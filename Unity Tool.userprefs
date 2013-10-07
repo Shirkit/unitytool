@@ -1,0 +1,16 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Editor\MapperEditor.cs">
+    <Files>
+      <File FileName="Assets\Editor\MapperWindowEditor.cs" Line="13" Column="5" />
+      <File FileName="Assets\Editor\MapperEditor.cs" Line="33" Column="2" />
+      <File FileName="Assets\Scripts\Mapper.cs" Line="14" Column="19" />
+      <File FileName="Assets\Scripts\RRT3D.cs" Line="88" Column="47" />
+      <File FileName="Assets\Editor\MapperEditorDrawer.cs" Line="10" Column="30" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
