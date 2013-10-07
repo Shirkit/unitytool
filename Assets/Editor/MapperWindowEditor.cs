@@ -154,15 +154,7 @@ public class MapperWindowEditor : EditorWindow
 				StorePositions ();
 				simulated = true;
 			}
-			Cell[][] obstacles = mapper.ComputeObstacles ();
-			Cell[][] grid = MapperEditor.grid;
-			if (grid != null)
-				for (int x = 0; x < obstacles.Length; x++) {
-					for (int y = 0; y < obstacles[x].Length; y++)
-						if (grid [x] [y] != null)
-							obstacles [x] [y] = grid [x] [y];
-				}
-			fullMap = mapper.PrecomputeMaps (floor.collider.bounds.min, floor.collider.bounds.max, gridSize, gridSize, timeSamples, stepSize, ticksBehind, obstacles);
+			fullMap = mapper.PrecomputeMaps (floor.collider.bounds.min, floor.collider.bounds.max, gridSize, gridSize, timeSamples, stepSize, ticksBehind);
 			
 			drawer.fullMap = fullMap;
 			float maxSeenGrid;
