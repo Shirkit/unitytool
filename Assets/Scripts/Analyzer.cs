@@ -403,15 +403,15 @@ public class Analyzer
 					int x = (int)pos.x;
 					int y = (int)pos.z;
 					
-					for (int back = 1; back <= stepsBehind && (par.t + t - back) > 0; back++) {
+					for (int back = 1; back <= stepsBehind; back++) {
 						
 						//Look at the back in thime
-						if (fullMap [par.t + t - back] [x] [y].seen) {
+						if ((par.t + t - back) > 0 && fullMap [par.t + t - back] [x] [y].seen) {
 							currentPath.crazy += Mathf.Pow (stepsBehind - back, 2);
 						}
 						
 						//Do the in front
-						if (fullMap [par.t + t + back] [x] [y].seen) {
+						if ((par.t + t - back) < fullMap.Length && fullMap [par.t + t + back] [x] [y].seen) {
 							currentPath.crazy += Mathf.Pow (stepsBehind - back, 2);
 						}
 					}

@@ -11,12 +11,11 @@ public class MapperWindowEditor : EditorWindow
 	
 	// Data holders
 	public static Cell[][][] fullMap;
-	public static List<Node> path;
 	public static List<Path> paths = new List<Path> ();
 	public static List<Node> mostDanger = null, shortest = null, lengthiest = null, fastest = null, longest = null;
 	// Parameters
 	public static int startX, startY, maxHeatMap, endX = 27, endY = 27, timeSlice, timeSamples = 800, attemps = 25000, iterations = 5, gridSize = 60, ticksBehind = 0;
-	public static bool drawMap = true, drawMoveMap = false, drawMoveUnits = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = false, smoothPath = true, drawShortestPath = false, drawLongestPath = false, drawLengthiestPath = false, drawFastestPath = false, drawMostDangerousPath = false, seeByTime = false, seeByLength = false, seeByDanger = false, seeByLoS = false, seeByDanger3 = false, seeByLoS3 = false, seeByDanger3Norm = false, seeByLoS3Norm = false, seeByCrazy = false, seeByVelocity = false;
+	public static bool drawMap = true, drawMoveMap = false, drawMoveUnits = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = false, smoothPath = true, drawShortestPath = false, drawLongestPath = false, drawLengthiestPath = false, drawFastestPath = false, drawMostDangerousPath = false, drawFoVOnly = false, seeByTime = false, seeByLength = false, seeByDanger = false, seeByLoS = false, seeByDanger3 = false, seeByLoS3 = false, seeByDanger3Norm = false, seeByLoS3Norm = false, seeByCrazy = false, seeByVelocity = false;
 	public static float stepSize = 1 / 10f, crazySeconds = 5f;
 	public static int[,] heatMap;
 	public static GameObject start = null, end = null, floor = null, playerPrefab = null;
@@ -67,28 +66,6 @@ public class MapperWindowEditor : EditorWindow
 		
 		scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
 		
-		if (GUILayout.Button ("Random")) {
-			Distribution d = new Distribution (2, new Distribution.Pair (1, 1));
-			
-			float[] na = new float[2 * 2];
-			for (int i = 0; i < 10000; i++) {
-				na [d.NextRandomDebug ()] += 1f;
-			}
-			
-			float sum = 0f;
-			for (int i = 0; i < na.Length; i++) {
-				sum += na [i];
-			}
-			for (int i = 0; i < na.Length; i++) {
-				na [i] /= sum;
-			}
-			string s = "";
-			foreach (var item in na) {
-				s += item + ",";
-			}
-			Debug.Log (s);
-		}
-		
 		#region 1. Map
 		
 		EditorGUILayout.LabelField ("1. Map");
@@ -121,7 +98,7 @@ public class MapperWindowEditor : EditorWindow
 		EditorGUILayout.LabelField ("3. Map Computation");
 		timeSamples = EditorGUILayout.IntSlider ("Time samples", timeSamples, 1, 10000);
 		stepSize = EditorGUILayout.Slider ("Step size", stepSize, 0.01f, 1f);
-		ticksBehind = EditorGUILayout.IntSlider ("Ticks behind", ticksBehind, 0, 100);
+		ticksBehind = EditorGUILayout.IntSlider (new GUIContent ("Ticks behind", "Number of ticks that the FoV will remain seen after the enemy has no visibility on that cell (prevents noise/jitter like behaviours)"), ticksBehind, 0, 100);
 		
 		if (GUILayout.Button ("Precompute Maps")) {
 			
@@ -215,10 +192,9 @@ public class MapperWindowEditor : EditorWindow
 				end = GameObject.Find ("End");	
 			}
 			
-			
-			
-			
 			paths.Clear ();
+			toggleStatus.Clear ();
+			arrangedByCrazy = arrangedByDanger = arrangedByDanger3 = arrangedByDanger3Norm = arrangedByLength = arrangedByLoS = arrangedByLoS3 = arrangedByLoS3Norm = arrangedByTime = arrangedByVelocity = null;
 			
 			startX = (int)((start.transform.position.x - floor.collider.bounds.min.x) / SpaceState.TileSize.x);
 			startY = (int)((start.transform.position.z - floor.collider.bounds.min.z) / SpaceState.TileSize.y);
@@ -233,8 +209,11 @@ public class MapperWindowEditor : EditorWindow
 			List<Node> nodes = null;
 			for (int it = 0; it < iterations; it++) {
 				nodes = rrt.Compute (startX, startY, endX, endY, attemps, speed, fullMap, smoothPath);
-				if (nodes.Count > 0)
+				if (nodes.Count > 0) {
 					paths.Add (new Path (nodes));
+					toggleStatus.Add (paths.Last (), true);
+					paths.Last ().color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
+				}
 			}
 			heatMap = Analyzer.Compute2DHeatMap (paths, gridSize, gridSize, out maxHeatMap);
 			
@@ -246,11 +225,9 @@ public class MapperWindowEditor : EditorWindow
 			int[] maxHeatMap3d;
 			drawer.heatMap3d = Analyzer.Compute3DHeatMap (paths, gridSize, gridSize, timeSamples, out maxHeatMap3d);
 			drawer.heatMapMax3d = maxHeatMap3d;
-			
-			//drawer.rrtMap = rrt.nodeMap;
+						
+			drawer.rrtMap = rrt.explored;
 			drawer.tileSize.Set (SpaceState.TileSize.x, SpaceState.TileSize.y);
-			drawer.path = nodes;
-			path = nodes;
 			shortest = fastest = longest = lengthiest = mostDanger = null;
 			
 		}
@@ -266,13 +243,14 @@ public class MapperWindowEditor : EditorWindow
 		
 		timeSlice = EditorGUILayout.IntSlider ("Time", timeSlice, 0, timeSamples - 1);
 		drawMap = EditorGUILayout.Toggle ("Draw map", drawMap);
+		drawNeverSeen = EditorGUILayout.Toggle ("- Draw safe places", drawNeverSeen);
+		drawFoVOnly = EditorGUILayout.Toggle ("- Draw only fields of view", drawFoVOnly);
+		drawHeatMap = EditorGUILayout.Toggle ("- Draw heat map", drawHeatMap);
+		drawHeatMap3d = EditorGUILayout.Toggle ("-> Draw heat map 3d", drawHeatMap3d);
 		drawPath = EditorGUILayout.Toggle ("Draw path", drawPath);
 		drawMoveMap = EditorGUILayout.Toggle ("Move map Y-axis", drawMoveMap);
 		drawMoveUnits = EditorGUILayout.Toggle ("Move units Y-axis", drawMoveUnits);
-		drawNeverSeen = EditorGUILayout.Toggle ("Draw safe places", drawNeverSeen);
-		//draw3dExploration = EditorGUILayout.Toggle ("Draw 3D exploration", draw3dExploration);
-		drawHeatMap = EditorGUILayout.Toggle ("Draw heat map", drawHeatMap);
-		drawHeatMap3d = EditorGUILayout.Toggle ("Draw heat map 3d", drawHeatMap3d);
+		draw3dExploration = EditorGUILayout.Toggle ("Draw 3D exploration", draw3dExploration);
 		
 		if (drawer != null) {
 			if (drawHeatMap3d)
@@ -551,6 +529,7 @@ public class MapperWindowEditor : EditorWindow
 			drawer.draw3dExploration = draw3dExploration;
 			drawer.drawHeatMap = drawHeatMap;
 			drawer.drawMap = drawMap;
+			drawer.drawFoVOnly = drawFoVOnly;
 			drawer.drawMoveMap = drawMoveMap;
 			drawer.drawNeverSeen = drawNeverSeen;
 			drawer.drawPath = drawPath;

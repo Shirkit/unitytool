@@ -10,6 +10,7 @@ public class RRTKDTree
 	private Cell[][][] nodeMatrix;
 	private float angle;
 	public KDTree tree;
+	public List<Node> explored;
 	// Only do noisy calculations if enemies is different from null
 	public Enemy[] enemies;
 	public Vector3 min;
@@ -44,6 +45,7 @@ public class RRTKDTree
 	{
 		// Initialization
 		tree = new KDTree (3);
+		explored = new List<Node>();
 		nodeMatrix = matrix;
 		
 		//Start and ending node
@@ -54,6 +56,7 @@ public class RRTKDTree
 		// Prepare start and end node
 		Node end = GetNode (0, endX, endY);
 		tree.insert (start.GetArray (), start);
+		explored.Add(start);
 		
 		// Prepare the variables		
 		Node nodeVisiting = null;
@@ -87,6 +90,8 @@ public class RRTKDTree
 				i--;
 				continue;
 			}
+			
+			explored.Add(nodeVisiting);
 			
 			nodeTheClosestTo = (Node)tree.nearest (new double[] {rx, rt, ry});
 			
