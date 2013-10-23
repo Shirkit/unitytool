@@ -248,9 +248,9 @@ public class MapperWindowEditor : EditorWindow
 		drawHeatMap = EditorGUILayout.Toggle ("- Draw heat map", drawHeatMap);
 		drawHeatMap3d = EditorGUILayout.Toggle ("-> Draw heat map 3d", drawHeatMap3d);
 		drawPath = EditorGUILayout.Toggle ("Draw path", drawPath);
-		drawMoveMap = EditorGUILayout.Toggle ("Move map Y-axis", drawMoveMap);
+		/*drawMoveMap = EditorGUILayout.Toggle ("Move map Y-axis", drawMoveMap);
 		drawMoveUnits = EditorGUILayout.Toggle ("Move units Y-axis", drawMoveUnits);
-		draw3dExploration = EditorGUILayout.Toggle ("Draw 3D exploration", draw3dExploration);
+		draw3dExploration = EditorGUILayout.Toggle ("Draw 3D exploration", draw3dExploration);*/
 		
 		if (drawer != null) {
 			if (drawHeatMap3d)
@@ -267,9 +267,9 @@ public class MapperWindowEditor : EditorWindow
 		
 		EditorGUILayout.LabelField ("");
 		
-		if (GUILayout.Button ("Batch computation")) {
+		/*if (GUILayout.Button ("Batch computation")) {
 			BatchComputing ();
-		}
+		}*/
 		
 		
 		
