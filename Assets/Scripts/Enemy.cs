@@ -114,12 +114,12 @@ public class Enemy : MonoBehaviour
 		}
 		else
 		{	
-			Quaternion q = Quaternion.Euler(new Vector3(0f, fovAngle, 0f));
-			Vector3 dir = q * transform.forward;
-			Gizmos.color = LineForFOV; 
-			Gizmos.DrawLine(transform.position, transform.position + dir * fovDistance);
-			dir = (Quaternion.Inverse(q)) * transform.forward;
-			Gizmos.DrawLine(transform.position, transform.position + dir * fovDistance);
+			//Quaternion q = Quaternion.Euler(new Vector3(0f, fovAngle, 0f));
+			//Vector3 dir = q * transform.forward;
+			//Gizmos.color = LineForFOV; 
+			//Gizmos.DrawLine(transform.position, transform.position + dir * fovDistance);
+			//dir = (Quaternion.Inverse(q)) * transform.forward;
+			//Gizmos.DrawLine(transform.position, transform.position + dir * fovDistance);
 		}	
 	
 		

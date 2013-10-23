@@ -14,8 +14,8 @@ public class MapperWindowEditor : EditorWindow
 	public static List<Path> paths = new List<Path> ();
 	public static List<Node> mostDanger = null, shortest = null, lengthiest = null, fastest = null, longest = null;
 	// Parameters
-	public static int startX, startY, maxHeatMap, endX = 27, endY = 27, timeSlice, timeSamples = 800, attemps = 25000, iterations = 5, gridSize = 60, ticksBehind = 0;
-	public static bool drawMap = true, drawMoveMap = false, drawMoveUnits = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = false, smoothPath = true, drawShortestPath = false, drawLongestPath = false, drawLengthiestPath = false, drawFastestPath = false, drawMostDangerousPath = false, drawFoVOnly = false, seeByTime = false, seeByLength = false, seeByDanger = false, seeByLoS = false, seeByDanger3 = false, seeByLoS3 = false, seeByDanger3Norm = false, seeByLoS3Norm = false, seeByCrazy = false, seeByVelocity = false;
+	public static int startX, startY, maxHeatMap, endX = 27, endY = 27, timeSlice, timeSamples = 800, attemps = 25000, iterations = 2, gridSize = 60, ticksBehind = 5;
+	public static bool drawMap = true, drawMoveMap = false, drawMoveUnits = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = true, smoothPath = true, drawShortestPath = false, drawLongestPath = false, drawLengthiestPath = false, drawFastestPath = false, drawMostDangerousPath = false, drawFoVOnly = true, seeByTime = false, seeByLength = false, seeByDanger = false, seeByLoS = false, seeByDanger3 = false, seeByLoS3 = false, seeByDanger3Norm = false, seeByLoS3Norm = false, seeByCrazy = false, seeByVelocity = false;
 	public static float stepSize = 1 / 10f, crazySeconds = 5f;
 	public static int[,] heatMap;
 	public static GameObject start = null, end = null, floor = null, playerPrefab = null;
@@ -230,8 +230,63 @@ public class MapperWindowEditor : EditorWindow
 			drawer.tileSize.Set (SpaceState.TileSize.x, SpaceState.TileSize.y);
 			shortest = fastest = longest = lengthiest = mostDanger = null;
 			
+			if(paths.Count == 2)
+			{
+				toggleStatus.Clear ();
+			
+				foreach (GameObject obj in players.Values)
+					GameObject.DestroyImmediate (obj);
+				
+				players.Clear ();
+				Resources.UnloadUnusedAssets ();
+				
+				int i = 1;
+				foreach (Path p in paths) 
+				{
+					p.name = "Path " + (i);
+				
+					if ( i == 1)
+						p.color = Color.blue;		
+					else
+						p.color = Color.red;
+					toggleStatus.Add (p, true);
+
+				
+				
+					p.ZeroValues ();
+					i++; 
+				}
+				
+				//Force the display
+				
+				Analyzer.ComputePathsTimeValues (paths);
+				
+				arrangedByTime = new List<Path> ();
+				arrangedByTime.AddRange (paths);
+				arrangedByTime.Sort (new Analyzer.TimeComparer ());
+				
+				
+				seeByTime = EditorGUILayout.Foldout (seeByTime, "Paths by Time");
+				if (seeByTime && arrangedByTime != null) 
+				{
+					for (i = 0; i < arrangedByTime.Count; i++) 
+					{
+						EditorGUILayout.BeginHorizontal ();
+		
+						EditorGUILayout.FloatField (arrangedByTime [i].name, arrangedByTime [i].time);
+						toggleStatus [arrangedByTime [i]] = EditorGUILayout.Toggle ("", toggleStatus [arrangedByTime [i]], GUILayout.MaxWidth (20f));
+						EditorGUILayout.ColorField (arrangedByTime [i].color, GUILayout.MaxWidth (40f));
+						
+						EditorGUILayout.EndHorizontal ();
+					}
+				}
+			}
 		}
+		
+		
+		
 		EditorGUILayout.LabelField ("");
+		
 		
 		#endregion
 		
@@ -348,6 +403,47 @@ public class MapperWindowEditor : EditorWindow
 			arrangedByVelocity = new List<Path> ();
 			arrangedByVelocity.AddRange (paths);
 			arrangedByVelocity.Sort (new Analyzer.VelocityComparer ());
+			
+			//Put the output of some of them in an XML file for human study.
+			if(paths.Count == 2)
+			{
+				String s = "";
+				s += "<Question> \n";
+				s += "	<id> </id>\n";
+				s += "	<Path1> </Path1>\n";
+				s += "	<Path2> </Path2>\n";
+				s += "	<P1Colour>Red</P1Colour>\n";
+				s += "	<P2Colour>Blue</P2Colour>\n";
+				//Different Values	   		
+				foreach(Path p in paths)
+				{
+					s+="	<Danger3>";
+					s+= p.danger3.ToString(); 
+					s+= "</Danger3>\n";
+				}
+				foreach(Path p in paths)
+				{
+					s+="	<LOS3>";
+					s+= p.los3.ToString(); 
+					s+= "</LOS3>\n";
+				}
+				foreach(Path p in paths)
+				{
+					s+="	<Crazy>";
+					s+= p.crazy.ToString(); 
+					s+= "</Crazy>\n";
+				}
+				s += "</Question>\n";
+				
+				//Debug.Log(questionNumber);
+				System.IO.DirectoryInfo dir = new System.IO.DirectoryInfo(
+					@"C:\Users\jtremb59\Dropbox\PhD\2013 Fall\Human Experiment\Output Tool\");
+	            int count = dir.GetFiles().Length + 1;
+				
+				System.IO.File.WriteAllText(
+					@"C:\Users\jtremb59\Dropbox\PhD\2013 Fall\Human Experiment\Output Tool\"+
+					count.ToString()+".txt", s);
+			}
 			
 		}
 		
@@ -480,6 +576,7 @@ public class MapperWindowEditor : EditorWindow
 				EditorGUILayout.EndHorizontal ();
 			}
 		}
+		
 		
 		
 		#endregion
