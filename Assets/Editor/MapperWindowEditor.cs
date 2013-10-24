@@ -308,6 +308,7 @@ public class MapperWindowEditor : EditorWindow
 			Analyzer.ComputePathsLoSValues (paths, SpaceState.Enemies, floor.collider.bounds.min, SpaceState.TileSize.x, SpaceState.TileSize.y, fullMap, drawer.seenNeverSeen, drawer.seenNeverSeenMax);
 			Analyzer.ComputePathsDangerValues (paths, SpaceState.Enemies, floor.collider.bounds.min, SpaceState.TileSize.x, SpaceState.TileSize.y, fullMap, drawer.seenNeverSeen, drawer.seenNeverSeenMax);
 			Analyzer.ComputeCrazyness (paths, fullMap, Mathf.FloorToInt (crazySeconds / stepSize));
+			Analyzer.ComputePathsVelocityValues(paths);
 			
 			arrangedByTime = new List<Path> ();
 			arrangedByTime.AddRange (paths);
@@ -839,7 +840,9 @@ public class MapperWindowEditor : EditorWindow
 		}*/
 		
 		foreach (KeyValuePair<Path, GameObject> each in players) {
-			if (toggleStatus [each.Key]) {
+			bool used = false;
+			toggleStatus.TryGetValue (each.Key, out used);
+			if (used) {
 				Node p = null;
 				foreach (Node n in each.Key.points) {
 					if (n.t > t) {
