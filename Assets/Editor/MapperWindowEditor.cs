@@ -14,7 +14,7 @@ public class MapperWindowEditor : EditorWindow
 	public static List<Path> paths = new List<Path> ();
 	public static List<Node> mostDanger = null, shortest = null, lengthiest = null, fastest = null, longest = null;
 	// Parameters
-	public static int startX, startY, maxHeatMap, endX = 27, endY = 27, timeSlice, timeSamples = 800, attemps = 25000, iterations = 2, gridSize = 60, ticksBehind = 5;
+	public static int startX, startY, maxHeatMap, endX = 27, endY = 27, timeSlice, timeSamples = 800, attemps = 25000, iterations = 2, gridSize = 60, ticksBehind = 0;
 	public static bool drawMap = true, drawMoveMap = false, drawMoveUnits = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = true, smoothPath = true, drawShortestPath = false, drawLongestPath = false, drawLengthiestPath = false, drawFastestPath = false, drawMostDangerousPath = false, drawFoVOnly = true, seeByTime = false, seeByLength = false, seeByDanger = false, seeByLoS = false, seeByDanger3 = false, seeByLoS3 = false, seeByDanger3Norm = false, seeByLoS3Norm = false, seeByCrazy = false, seeByVelocity = false;
 	public static float stepSize = 1 / 10f, crazySeconds = 5f;
 	public static int[,] heatMap;
@@ -343,6 +343,7 @@ public class MapperWindowEditor : EditorWindow
 		if (GUILayout.Button ("Analyze paths")) {		
 			toggleStatus.Clear ();
 			
+				
 			foreach (GameObject obj in players.Values)
 				GameObject.DestroyImmediate (obj);
 			
@@ -350,12 +351,33 @@ public class MapperWindowEditor : EditorWindow
 			Resources.UnloadUnusedAssets ();
 			
 			int i = 1;
-			foreach (Path path in paths) {
-				path.name = "Path " + (i++);
-				path.color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
-				toggleStatus.Add (path, false);
+			foreach (Path path in paths) 
+			{
+				path.name = "Path " + (i);
+				
+				if(paths.Count == 2)
+				{
+					if ( i == 1)
+						path.color = Color.blue;		
+					else
+						path.color = Color.red;
+					
+					toggleStatus.Add (path, true);
+					
+				}
+				else
+				{	
+					path.color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
+					
+					toggleStatus.Add (path, false);
+				
+				}
+				
+				
 				path.ZeroValues ();
-			}
+				i++; 
+			}	
+		
 			
 			Analyzer.ComputePathsTimeValues (paths);
 			Analyzer.ComputePathsLengthValues (paths);
@@ -412,8 +434,8 @@ public class MapperWindowEditor : EditorWindow
 				s += "	<id> </id>\n";
 				s += "	<Path1> </Path1>\n";
 				s += "	<Path2> </Path2>\n";
-				s += "	<P1Colour>Red</P1Colour>\n";
-				s += "	<P2Colour>Blue</P2Colour>\n";
+				s += "	<P1Colour>Blue</P1Colour>\n";
+				s += "	<P2Colour>Red</P2Colour>\n";
 				//Different Values	   		
 				foreach(Path p in paths)
 				{
@@ -432,6 +454,12 @@ public class MapperWindowEditor : EditorWindow
 					s+="	<Crazy>";
 					s+= p.crazy.ToString(); 
 					s+= "</Crazy>\n";
+				}
+				foreach(Path p in paths)
+				{
+					s+="	<Accel>";
+					s+= p.velocity.ToString(); 
+					s+= "</Accel>\n";
 				}
 				s += "</Question>\n";
 				
