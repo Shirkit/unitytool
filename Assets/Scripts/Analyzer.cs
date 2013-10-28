@@ -115,9 +115,9 @@ public class Analyzer
 	
 	public class VelocityComparer : IComparer<Path>
 	{
-		public int Compare(Path path1, Path path2)
+		public int Compare (Path path1, Path path2)
 		{
-			return Mathf.FloorToInt(path2.velocity - path1.velocity);
+			return Mathf.FloorToInt (path2.velocity - path1.velocity);
 		}
 	}
 	
@@ -143,26 +143,27 @@ public class Analyzer
 		}
 	}
 	
-	public static void ComputePathsVelocityValues(List<Path> paths) {
+	public static void ComputePathsVelocityValues (List<Path> paths)
+	{
 		foreach (Path path in paths) {
-			Node n = path.points[path.points.Count - 1];
+			Node n = path.points [path.points.Count - 1];
 			while (n.parent != null && n.parent.parent != null) {
-				Vector3 p1 = n.GetVector3();
-				Vector3 p2 = n.parent.GetVector3();
-				Vector3 p3 = n.parent.parent.GetVector3();
+				Vector3 p1 = n.GetVector3 ();
+				Vector3 p2 = n.parent.GetVector3 ();
+				Vector3 p3 = n.parent.parent.GetVector3 ();
 				Vector3 v1 = p1 - p2;
 				Vector3 v2 = p2 - p3;
 				v1.z = 0f;
 				v2.z = 0f;
-				v1.Normalize();
-				v2.Normalize();
-				float angle1 = Vector3.Angle(v1, Vector3.up);
-				float angle2 = Vector3.Angle(v2, Vector3.up);
-				path.velocity = Mathf.Abs(angle2 - angle1);
+				v1.Normalize ();
+				v2.Normalize ();
+				float angle1 = Vector3.Angle (v1, Vector3.up);
+				float angle2 = Vector3.Angle (v2, Vector3.up);
+				path.velocity += Mathf.Abs (angle2 - angle1);
 				n = n.parent;
 			}
 			if (path.length3d == 0)
-				path.length3d = ComputeLength3D(path.points);
+				path.length3d = ComputeLength3D (path.points);
 			path.velocity /= path.length3d;
 		}
 	}
@@ -187,8 +188,7 @@ public class Analyzer
 					
 				Vector3 p1 = cur.GetVector3 ();
 				Vector3 p2 = par.GetVector3 ();
-				Vector3 pd = p2 - p1;
-				pd.Normalize ();
+				Vector3 pd = p1 - p2;
 					
 				float pt = (cur.t - par.t);
 					
@@ -336,8 +336,7 @@ public class Analyzer
 					
 				Vector3 p1 = cur.GetVector3 ();
 				Vector3 p2 = par.GetVector3 ();
-				Vector3 pd = p2 - p1;
-				pd.Normalize ();
+				Vector3 pd = p1 - p2;
 					
 				float pt = (cur.t - par.t);
 					
@@ -379,8 +378,6 @@ public class Analyzer
 	public static void ComputeCrazyness (List<Path> paths, Cell[][][] fullMap, int stepsBehind)
 	{
 		foreach (Path currentPath in paths) {
-			if (currentPath.length3d == 0)
-				currentPath.length3d = ComputeLength3D (currentPath.points);
 				
 			Node cur = currentPath.points [currentPath.points.Count - 1];
 			Node par = cur.parent;
@@ -388,11 +385,10 @@ public class Analyzer
 					
 				Vector3 p1 = cur.GetVector3 ();
 				Vector3 p2 = par.GetVector3 ();
-				Vector3 pd = p2 - p1;
-				pd.Normalize ();
+				Vector3 pd = p1 - p2;
 					
 				float pt = (cur.t - par.t);
-					
+
 				// Navigate through time to find the right cells to start from
 				for (int t = 0; t < pt; t++) {
 						
@@ -405,13 +401,13 @@ public class Analyzer
 					
 					for (int back = 1; back <= stepsBehind; back++) {
 						
-						//Look at the back in thime
+						// Look back in time to search for visible cells
 						if ((par.t + t - back) > 0 && fullMap [par.t + t - back] [x] [y].seen) {
 							currentPath.crazy += Mathf.Pow (stepsBehind - back, 2);
 						}
 						
 						//Do the in front
-						if ((par.t + t - back) < fullMap.Length && fullMap [par.t + t + back] [x] [y].seen) {
+						if ((par.t + t + back) < fullMap.Length && fullMap [par.t + t + back] [x] [y].seen) {
 							currentPath.crazy += Mathf.Pow (stepsBehind - back, 2);
 						}
 					}
