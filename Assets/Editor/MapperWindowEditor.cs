@@ -194,6 +194,11 @@ public class MapperWindowEditor : EditorWindow
 			
 			paths.Clear ();
 			toggleStatus.Clear ();
+			foreach (GameObject obj in players.Values)
+				GameObject.DestroyImmediate (obj);
+			
+			players.Clear ();
+			Resources.UnloadUnusedAssets ();
 			arrangedByCrazy = arrangedByDanger = arrangedByDanger3 = arrangedByDanger3Norm = arrangedByLength = arrangedByLoS = arrangedByLoS3 = arrangedByLoS3Norm = arrangedByTime = arrangedByVelocity = null;
 			
 			startX = (int)((start.transform.position.x - floor.collider.bounds.min.x) / SpaceState.TileSize.x);
