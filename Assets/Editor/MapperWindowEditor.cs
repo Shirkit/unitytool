@@ -26,8 +26,8 @@ public class MapperWindowEditor : EditorWindow
 	public static List<Path> arrangedByTime, arrangedByLength, arrangedByDanger, arrangedByLoS, arrangedByDanger3, arrangedByLoS3, arrangedByDanger3Norm, arrangedByLoS3Norm, arrangedByCrazy, arrangedByVelocity;
 	private static Vector2 scrollPos = new Vector2 ();
 	private int lastTime = timeSlice;
+	private long stepInTicks = 0L, playTime = 0L;
 	private static bool simulated = false, playing = false;
-	private static float playTime = 0f;
 	private Mapper mapper;
 	private RRTKDTree rrt = new RRTKDTree ();
 	private MapperEditorDrawer drawer;
@@ -98,6 +98,7 @@ public class MapperWindowEditor : EditorWindow
 		EditorGUILayout.LabelField ("3. Map Computation");
 		timeSamples = EditorGUILayout.IntSlider ("Time samples", timeSamples, 1, 10000);
 		stepSize = EditorGUILayout.Slider ("Step size", stepSize, 0.01f, 1f);
+		stepInTicks = ((long) (stepSize * 10000000L));
 		ticksBehind = EditorGUILayout.IntSlider (new GUIContent ("Ticks behind", "Number of ticks that the FoV will remain seen after the enemy has no visibility on that cell (prevents noise/jitter like behaviours)"), ticksBehind, 0, 100);
 		
 		if (GUILayout.Button ("Precompute Maps")) {
@@ -774,23 +775,7 @@ public class MapperWindowEditor : EditorWindow
 		//triangulator.CreateInfluencePolygon(pointsVoronoi.ToArray());
 	}
 	
-	public void Update ()
-	{
-		if (playing) {
-			playTime += 1 / 100f;
-			if (playTime > stepSize) {
-				playTime = 0f;
-				timeSlice++;
-				if (timeSlice >= timeSamples) {
-					timeSlice = 0;
-				}
-				drawer.timeSlice = timeSlice;
-				UpdatePositions (timeSlice, mapper);
-			}
-		}
-	}
-	
-	// Resets the AI back to it's original position
+		// Resets the AI back to it's original position
 	public void ResetAI ()
 	{
 		GameObject[] objs = GameObject.FindGameObjectsWithTag ("AI") as GameObject[];
@@ -802,18 +787,59 @@ public class MapperWindowEditor : EditorWindow
 			ob.GetComponent<Enemy> ().ResetSimulation ();
 	}
 	
+	private DateTime previous = DateTime.Now;
+	private long accL = 0L;
+	public void Update ()
+	{
+		if (playing) {
+			long l = DateTime.Now.Ticks - previous.Ticks;
+			playTime += l;
+			accL += l;
+			if (playTime > stepInTicks) {
+				playTime -= stepInTicks;
+				timeSlice++;
+				if (timeSlice >= timeSamples) {
+					timeSlice = 0;
+				}
+				drawer.timeSlice = timeSlice;
+				UpdatePositions (timeSlice, mapper, 0f);
+				accL += playTime;
+			} else {
+				UpdatePositions (timeSlice, mapper, (float) accL / (float) stepInTicks);
+				accL = 0L;
+			}
+		}
+		previous = DateTime.Now;
+	}
+	
 	// Updates everyone's position to the current timeslice
-	public void UpdatePositions (int t, Mapper mapper)
+	public void UpdatePositions (int t, Mapper mapper, float diff = 0f)
 	{
 		for (int i = 0; i < SpaceState.Enemies.Length; i++) {
 			if (SpaceState.Enemies [i] == null)
 				continue;
 			
-			Vector3 pos = SpaceState.Enemies [i].positions [t];
+			Vector3 pos;
+			Quaternion rot;
+			
+			if (t == 0 || diff == 0) {
+				pos = SpaceState.Enemies [i].positions [t];
+				rot = SpaceState.Enemies [i].rotations [t];	
+			} else {
+				pos = SpaceState.Enemies [i].transform.position;
+				rot = SpaceState.Enemies [i].transform.rotation;
+			}
+			
 			if (drawMoveUnits)
 				pos.y = t;
+			
+			if (diff > 0 && t+1 < SpaceState.Enemies[i].positions.Length) {
+				pos += (SpaceState.Enemies[i].positions[t+1] - SpaceState.Enemies[i].positions[t]) * diff;
+				//rot = Quaternion.Lerp(rot, SpaceState.Enemies[i].rotations[t+1], diff);
+			}
+			
 			SpaceState.Enemies [i].transform.position = pos;
-			SpaceState.Enemies [i].transform.rotation = SpaceState.Enemies [i].rotations [t];
+			SpaceState.Enemies [i].transform.rotation = rot;
 		}
 		
 		/*GameObject[] objs = GameObject.FindGameObjectsWithTag ("AI") as GameObject[];
