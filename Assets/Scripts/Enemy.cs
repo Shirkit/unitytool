@@ -30,12 +30,12 @@ public class Enemy : MonoBehaviour
 	// This moves the enemy in the game running environment
 	void Update ()
 	{		
-		//return; 
+		return; 
 		Vector3 outPos;
 		Quaternion outRot;
 		Waypoint outWay;
 		
-		EnemyMover.Solve(gameObject.GetHashCode(), dummyPosition, dummyRotation, moveSpeed, rotationSpeed, Time.deltaTime, dummyTarget, 0.25f, out outPos, out outRot, out outWay);
+		EnemyMover.Solve(gameObject.GetHashCode(), transform.position, transform.rotation, moveSpeed, rotationSpeed, Time.deltaTime, target, 0.25f, out outPos, out outRot, out outWay);
 		
 		transform.position = outPos;
 		transform.rotation = outRot;

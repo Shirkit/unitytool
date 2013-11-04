@@ -142,6 +142,7 @@ public class MapperWindowEditor : EditorWindow
 			drawer.zero.Set (floor.collider.bounds.min.x, floor.collider.bounds.min.z);
 			
 			ResetAI ();
+			previous = DateTime.Now;
 		} 
 		EditorGUILayout.LabelField ("");
 		
@@ -785,6 +786,9 @@ public class MapperWindowEditor : EditorWindow
 		objs = GameObject.FindGameObjectsWithTag ("Enemy") as GameObject[];
 		foreach (GameObject ob in objs) 
 			ob.GetComponent<Enemy> ().ResetSimulation ();
+		
+		timeSlice = 0;
+		SpaceState.Instance.timeSlice = 0;
 	}
 	
 	private DateTime previous = DateTime.Now;
@@ -802,6 +806,7 @@ public class MapperWindowEditor : EditorWindow
 					timeSlice = 0;
 				}
 				drawer.timeSlice = timeSlice;
+				SpaceState.Instance.timeSlice = timeSlice;
 				UpdatePositions (timeSlice, mapper, 0f);
 				accL += playTime;
 			} else {

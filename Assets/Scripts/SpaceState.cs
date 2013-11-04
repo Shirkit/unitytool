@@ -33,6 +33,9 @@ public class SpaceState
 	// ComputeTilesize
 	public Vector2 tileSize;
 	
+	//
+	public int timeSlice = 0;
+	
 	// Getters
 	
 	public static Enemy[] Enemies {
@@ -49,6 +52,10 @@ public class SpaceState
 	
 	public static Vector3 FloorMin {
 		get { return Instance.floorMin; }
+	}
+	
+	public static int TimeSlice {
+		get { return Instance.timeSlice; }
 	}
 	#endregion
 }
