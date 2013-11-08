@@ -2,6 +2,8 @@ using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Common;
+using Objects;
 
 public class Mapper : MonoBehaviour
 {
@@ -31,7 +33,7 @@ public class Mapper : MonoBehaviour
 		return baseMap;
 	}
 	
-	public void ComputeTileSize (Vector3 floorMin, Vector3 floorMax, int cellsX, int cellsZ)
+	public void ComputeTileSize (SpaceState populate, Vector3 floorMin, Vector3 floorMax, int cellsX, int cellsZ)
 	{
 		// Initial computation
 		float dx = Mathf.Abs (floorMin.x - floorMax.x);
@@ -41,18 +43,18 @@ public class Mapper : MonoBehaviour
 		
 		this.minX = floorMin.x;
 		this.minZ = floorMin.z;
+		this.cellsX = cellsX;
+		this.cellsZ = cellsZ;
 		
-		SpaceState.Instance.tileSize = new Vector2 (tileSizeX, tileSizeZ);
-		SpaceState.Instance.floorMin = floorMin;
+		populate.tileSize = new Vector2 (tileSizeX, tileSizeZ);
+		populate.floorMin = floorMin;
 	}
 	
 	// Precompute a timestamps number of maps in the future by simulating the enemies movement across the map
-	public Cell[][][] PrecomputeMaps (Vector3 floorMin, Vector3 floorMax, int cellsX, int cellsZ, int timestamps, float stepSize, int ticksBehind = 0, Cell[][] baseMap = null)
+	public Cell[][][] PrecomputeMaps (SpaceState populate, Vector3 floorMin, Vector3 floorMax, int cellsX, int cellsZ, int timestamps, float stepSize, int ticksBehind = 0, Cell[][] baseMap = null)
 	{
 		// Initial computation
-		this.cellsX = cellsX;
-		this.cellsZ = cellsZ;
-		ComputeTileSize (floorMin, floorMax, cellsX, cellsZ);
+		ComputeTileSize (populate, floorMin, floorMax, cellsX, cellsZ);
 		
 		// Compute the fixed obstacle map
 		if (baseMap == null)
@@ -75,7 +77,6 @@ public class Mapper : MonoBehaviour
 		for (int i = 0; i < enemies.Length; i++) {
 			cells.Add (new List<Vector2> ());
 		}
-		
 		
 		// Foreach period time, we advance a stepsize into the future and compute the map for it
 		for (int counter = 0; counter < timestamps; counter++) {
@@ -107,8 +108,8 @@ public class Mapper : MonoBehaviour
 								fullMap [counter] [(int)v.x] [(int)v.y].seen = true;
 							}
 		
-		SpaceState.Instance.enemies = enemies;
-		SpaceState.Instance.fullMap = fullMap;
+		populate.enemies = enemies;
+		populate.fullMap = fullMap;
 		
 		return fullMap;
 	}
