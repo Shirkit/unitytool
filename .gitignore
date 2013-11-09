@@ -6,3 +6,11 @@
 *.csproj
 *.unityproj
 *.sln
+
+*.svg
+
+ProjectSettings/GraphicsSettings.asset
+
+pathresults.xml
+
+SvgToPdf.py

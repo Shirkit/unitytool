@@ -46,7 +46,7 @@ namespace Common {
 		public string name;
 		[XmlElement("results")]
 		public List<PathValue> values;
-		public float[][] total;
+		//public float[][] total;
 		
 		// Serialization only
 		public PathResults() {
@@ -57,7 +57,7 @@ namespace Common {
 			this.values = new List<PathValue>();
 			for (int ttime = 0; ttime < path.points[path.points.Count - 1].t; ttime++)
 				this.values.Add(new PathValue(input, ttime));
-			this.total = input;
+			//this.total = input;
 		}
 	}
 	
