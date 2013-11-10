@@ -90,9 +90,10 @@ namespace Objects {
 		
 		public void OnDrawGizmos() 
 		{
-			if (transform.FindChild("FOV") != null)
+			/*if (transform.FindChild("FOV") != null)
 			{
 				GameObject FOV = transform.FindChild("FOV").gameObject;
+				
 				Mesh mesh = FOV.GetComponent<MeshFilter>().sharedMesh; 
 				if (mesh == null)
 				{
@@ -132,7 +133,7 @@ namespace Objects {
 				Gizmos.DrawLine(transform.position, transform.position + dir * fovDistance);
 			}	
 		
-			
+			*/
 			
 			
 		}

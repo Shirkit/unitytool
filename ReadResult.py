@@ -23,7 +23,11 @@ for i, l in enumerate(o.readlines()):
 		t=0
 		w = 0
 	if "time=" in l:
+		l=l.replace("<results time=\"","")
+		l=l.replace("\">","")
+		l=l.replace("\n","")
 		t+=1
+		r["Time"] = float(l)
 
 	if("Crazyness" in l):
 		#clear
@@ -62,7 +66,7 @@ x = [] ;yD = []; yL = [];yC=[]
 
 for i,j in enumerate(paths[0]):
 	#print i 
-	x.append(i)
+	x.append(j["Time"])
 	yD.append(j["Danger3"])
 	yL.append(j["Los3"])
 	yC.append(j["Crazyness"])
