@@ -60,7 +60,6 @@ namespace Common {
 		public List<Value> totalPerPath;
 		[XmlArray("timestamp-results")]
 		public List<PathValue> values;
-		//public float[][] total;
 		
 		// Serialization only
 		public PathResults() {
@@ -72,9 +71,6 @@ namespace Common {
 			this.totalPerPath = new List<Value>();
 			for (int ttime = 0; ttime < path.points[path.points.Count - 1].t; ttime++)
 				this.values.Add(new PathValue(input, ttime));
-<<<<<<< 2c7a7081d0a3840aa014fe0cf7557cea9823554f
-			//this.total = input;
-=======
 			{
 				this.totalPerPath.Add(new Value("Velocity", path.velocity));
 				this.totalPerPath.Add(new Value("Crazyness", path.crazy));
@@ -86,7 +82,6 @@ namespace Common {
 				this.totalPerPath.Add(new Value("Los3Norm", path.los3Norm));
 			}
 			this.total = input;
->>>>>>> 80be85900c109fce6abc8ea5ac2474cbe04ad29b
 		}
 	}
 	
