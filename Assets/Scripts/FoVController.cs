@@ -7,7 +7,7 @@ using Objects;
 public class FoVController : MonoBehaviour
 {
 	
-	public GameObject floor;
+	public GameObject floor, end;
 	public int gridSize = 60;
 	public float stepSize = 0.1f;
 	public int ticksBehind = 0;
@@ -15,6 +15,7 @@ public class FoVController : MonoBehaviour
 	private Mapper mapper;
 	private Cell[][] obstaclesMap;
 	private Cell[][][] fullMap;
+	private int endX, endY;
 	private List<List<Vector2>> cells;
 	
 	
@@ -24,9 +25,8 @@ public class FoVController : MonoBehaviour
 		// First prepare the mapper class
 		if (mapper == null && floor != null) {
 			mapper = floor.GetComponent<Mapper> ();
-			if (floor == null) {
+			if (floor == null)
 				mapper = floor.AddComponent<Mapper> ();
-			}
 		}
 		
 		// Then, we setup the enviornment needed to make it work
@@ -56,8 +56,17 @@ public class FoVController : MonoBehaviour
 			SpaceState.Running.fullMap = fullMap;
 			SpaceState.Running.enemies = enemies;
 			
+			if (end == null) {
+				end = GameObject.Find ("End");	
+			}
+			
+			endX = (int)((end.transform.position.x - floor.collider.bounds.min.x) / SpaceState.Running.tileSize.x);
+			endY = (int)((end.transform.position.z - floor.collider.bounds.min.z) / SpaceState.Running.tileSize.y);
+			
+			obstaclesMap[endX][endY].goal = true;
+			
 			// Run this once before enemies moving
-			LateUpdate();
+			LateUpdate ();
 		}
 	}
 	
@@ -69,10 +78,10 @@ public class FoVController : MonoBehaviour
 	void LateUpdate ()
 	{
 		for (int en = 0; en < SpaceState.Running.enemies.Length; en++)
-			cells[en].Clear();
+			cells [en].Clear ();
 		
 		Cell[][] computed = mapper.ComputeMap (obstaclesMap, SpaceState.Running.enemies, cells);
-		fullMap[SpaceState.Running.timeSlice] = computed;
+		fullMap [SpaceState.Running.timeSlice] = computed;
 		
 		// Store the seen cells in the enemy class
 		List<Vector2>[] arr = cells.ToArray ();

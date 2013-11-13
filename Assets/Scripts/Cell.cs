@@ -10,7 +10,8 @@ namespace Common {
 		public bool safe = false;
 		public bool noisy = false;
 		public bool waypoint = false;
-		public bool cluster = false;
+		public bool goal = false;
+		public short cluster = 0;
 		
 		public Boolean IsWalkable() {
 			return safe || (!(blocked || seen));
@@ -23,6 +24,7 @@ namespace Common {
 			copy.safe = this.safe;
 			copy.noisy = this.noisy;
 			copy.waypoint = this.waypoint;
+			copy.goal = this.goal;
 			copy.cluster = this.cluster;
 			return copy;
 		}

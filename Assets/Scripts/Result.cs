@@ -32,19 +32,33 @@ namespace Common {
 		public double timeSpent = 0f;
 	}
 	
+	[Serializable, XmlRoot("clusters")]
+	public class ClustersRoot
+	{
+		[XmlElement("cluster")]
+		public List<MetricsRoot> everything = new List<MetricsRoot>();
+	}
+	
 	[Serializable, XmlRoot("paths")]
 	public class MetricsRoot
 	{
+		[XmlAttribute]
+		public string name;
+		[XmlAttribute]
+		public string number;
+		
 		[XmlElement("path")]
 		public List<PathResults> everything = new List<PathResults>();
 	}
 	
-	[Serializable]
+	[Serializable, XmlRoot("timestamp")]
 	public class PathResults
 	{
 		[XmlAttribute("name")]
 		public string name;
-		[XmlElement("results")]
+		[XmlElement("total-results")]
+		public List<Value> totalPerPath;
+		[XmlArray("timestamp-results")]
 		public List<PathValue> values;
 		//public float[][] total;
 		
@@ -55,9 +69,24 @@ namespace Common {
 		public PathResults(Path path, float[][] input) {
 			this.name = path.name;
 			this.values = new List<PathValue>();
+			this.totalPerPath = new List<Value>();
 			for (int ttime = 0; ttime < path.points[path.points.Count - 1].t; ttime++)
 				this.values.Add(new PathValue(input, ttime));
+<<<<<<< 2c7a7081d0a3840aa014fe0cf7557cea9823554f
 			//this.total = input;
+=======
+			{
+				this.totalPerPath.Add(new Value("Velocity", path.velocity));
+				this.totalPerPath.Add(new Value("Crazyness", path.crazy));
+				this.totalPerPath.Add(new Value("Danger", path.danger));
+				this.totalPerPath.Add(new Value("Danger3", path.danger3));
+				this.totalPerPath.Add(new Value("Danger3Norm", path.danger3Norm));
+				this.totalPerPath.Add(new Value("Los", path.los));
+				this.totalPerPath.Add(new Value("Los3", path.los3));
+				this.totalPerPath.Add(new Value("Los3Norm", path.los3Norm));
+			}
+			this.total = input;
+>>>>>>> 80be85900c109fce6abc8ea5ac2474cbe04ad29b
 		}
 	}
 	

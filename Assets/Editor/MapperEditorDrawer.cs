@@ -25,7 +25,6 @@ namespace EditorArea {
 		
 		public void Start ()
 		{
-			Debug.Log ("Started");
 			hideFlags = HideFlags.HideInInspector;
 		}
 		
@@ -55,7 +54,7 @@ namespace EditorArea {
 								Gizmos.color = Color.yellow;
 							else if (c.waypoint)
 								Gizmos.color = Color.cyan;
-							else if (c.cluster)
+							else if (c.cluster > 0)
 								Gizmos.color = Color.white;
 							else
 								Gizmos.color = Color.gray;
@@ -98,7 +97,7 @@ namespace EditorArea {
 									Gizmos.color = Color.yellow;
 								else if (c.waypoint)
 									Gizmos.color = Color.cyan;
-								else if (c.cluster)
+								else if (c.cluster > 0)
 									Gizmos.color = Color.white;
 								else if (drawNeverSeen)
 									Gizmos.color = Color.Lerp (Color.green, Color.magenta, seenNeverSeen [x] [y] / (seenNeverSeenMax * 3f / 8f));

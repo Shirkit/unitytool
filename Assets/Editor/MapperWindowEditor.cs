@@ -11,10 +11,10 @@ using Path = Common.Path;
 using Extra;
 using Objects;
 
-namespace EditorArea {
+namespace EditorArea
+{
 	public class MapperWindowEditor : EditorWindow
 	{
-		
 		// Data holders
 		public static Cell[][][] fullMap;
 		public static List<Path> paths = new List<Path> ();
@@ -105,7 +105,7 @@ namespace EditorArea {
 			EditorGUILayout.LabelField ("3. Map Computation");
 			timeSamples = EditorGUILayout.IntSlider ("Time samples", timeSamples, 1, 10000);
 			stepSize = EditorGUILayout.Slider ("Step size", stepSize, 0.01f, 1f);
-			stepInTicks = ((long) (stepSize * 10000000L));
+			stepInTicks = ((long)(stepSize * 10000000L));
 			ticksBehind = EditorGUILayout.IntSlider (new GUIContent ("Ticks behind", "Number of ticks that the FoV will remain seen after the enemy has no visibility on that cell (prevents noise/jitter like behaviours)"), ticksBehind, 0, 100);
 			
 			if (GUILayout.Button ("Precompute Maps")) {
@@ -142,12 +142,12 @@ namespace EditorArea {
 				
 				Cell[][] baseMap = null;
 				if (MapperEditor.grid != null) {
-					Cell[][] obstacles = mapper.ComputeObstacles();
+					Cell[][] obstacles = mapper.ComputeObstacles ();
 					baseMap = new Cell[gridSize][];
 					for (int x = 0; x < gridSize; x++) {
-						baseMap[x] = new Cell[gridSize];
+						baseMap [x] = new Cell[gridSize];
 						for (int y = 0; y < gridSize; y++) {
-							baseMap[x][y] = MapperEditor.grid[x][y] == null ? obstacles[x][y] : MapperEditor.grid[x][y];
+							baseMap [x] [y] = MapperEditor.grid [x] [y] == null ? obstacles [x] [y] : MapperEditor.grid [x] [y];
 						}
 					}
 				}
@@ -327,14 +327,14 @@ namespace EditorArea {
 					path.ZeroValues ();
 				}
 				
-				Analyzer.PreparePaths(paths);
+				Analyzer.PreparePaths (paths);
 				Analyzer.ComputePathsTimeValues (paths);
 				Analyzer.ComputePathsLengthValues (paths);
 				Analyzer.ComputePathsVelocityValues (paths);
 				Analyzer.ComputePathsLoSValues (paths, SpaceState.Editor.enemies, floor.collider.bounds.min, SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y, fullMap, drawer.seenNeverSeen, drawer.seenNeverSeenMax);
 				Analyzer.ComputePathsDangerValues (paths, SpaceState.Editor.enemies, floor.collider.bounds.min, SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y, fullMap, drawer.seenNeverSeen, drawer.seenNeverSeenMax);
 				Analyzer.ComputeCrazyness (paths, fullMap, Mathf.FloorToInt (crazySeconds / stepSize));
-				Analyzer.ComputePathsVelocityValues(paths);
+				Analyzer.ComputePathsVelocityValues (paths);
 				
 				arrangedByTime = new List<Path> ();
 				arrangedByTime.AddRange (paths);
@@ -377,19 +377,23 @@ namespace EditorArea {
 				arrangedByVelocity.Sort (new Analyzer.VelocityComparer ());
 			}
 			
-			if (GUILayout.Button("Export Analysis")) {
+			if (GUILayout.Button ("Export Analysis")) {
 				XmlSerializer ser = new XmlSerializer (typeof(MetricsRoot), new Type[] {typeof(PathResults), typeof(PathValue), typeof(Value)});
 				
-				MetricsRoot root = new MetricsRoot();
+				MetricsRoot root = new MetricsRoot ();
 				
 				foreach (Path path in paths) {
-					root.everything.Add(new PathResults(path, Analyzer.pathMap[path]));
+					root.everything.Add (new PathResults (path, Analyzer.pathMap [path]));
 				}
 				using (FileStream stream = new FileStream ("pathresults.xml", FileMode.Create)) {
 					ser.Serialize (stream, root);
 					stream.Flush ();
 					stream.Close ();
 				}
+			}
+			
+			if (GUILayout.Button("Compute clusters")) {
+				ComputeClusters();
 			}
 			
 			seeByTime = EditorGUILayout.Foldout (seeByTime, "Paths by Time");
@@ -541,9 +545,9 @@ namespace EditorArea {
 			#endregion
 			
 			if (playerNode == null) {
-				playerNode = GameObject.Find("TempPlayerNode");
+				playerNode = GameObject.Find ("TempPlayerNode");
 				if (playerNode == null) {
-					playerNode = new GameObject("TempPlayerNode");
+					playerNode = new GameObject ("TempPlayerNode");
 				}
 			}
 			foreach (KeyValuePair<Path, bool> p in toggleStatus) {
@@ -591,7 +595,79 @@ namespace EditorArea {
 			SceneView.RepaintAll ();
 		}
 		
-		void ComputeClusters() {
+		void ComputeClusters ()
+		{
+			if (MapperEditor.grid != null) {
+				Dictionary<int, List<Path>> clusterMap = new Dictionary<int, List<Path>> ();
+				foreach (Path currentPath in paths) {
+					
+					Node cur = currentPath.points [currentPath.points.Count - 1];
+					Node par = cur.parent;
+					while (cur.parent != null) {
+						
+						Vector3 p1 = cur.GetVector3 ();
+						Vector3 p2 = par.GetVector3 ();
+						Vector3 pd = p1 - p2;
+						
+						float pt = (cur.t - par.t);
+						
+						// Navigate through time to find the right cells to start from
+						for (int t = 0; t < pt; t++) {
+							
+							float delta = ((float)t) / pt;
+							
+							Vector3 pos = p2 + pd * delta;
+							int pX = Mathf.FloorToInt (pos.x);
+							int pY = Mathf.FloorToInt (pos.z);
+							
+							short i = 1;
+							if (fullMap [par.t + t] [pX] [pY].cluster > 0) {
+								
+								while (i <= 256) {
+									if ((fullMap [par.t + t] [pX] [pY].cluster & i) > 0) {
+										List<Path> inside;
+										clusterMap.TryGetValue(i, out inside);
+										
+										if (inside == null) {
+											inside = new List<Path> ();
+											clusterMap.Add(i, inside);
+										}
+										
+										if (!inside.Contains(currentPath))
+											inside.Add (currentPath);
+									}
+									
+									
+									i *= 2;
+								}
+							}
+						}
+						
+						cur = par;
+						par = par.parent;
+					}
+				}
+				
+				ClustersRoot root = new ClustersRoot();
+				foreach (int n in clusterMap.Keys) {
+					MetricsRoot cluster = new MetricsRoot();
+					cluster.number = n + "";
+					
+					foreach (Path path in clusterMap[n]) {
+						cluster.everything.Add (new PathResults (path, Analyzer.pathMap [path]));
+					}
+					
+					root.everything.Add(cluster);
+				}
+				
+				XmlSerializer ser = new XmlSerializer (typeof(ClustersRoot), new Type[] {typeof(MetricsRoot), typeof(PathResults), typeof(PathValue), typeof(Value)});
+				
+				using (FileStream stream = new FileStream ("clusterresults.xml", FileMode.Create)) {
+					ser.Serialize (stream, root);
+					stream.Flush ();
+					stream.Close ();
+				}
+			}
 		}
 	
 		void BatchComputing ()
@@ -817,7 +893,7 @@ namespace EditorArea {
 			//triangulator.CreateInfluencePolygon(pointsVoronoi.ToArray());
 		}
 		
-			// Resets the AI back to it's original position
+		// Resets the AI back to it's original position
 		public void ResetAI ()
 		{
 			GameObject[] objs = GameObject.FindGameObjectsWithTag ("AI") as GameObject[];
@@ -834,6 +910,7 @@ namespace EditorArea {
 		
 		private DateTime previous = DateTime.Now;
 		private long accL = 0L;
+
 		public void Update ()
 		{
 			if (playing) {
@@ -851,7 +928,7 @@ namespace EditorArea {
 					UpdatePositions (timeSlice, mapper, 0f);
 					accL += playTime;
 				} else {
-					UpdatePositions (timeSlice, mapper, (float) accL / (float) stepInTicks);
+					UpdatePositions (timeSlice, mapper, (float)accL / (float)stepInTicks);
 					accL = 0L;
 				}
 			}
@@ -879,8 +956,8 @@ namespace EditorArea {
 				if (drawMoveUnits)
 					pos.y = t;
 				
-				if (diff > 0 && t+1 < SpaceState.Editor.enemies[i].positions.Length) {
-					pos += (SpaceState.Editor.enemies[i].positions[t+1] - SpaceState.Editor.enemies[i].positions[t]) * diff;
+				if (diff > 0 && t + 1 < SpaceState.Editor.enemies [i].positions.Length) {
+					pos += (SpaceState.Editor.enemies [i].positions [t + 1] - SpaceState.Editor.enemies [i].positions [t]) * diff;
 					//rot = Quaternion.Lerp(rot, SpaceState.Editor.enemies[i].rotations[t+1], diff);
 				}
 				
