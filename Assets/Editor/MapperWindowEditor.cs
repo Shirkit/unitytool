@@ -654,7 +654,7 @@ namespace EditorArea
 					cluster.number = n + "";
 					
 					foreach (Path path in clusterMap[n]) {
-						cluster.everything.Add (new PathResults (path, Analyzer.pathMap [path]));
+						cluster.everything.Add (new PathResults (path, null));
 					}
 					
 					root.everything.Add(cluster);

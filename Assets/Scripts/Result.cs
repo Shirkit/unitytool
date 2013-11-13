@@ -70,7 +70,8 @@ namespace Common {
 			this.values = new List<PathValue>();
 			this.totalPerPath = new List<Value>();
 			for (int ttime = 0; ttime < path.points[path.points.Count - 1].t; ttime++)
-				this.values.Add(new PathValue(input, ttime));
+				if (input != null)
+					this.values.Add(new PathValue(input, ttime));
 			{
 				this.totalPerPath.Add(new Value("Velocity", path.velocity));
 				this.totalPerPath.Add(new Value("Crazyness", path.crazy));
