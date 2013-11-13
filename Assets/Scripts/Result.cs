@@ -81,7 +81,6 @@ namespace Common {
 				this.totalPerPath.Add(new Value("Los3", path.los3));
 				this.totalPerPath.Add(new Value("Los3Norm", path.los3Norm));
 			}
-			this.total = input;
 		}
 	}
 	
