@@ -24,3 +24,7 @@ Assembly-CSharp.pidb
 Assembly-CSharp-Editor.pidb
 
 *.userprefs
+
+Output.pdf
+
+Assets/Levels/Human Study.meta
