@@ -21,7 +21,7 @@ namespace EditorArea
 		public static List<Node> mostDanger = null, shortest = null, lengthiest = null, fastest = null, longest = null;
 		// Parameters
 		public static int startX, startY, maxHeatMap, endX = 27, endY = 27, timeSlice, timeSamples = 800, attemps = 25000, iterations = 5, gridSize = 60, ticksBehind = 0;
-		public static bool drawMap = true, drawMoveMap = false, drawMoveUnits = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = false, smoothPath = true, drawShortestPath = false, drawLongestPath = false, drawLengthiestPath = false, drawFastestPath = false, drawMostDangerousPath = false, drawFoVOnly = false, seeByTime = false, seeByLength = false, seeByDanger = false, seeByLoS = false, seeByDanger3 = false, seeByLoS3 = false, seeByDanger3Norm = false, seeByLoS3Norm = false, seeByCrazy = false, seeByVelocity = false;
+		public static bool drawMap = true, drawMoveMap = false, drawMoveUnits = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = true, smoothPath = true, drawShortestPath = false, drawLongestPath = false, drawLengthiestPath = false, drawFastestPath = false, drawMostDangerousPath = false, drawFoVOnly = true, seeByTime = false, seeByLength = false, seeByDanger = false, seeByLoS = false, seeByDanger3 = false, seeByLoS3 = false, seeByDanger3Norm = false, seeByLoS3Norm = false, seeByCrazy = false, seeByVelocity = false;
 		public static float stepSize = 1 / 10f, crazySeconds = 5f;
 		public static int[,] heatMap;
 		public static GameObject start = null, end = null, floor = null, playerPrefab = null;
@@ -323,7 +323,7 @@ namespace EditorArea
 				foreach (Path path in paths) {
 					path.name = "Path " + (i++);
 					path.color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
-					toggleStatus.Add (path, false);
+					toggleStatus.Add (path, true);
 					path.ZeroValues ();
 				}
 				
@@ -649,14 +649,29 @@ namespace EditorArea
 				}
 				
 				ClustersRoot root = new ClustersRoot();
+				int j =0 ;//for colours
 				foreach (int n in clusterMap.Keys) {
 					MetricsRoot cluster = new MetricsRoot();
 					cluster.number = n + "";
 					
-					foreach (Path path in clusterMap[n]) {
-						cluster.everything.Add (new PathResults (path, null));
-					}
 					
+					foreach (Path path in clusterMap[n]) 
+					{
+						cluster.everything.Add (new PathResults (path, null));
+						switch(j)
+						{
+							case 0:
+								path.color = Color.red;
+								break; 
+							case 1:
+								path.color = Color.blue;
+								break; 
+							case 2:
+								path.color = Color.green;
+								break; 
+						}
+					}
+					j++; 
 					root.everything.Add(cluster);
 				}
 				
