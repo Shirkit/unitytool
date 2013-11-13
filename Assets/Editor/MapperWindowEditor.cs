@@ -669,6 +669,9 @@ namespace EditorArea
 							case 2:
 								path.color = Color.green;
 								break; 
+							case 3:
+								path.color = Color.magenta;
+								break; 
 						}
 					}
 					j++; 

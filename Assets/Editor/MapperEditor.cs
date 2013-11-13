@@ -97,9 +97,10 @@ namespace EditorArea
 							c.waypoint = true;
 							break;
 							
-						case KeyCode.Alpha9:
+						case KeyCode.U:
 							c.cluster = 0;
 							break;
+						
 						
 						case KeyCode.Alpha6:
 							c.cluster |= 1;
@@ -113,6 +114,12 @@ namespace EditorArea
 							c.cluster |= 4;
 							break;
 						
+						case KeyCode.Alpha9:
+							c.cluster |= 8;
+							break;
+							
+							
+							
 						case KeyCode.Keypad4:
 							c.cluster |= 8;
 							break;
