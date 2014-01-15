@@ -16,7 +16,9 @@ public class FoVController : MonoBehaviour
 	private Cell[][] obstaclesMap;
 	private Cell[][][] fullMap;
 	private int endX, endY;
+	private GameObject player;
 	private List<List<Vector2>> cells;
+	private Path playerPath;
 	
 	
 	// Use this for initialization
@@ -51,10 +53,16 @@ public class FoVController : MonoBehaviour
 				cells.Add (new List<Vector2> ());
 			}
 			
-			fullMap = new Cell[1][][];
+			fullMap = new Cell[10000][][];
 			
 			SpaceState.Running.fullMap = fullMap;
 			SpaceState.Running.enemies = enemies;
+			
+			player = GameObject.FindGameObjectWithTag ("Player");
+			if (player == null)
+				player = GameObject.FindGameObjectWithTag ("AI");
+			
+			playerPath = new Path (new List<Node> ());
 			
 			if (end == null) {
 				end = GameObject.Find ("End");	
@@ -63,9 +71,10 @@ public class FoVController : MonoBehaviour
 			endX = (int)((end.transform.position.x - floor.collider.bounds.min.x) / SpaceState.Running.tileSize.x);
 			endY = (int)((end.transform.position.z - floor.collider.bounds.min.z) / SpaceState.Running.tileSize.y);
 			
-			obstaclesMap[endX][endY].goal = true;
+			obstaclesMap [endX] [endY].goal = true;
 			
 			// Run this once before enemies moving
+			acc += stepSize + 1;
 			LateUpdate ();
 		}
 	}
@@ -75,19 +84,110 @@ public class FoVController : MonoBehaviour
 	{
 	}
 	
+	private float acc = 0f;
+	private Node last;
+	
+	// After all Update() are called, this method is invoked
 	void LateUpdate ()
 	{
-		for (int en = 0; en < SpaceState.Running.enemies.Length; en++)
-			cells [en].Clear ();
-		
-		Cell[][] computed = mapper.ComputeMap (obstaclesMap, SpaceState.Running.enemies, cells);
-		fullMap [SpaceState.Running.timeSlice] = computed;
-		
-		// Store the seen cells in the enemy class
-		List<Vector2>[] arr = cells.ToArray ();
-		for (int i = 0; i < SpaceState.Running.enemies.Length; i++) {
-			SpaceState.Running.enemies [i].cells [0] = arr [0].ToArray ();
-			arr [0].Clear ();
+		if (acc > stepSize) {
+			for (int en = 0; en < SpaceState.Running.enemies.Length; en++)
+				cells [en].Clear ();
+			
+			Cell[][] computed = mapper.ComputeMap (obstaclesMap, SpaceState.Running.enemies, cells);
+			fullMap [SpaceState.Running.timeSlice] = computed;
+			
+			// Store the seen cells in the enemy class
+			List<Vector2>[] arr = cells.ToArray ();
+			for (int i = 0; i < SpaceState.Running.enemies.Length; i++) {
+				SpaceState.Running.enemies [i].cells [0] = arr [0].ToArray ();
+				arr [0].Clear ();
+			}
+			
+			Vector2 pos = new Vector2 ((player.transform.position.x - SpaceState.Running.floorMin.x) / SpaceState.Running.tileSize.x, (player.transform.position.z - SpaceState.Running.floorMin.z) / SpaceState.Running.tileSize.y);
+			int mapX = (int)pos.x;
+			int mapY = (int)pos.y;
+			
+			Node curr = new Node ();
+			curr.t = SpaceState.Running.timeSlice;
+			curr.x = mapX;
+			curr.y = mapY;
+			curr.cell = fullMap [curr.t] [curr.x] [curr.y];
+			curr.parent = last;
+			last = curr;
+			
+			playerPath.points.Add (last);
+			
+			SpaceState.Running.timeSlice++;
+			acc -= stepSize;
 		}
+		acc += Time.deltaTime;
+	}
+	
+	public void OnApplicationQuit ()
+	{
+		Node final = null;
+		foreach (Node each in playerPath.points) {
+			final = each;
+			while (SmoothNode(final)) {
+			}
+		}
+		
+		playerPath.points.Clear();
+		
+		while (final != null) {
+			playerPath.points.Add (final);
+			final = final.parent;
+		}
+		playerPath.points.Reverse ();
+		
+		List<Path> paths = new List<Path>();
+		paths.Add(playerPath);
+		PathBulk.SavePathsToFile("playerPath.xml", paths);
+	}
+	
+	// TODO: Need to remove this funciton and make it a common library for this and RRT
+	private bool SmoothNode (Node n)
+	{
+		if (n.parent != null && n.parent.parent != null) {
+			if (CheckCollision (n, n.parent.parent))
+				return false;
+			else {
+				n.parent = n.parent.parent;
+				return true;
+			}
+		} else
+			return false;
+	}
+	
+	private bool CheckCollision (Node n1, Node n2, int deep = 0)
+	{
+		if (deep > 5)
+			return false;
+		int x = (n1.x + n2.x) / 2;
+		int y = (n1.y + n2.y) / 2;
+		int t = (n1.t + n2.t) / 2;
+		Node n3 = new Node();
+		n3.cell = fullMap[t][x][y];
+		n3.x = x;
+		n3.t = t;
+		n3.y = y;
+		
+		// Noisy calculation
+		if (SpaceState.Running.enemies != null && ((Cell)n3.cell).noisy) {
+			foreach (Enemy enemy in SpaceState.Running.enemies) {
+				Vector3 dupe = enemy.positions [t];
+				dupe.x = (dupe.x - SpaceState.Running.floorMin.x) / SpaceState.Running.tileSize.x;
+				dupe.y = n3.t;
+				dupe.z = (dupe.z - SpaceState.Running.floorMin.z) / SpaceState.Running.tileSize.y;
+				
+				// This distance is in number of cells size radius i.e. a 10 tilesize circle around the point
+				if (Vector3.Distance (dupe, n3.GetVector3 ()) < 10)
+					return true;
+			} 
+		}
+		
+		return !n3.cell.IsWalkable () || CheckCollision (n1, n3, deep + 1) || CheckCollision (n2, n3, deep + 1);
+		
 	}
 }

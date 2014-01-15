@@ -18,14 +18,12 @@ namespace EditorArea
 		// Data holders
 		public static Cell[][][] fullMap;
 		public static List<Path> paths = new List<Path> ();
-		public static List<Node> mostDanger = null, shortest = null, lengthiest = null, fastest = null, longest = null;
 		// Parameters
 		public static int startX, startY, maxHeatMap, endX = 27, endY = 27, timeSlice, timeSamples = 800, attemps = 25000, iterations = 5, gridSize = 60, ticksBehind = 0;
 		public static bool drawMap = true, drawMoveMap = false, drawMoveUnits = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = true, smoothPath = true, drawShortestPath = false, drawLongestPath = false, drawLengthiestPath = false, drawFastestPath = false, drawMostDangerousPath = false, drawFoVOnly = true, seeByTime = false, seeByLength = false, seeByDanger = false, seeByLoS = false, seeByDanger3 = false, seeByLoS3 = false, seeByDanger3Norm = false, seeByLoS3Norm = false, seeByCrazy = false, seeByVelocity = false;
 		public static float stepSize = 1 / 10f, crazySeconds = 5f;
 		public static int[,] heatMap;
 		public static GameObject start = null, end = null, floor = null, playerPrefab = null;
-		public static List<GameObject> waypoints = new List<GameObject> ();
 		public static Dictionary<Path, bool> toggleStatus = new Dictionary<Path, bool> ();
 		public static Dictionary<Path, GameObject> players = new Dictionary<Path, GameObject> ();
 		// Helping stuff
@@ -49,6 +47,8 @@ namespace EditorArea
 		
 		void OnGUI ()
 		{
+			#region Pre-Init
+			
 			// Wait for the floor to be set and initialize the drawer and the mapper
 			if (floor != null) {
 				if (floor.collider == null) {
@@ -68,6 +68,8 @@ namespace EditorArea
 					}
 				}
 			} 
+			
+			#endregion
 			
 			// ----------------------------------
 			
@@ -112,20 +114,19 @@ namespace EditorArea
 				
 				//Find this is the view
 				if (playerPrefab == null) {
-					//Debug.Log("No playerPrefab"); 
-					//playerPrefab = (GameObject)(Resources.Load( "../Prefab/Player.prefab", typeof(GameObject)));
 					playerPrefab = GameObject.Find ("Player"); 
 				}
+				
 				if (floor == null) {
 					floor = (GameObject)GameObject.Find ("Floor");
-					
-					gridSize = EditorGUILayout.IntSlider ("Grid size", gridSize, 10, 300);
 					
 					if (mapper == null) {
 						mapper = floor.GetComponent<Mapper> ();
 						
 						if (mapper == null)
 							mapper = floor.AddComponent<Mapper> ();
+						
+						mapper.hideFlags = HideFlags.None;
 						
 					}
 					drawer = floor.gameObject.GetComponent<MapperEditorDrawer> ();
@@ -180,28 +181,6 @@ namespace EditorArea
 			iterations = EditorGUILayout.IntSlider ("Iterations", iterations, 1, 1500);
 			smoothPath = EditorGUILayout.Toggle ("Smooth path", smoothPath);
 			
-			// Future work planned, allow the RRT to pass through this safe spots
-			/*someBoolean = EditorGUILayout.Foldout (someBoolean, "Passby Waypoints");
-			if (someBoolean) {
-				for (int i = 0; i < waypoints.Count; i++) {
-					EditorGUILayout.BeginHorizontal ();
-					
-					waypoints [i] = (GameObject)EditorGUILayout.ObjectField ("N:" + (i + 1), waypoints [i], typeof(GameObject), true);
-					
-					if (GUILayout.Button ("X", GUILayout.MaxWidth (20f))) {
-						waypoints.RemoveAt (i);
-						i--;
-					}
-					EditorGUILayout.EndHorizontal ();
-				}
-				
-				GameObject newone = null;
-				newone = (GameObject)EditorGUILayout.ObjectField ("N:" + (waypoints.Count + 1), newone, typeof(GameObject), true);
-					
-				if (newone != null)
-					waypoints.Add (newone);
-			}*/
-			
 			if (GUILayout.Button ("Compute Path")) {
 				float speed = GameObject.FindGameObjectWithTag ("AI").GetComponent<Player> ().speed;
 				
@@ -215,12 +194,7 @@ namespace EditorArea
 				}
 				
 				paths.Clear ();
-				toggleStatus.Clear ();
-				foreach (GameObject obj in players.Values)
-					GameObject.DestroyImmediate (obj);
-				
-				players.Clear ();
-				Resources.UnloadUnusedAssets ();
+				ClearPathsRepresentation ();
 				arrangedByCrazy = arrangedByDanger = arrangedByDanger3 = arrangedByDanger3Norm = arrangedByLength = arrangedByLoS = arrangedByLoS3 = arrangedByLoS3Norm = arrangedByTime = arrangedByVelocity = null;
 				
 				startX = (int)((start.transform.position.x - floor.collider.bounds.min.x) / SpaceState.Editor.tileSize.x);
@@ -242,22 +216,29 @@ namespace EditorArea
 						paths.Last ().color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
 					}
 				}
-				heatMap = Analyzer.Compute2DHeatMap (paths, gridSize, gridSize, out maxHeatMap);
 				
 				Debug.Log ("Paths found: " + paths.Count);
 				
-				drawer.heatMapMax = maxHeatMap;
-				drawer.heatMap = heatMap;
-				
-				int[] maxHeatMap3d;
-				drawer.heatMap3d = Analyzer.Compute3DHeatMap (paths, gridSize, gridSize, timeSamples, out maxHeatMap3d);
-				drawer.heatMapMax3d = maxHeatMap3d;
-							
-				drawer.rrtMap = rrt.explored;
-				drawer.tileSize.Set (SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y);
-				shortest = fastest = longest = lengthiest = mostDanger = null;
-				
+				ComputeHeatMap (paths);
 			}
+			
+			if (GUILayout.Button ("(DEBUG) Export Paths")) {
+				PathBulk.SavePathsToFile ("pathtest.xml", paths);
+			}
+			
+			if (GUILayout.Button ("(DEBUG) Import Paths")) {
+				paths.Clear();
+				ClearPathsRepresentation();
+				paths.AddRange(PathBulk.LoadPathsFromFile ("pathtest.xml"));
+				foreach (Path p in paths) {
+					p.name = "Imported " + (++imported);
+					p.color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
+					toggleStatus.Add(p, true);
+				}
+				ComputeHeatMap(paths);
+				SetupArrangedPaths(paths);
+			}
+			
 			EditorGUILayout.LabelField ("");
 			
 			#endregion
@@ -311,14 +292,9 @@ namespace EditorArea
 			crazySeconds = EditorGUILayout.Slider ("Crazy seconds window", crazySeconds, 0f, 10f);
 			
 			if (GUILayout.Button ("Analyze paths")) {		
-				toggleStatus.Clear ();
+				ClearPathsRepresentation ();
 				
-				foreach (GameObject obj in players.Values)
-					GameObject.DestroyImmediate (obj);
-				
-				players.Clear ();
-				Resources.UnloadUnusedAssets ();
-				
+				// Setup paths names
 				int i = 1;
 				foreach (Path path in paths) {
 					path.name = "Path " + (i++);
@@ -327,6 +303,7 @@ namespace EditorArea
 					path.ZeroValues ();
 				}
 				
+				// Analyze paths
 				Analyzer.PreparePaths (paths);
 				Analyzer.ComputePathsTimeValues (paths);
 				Analyzer.ComputePathsLengthValues (paths);
@@ -336,48 +313,10 @@ namespace EditorArea
 				Analyzer.ComputeCrazyness (paths, fullMap, Mathf.FloorToInt (crazySeconds / stepSize));
 				Analyzer.ComputePathsVelocityValues (paths);
 				
-				arrangedByTime = new List<Path> ();
-				arrangedByTime.AddRange (paths);
-				arrangedByTime.Sort (new Analyzer.TimeComparer ());
-				
-				arrangedByLength = new List<Path> ();
-				arrangedByLength.AddRange (paths);
-				arrangedByLength.Sort (new Analyzer.Length2dComparer ());
-				
-				arrangedByDanger = new List<Path> ();
-				arrangedByDanger.AddRange (paths);
-				arrangedByDanger.Sort (new Analyzer.DangerComparer ());
-				
-				arrangedByDanger3 = new List<Path> ();
-				arrangedByDanger3.AddRange (paths);
-				arrangedByDanger3.Sort (new Analyzer.Danger3Comparer ());
-				
-				arrangedByDanger3Norm = new List<Path> ();
-				arrangedByDanger3Norm.AddRange (paths);
-				arrangedByDanger3Norm.Sort (new Analyzer.Danger3NormComparer ());
-				
-				arrangedByLoS = new List<Path> ();
-				arrangedByLoS.AddRange (paths);
-				arrangedByLoS.Sort (new Analyzer.LoSComparer ());
-				
-				arrangedByLoS3 = new List<Path> ();
-				arrangedByLoS3.AddRange (paths);
-				arrangedByLoS3.Sort (new Analyzer.LoS3Comparer ());
-				
-				arrangedByLoS3Norm = new List<Path> ();
-				arrangedByLoS3Norm.AddRange (paths);
-				arrangedByLoS3Norm.Sort (new Analyzer.LoS3NormComparer ());
-				
-				arrangedByCrazy = new List<Path> ();
-				arrangedByCrazy.AddRange (paths);
-				arrangedByCrazy.Sort (new Analyzer.CrazyComparer ());
-				
-				arrangedByVelocity = new List<Path> ();
-				arrangedByVelocity.AddRange (paths);
-				arrangedByVelocity.Sort (new Analyzer.VelocityComparer ());
+				SetupArrangedPaths (paths);
 			}
 			
-			if (GUILayout.Button ("Export Analysis")) {
+			if (GUILayout.Button ("(DEBUG) Export Analysis")) {
 				XmlSerializer ser = new XmlSerializer (typeof(MetricsRoot), new Type[] {typeof(PathResults), typeof(PathValue), typeof(Value)});
 				
 				MetricsRoot root = new MetricsRoot ();
@@ -392,9 +331,11 @@ namespace EditorArea
 				}
 			}
 			
-			if (GUILayout.Button("Compute clusters")) {
-				ComputeClusters();
+			if (GUILayout.Button ("(DEBUG) Compute clusters")) {
+				ComputeClusters ();
 			}
+			
+			#region Paths values display
 			
 			seeByTime = EditorGUILayout.Foldout (seeByTime, "Paths by Time");
 			if (seeByTime && arrangedByTime != null) {
@@ -526,10 +467,19 @@ namespace EditorArea
 				}
 			}
 			
+			#endregion
+			
 			
 			#endregion
 			
 			// ----------------------------------
+			
+			if (GUILayout.Button ("(WIP) " + (MapperEditor.editGrid ? "Finish Editing" : "Edit Grid"))) {
+				if (floor != null) {
+					MapperEditor.editGrid = !MapperEditor.editGrid;
+					Selection.activeGameObject = mapper.gameObject;
+				}
+			}
 			
 			#region Voronoi
 			/*
@@ -544,10 +494,13 @@ namespace EditorArea
 			*/
 			#endregion
 			
+			#region Temp Player setup
+			
 			if (playerNode == null) {
 				playerNode = GameObject.Find ("TempPlayerNode");
 				if (playerNode == null) {
 					playerNode = new GameObject ("TempPlayerNode");
+					playerNode.hideFlags = HideFlags.HideAndDontSave;
 				}
 			}
 			foreach (KeyValuePair<Path, bool> p in toggleStatus) {
@@ -560,6 +513,7 @@ namespace EditorArea
 						Material m = new Material (player.renderer.sharedMaterial);
 						m.color = p.Key.color;
 						player.renderer.material = m;
+						player.hideFlags = HideFlags.HideAndDontSave;
 					} else {
 						players [p.Key].SetActive (true);
 					}
@@ -569,6 +523,8 @@ namespace EditorArea
 					}
 				}
 			}
+			
+			#endregion
 			
 			EditorGUILayout.EndScrollView ();
 			
@@ -595,7 +551,104 @@ namespace EditorArea
 			SceneView.RepaintAll ();
 		}
 		
-		void ComputeClusters ()
+		private DateTime previous = DateTime.Now;
+		private long accL = 0L;
+			
+		public void Update ()
+		{
+			if (playing) {
+				long l = DateTime.Now.Ticks - previous.Ticks;
+				playTime += l;
+				accL += l;
+				if (playTime > stepInTicks) {
+					playTime -= stepInTicks;
+					timeSlice++;
+					if (timeSlice >= timeSamples) {
+						timeSlice = 0;
+					}
+					drawer.timeSlice = timeSlice;
+					SpaceState.Editor.timeSlice = timeSlice;
+					UpdatePositions (timeSlice, mapper, 0f);
+					accL += playTime;
+				} else {
+					UpdatePositions (timeSlice, mapper, (float)accL / (float)stepInTicks);
+					accL = 0L;
+				}
+			}
+				
+			previous = DateTime.Now;
+		}
+		
+		private void ClearPathsRepresentation ()
+		{
+			toggleStatus.Clear ();
+			
+			foreach (GameObject obj in players.Values)
+				GameObject.DestroyImmediate (obj);
+				
+			players.Clear ();
+			Resources.UnloadUnusedAssets ();
+		}
+		
+		private void SetupArrangedPaths (List<Path> paths)
+		{
+			arrangedByTime = new List<Path> ();
+			arrangedByTime.AddRange (paths);
+			arrangedByTime.Sort (new Analyzer.TimeComparer ());
+				
+			arrangedByLength = new List<Path> ();
+			arrangedByLength.AddRange (paths);
+			arrangedByLength.Sort (new Analyzer.Length2dComparer ());
+				
+			arrangedByDanger = new List<Path> ();
+			arrangedByDanger.AddRange (paths);
+			arrangedByDanger.Sort (new Analyzer.DangerComparer ());
+				
+			arrangedByDanger3 = new List<Path> ();
+			arrangedByDanger3.AddRange (paths);
+			arrangedByDanger3.Sort (new Analyzer.Danger3Comparer ());
+				
+			arrangedByDanger3Norm = new List<Path> ();
+			arrangedByDanger3Norm.AddRange (paths);
+			arrangedByDanger3Norm.Sort (new Analyzer.Danger3NormComparer ());
+				
+			arrangedByLoS = new List<Path> ();
+			arrangedByLoS.AddRange (paths);
+			arrangedByLoS.Sort (new Analyzer.LoSComparer ());
+				
+			arrangedByLoS3 = new List<Path> ();
+			arrangedByLoS3.AddRange (paths);
+			arrangedByLoS3.Sort (new Analyzer.LoS3Comparer ());
+				
+			arrangedByLoS3Norm = new List<Path> ();
+			arrangedByLoS3Norm.AddRange (paths);
+			arrangedByLoS3Norm.Sort (new Analyzer.LoS3NormComparer ());
+				
+			arrangedByCrazy = new List<Path> ();
+			arrangedByCrazy.AddRange (paths);
+			arrangedByCrazy.Sort (new Analyzer.CrazyComparer ());
+				
+			arrangedByVelocity = new List<Path> ();
+			arrangedByVelocity.AddRange (paths);
+			arrangedByVelocity.Sort (new Analyzer.VelocityComparer ());
+		}
+		
+		private void ComputeHeatMap (List<Path> paths)
+		{
+			heatMap = Analyzer.Compute2DHeatMap (paths, gridSize, gridSize, out maxHeatMap);
+				
+			drawer.heatMapMax = maxHeatMap;
+			drawer.heatMap = heatMap;
+				
+			int[] maxHeatMap3d;
+			drawer.heatMap3d = Analyzer.Compute3DHeatMap (paths, gridSize, gridSize, timeSamples, out maxHeatMap3d);
+			drawer.heatMapMax3d = maxHeatMap3d;
+
+			drawer.rrtMap = rrt.explored;
+			drawer.tileSize.Set (SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y);
+		}
+
+		private void ComputeClusters ()
 		{
 			if (MapperEditor.grid != null) {
 				Dictionary<int, List<Path>> clusterMap = new Dictionary<int, List<Path>> ();
@@ -626,14 +679,14 @@ namespace EditorArea
 								while (i <= 256) {
 									if ((fullMap [par.t + t] [pX] [pY].cluster & i) > 0) {
 										List<Path> inside;
-										clusterMap.TryGetValue(i, out inside);
+										clusterMap.TryGetValue (i, out inside);
 										
 										if (inside == null) {
 											inside = new List<Path> ();
-											clusterMap.Add(i, inside);
+											clusterMap.Add (i, inside);
 										}
 										
-										if (!inside.Contains(currentPath))
+										if (!inside.Contains (currentPath))
 											inside.Add (currentPath);
 									}
 									
@@ -651,7 +704,7 @@ namespace EditorArea
 				ClustersRoot root = new ClustersRoot();
 				int j =0 ;//for colours
 				foreach (int n in clusterMap.Keys) {
-					MetricsRoot cluster = new MetricsRoot();
+					MetricsRoot cluster = new MetricsRoot ();
 					cluster.number = n + "";
 					
 					
@@ -688,7 +741,7 @@ namespace EditorArea
 			}
 		}
 	
-		void BatchComputing ()
+		private void BatchComputing ()
 		{
 			ResultsRoot root = new ResultsRoot ();
 				
@@ -890,7 +943,7 @@ namespace EditorArea
 			//}
 		}
 		
-		void CalculateVoronoi ()
+		private void CalculateVoronoi ()
 		{
 			if (floor == null) {
 				floor = GameObject.FindGameObjectWithTag ("Floor");
@@ -912,7 +965,7 @@ namespace EditorArea
 		}
 		
 		// Resets the AI back to it's original position
-		public void ResetAI ()
+		private void ResetAI ()
 		{
 			GameObject[] objs = GameObject.FindGameObjectsWithTag ("AI") as GameObject[];
 			foreach (GameObject ob in objs)
@@ -923,38 +976,12 @@ namespace EditorArea
 				ob.GetComponent<Enemy> ().ResetSimulation ();
 			
 			timeSlice = 0;
-			SpaceState.Editor.timeSlice = 0;
-		}
-		
-		private DateTime previous = DateTime.Now;
-		private long accL = 0L;
-
-		public void Update ()
-		{
-			if (playing) {
-				long l = DateTime.Now.Ticks - previous.Ticks;
-				playTime += l;
-				accL += l;
-				if (playTime > stepInTicks) {
-					playTime -= stepInTicks;
-					timeSlice++;
-					if (timeSlice >= timeSamples) {
-						timeSlice = 0;
-					}
-					drawer.timeSlice = timeSlice;
-					SpaceState.Editor.timeSlice = timeSlice;
-					UpdatePositions (timeSlice, mapper, 0f);
-					accL += playTime;
-				} else {
-					UpdatePositions (timeSlice, mapper, (float)accL / (float)stepInTicks);
-					accL = 0L;
-				}
-			}
-			previous = DateTime.Now;
+			
+			
 		}
 		
 		// Updates everyone's position to the current timeslice
-		public void UpdatePositions (int t, Mapper mapper, float diff = 0f)
+		private void UpdatePositions (int t, Mapper mapper, float diff = 0f)
 		{
 			for (int i = 0; i < SpaceState.Editor.enemies.Length; i++) {
 				if (SpaceState.Editor.enemies [i] == null)
@@ -1040,7 +1067,7 @@ namespace EditorArea
 			}
 		}
 		
-		public void StorePositions ()
+		private void StorePositions ()
 		{
 			GameObject[] objs = GameObject.FindGameObjectsWithTag ("Enemy") as GameObject[];
 			for (int i = 0; i < objs.Length; i++) {

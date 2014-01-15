@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 namespace Common {
-	[System.Serializable]
+	[Serializable]
 	public class Cell
 	{
 		public bool blocked = false;

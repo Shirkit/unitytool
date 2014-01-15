@@ -17,52 +17,58 @@ namespace EditorArea
 	public class MapperEditor : Editor
 	{
 		
+		public static Cell[][] grid;
+		//
 		public static bool editGrid = false, didUpdate = false;
+		//
+		private Mapper mapper;
+		private MapperEditorDrawer drawer;
 		
 		public override void OnInspectorGUI ()
 		{
-			Mapper mapper = (Mapper)target;
-			
-			DrawDefaultInspector ();
-			
-			MapperEditorDrawer drawer = mapper.gameObject.GetComponent<MapperEditorDrawer> ();
-			if (drawer == null) {
-				drawer = mapper.gameObject.AddComponent<MapperEditorDrawer> ();
-				drawer.hideFlags = HideFlags.HideInInspector;
-			}
-			
-			editGrid = EditorGUILayout.Toggle ("Edit grid", editGrid);
-			drawer.editGrid = editGrid;
-			if (editGrid) {
-				OnSceneGUI ();
-				drawer.editingGrid = grid;
-				if (!didUpdate) {
-					mapper.ComputeTileSize (SpaceState.Editor, mapper.collider.bounds.min, mapper.collider.bounds.max, MapperWindowEditor.gridSize, MapperWindowEditor.gridSize);
-					drawer.tileSize.Set (SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y);
-					drawer.zero.Set (SpaceState.Editor.floorMin.x, SpaceState.Editor.floorMin.z);
-					didUpdate = true;
-				}
-			} else {
-				didUpdate = false;
-			}
-			
-			SceneView.RepaintAll ();
+			DrawDefaultInspector();
 		}
 		
-		public static Cell[][] grid;
 	
 		public void OnSceneGUI ()
-		{
-			if (!editGrid)
-				return;
+		{			
+			// Update drawer
+			if (drawer != null)
+				drawer.editGrid = editGrid;
 			
-			//Mapper mapper = (Mapper)target;
+			// Stop if needed
+			if (!editGrid) {
+				didUpdate = false;
+				return;
+			}
+			
+			
+			// Create grid
 			if (grid == null || grid.Length != MapperWindowEditor.gridSize) {
 				grid = new Cell[MapperWindowEditor.gridSize][];
 				for (int i = 0; i < MapperWindowEditor.gridSize; i++)
 					grid [i] = new Cell[MapperWindowEditor.gridSize];
 			}
-			// Disabled part to do raycasting to identify the cell which the user clicked
+			
+			// Prepare holders
+			if (mapper == null) {
+				mapper = (Mapper) target;
+			}
+			if (drawer == null) {
+				drawer = mapper.gameObject.GetComponent<MapperEditorDrawer> ();
+			}
+			
+			drawer.editingGrid = grid;
+			
+			// Update Scene
+			if (!didUpdate) {
+				mapper.ComputeTileSize (SpaceState.Editor, mapper.collider.bounds.min, mapper.collider.bounds.max, MapperWindowEditor.gridSize, MapperWindowEditor.gridSize);
+				drawer.tileSize.Set (SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y);
+				drawer.zero.Set (SpaceState.Editor.floorMin.x, SpaceState.Editor.floorMin.z);
+				didUpdate = true;
+			}
+			
+			// Raycast
 			Event current = Event.current;
 			if (current != null && EventType.KeyDown == current.type) {
 				Ray ray = HandleUtility.GUIPointToWorldRay (current.mousePosition);

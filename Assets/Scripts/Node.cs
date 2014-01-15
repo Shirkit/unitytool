@@ -1,14 +1,19 @@
 using System;
 using UnityEngine;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace Common {
 	[Serializable]
 	// Structure that holds the information used in the AStar cells
 	public class Node : Priority_Queue.PriorityQueueNode
 	{
-		public Cell cell;
-		public Node parent;
 		public int x, y, t;
+		[XmlIgnore]
+		public Node parent;
+		[XmlIgnore]
+		public Cell cell;
+		[XmlIgnore]
 		public bool visited = false;
 			
 		public float DistanceFrom (Node n)
