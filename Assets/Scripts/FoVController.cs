@@ -11,6 +11,7 @@ public class FoVController : MonoBehaviour
 	public int gridSize = 60;
 	public float stepSize = 0.1f;
 	public int ticksBehind = 0;
+	public bool smoothPlayerPath = false;
 	//
 	private Mapper mapper;
 	private Cell[][] obstaclesMap;
@@ -19,6 +20,7 @@ public class FoVController : MonoBehaviour
 	private GameObject player;
 	private List<List<Vector2>> cells;
 	private Path playerPath;
+	private List<Vector3> playerPoints;
 	
 	
 	// Use this for initialization
@@ -41,10 +43,10 @@ public class FoVController : MonoBehaviour
 			
 			for (int i = 0; i < en.Length; i++) {
 				enemies [i] = en [i].GetComponent<Enemy> ();
-				enemies [i].positions = new Vector3[1];
-				enemies [i].forwards = new Vector3[1];
-				enemies [i].rotations = new Quaternion[1];
-				enemies [i].cells = new Vector2[1][];
+				enemies [i].positions = new Vector3[10000];
+				enemies [i].forwards = new Vector3[10000];
+				enemies [i].rotations = new Quaternion[10000];
+				enemies [i].cells = new Vector2[10000][];
 			}
 			
 			cells = new List<List<Vector2>> ();
@@ -63,6 +65,7 @@ public class FoVController : MonoBehaviour
 				player = GameObject.FindGameObjectWithTag ("AI");
 			
 			playerPath = new Path (new List<Node> ());
+			playerPoints = new List<Vector3> ();
 			
 			if (end == null) {
 				end = GameObject.Find ("End");	
@@ -100,8 +103,10 @@ public class FoVController : MonoBehaviour
 			// Store the seen cells in the enemy class
 			List<Vector2>[] arr = cells.ToArray ();
 			for (int i = 0; i < SpaceState.Running.enemies.Length; i++) {
-				SpaceState.Running.enemies [i].cells [0] = arr [0].ToArray ();
-				arr [0].Clear ();
+				SpaceState.Running.enemies [i].cells [SpaceState.Running.timeSlice] = arr [i].ToArray ();
+				SpaceState.Running.enemies [i].positions [SpaceState.Running.timeSlice] = SpaceState.Running.enemies [i].transform.position;
+				SpaceState.Running.enemies [i].forwards [SpaceState.Running.timeSlice] = SpaceState.Running.enemies [i].transform.forward;
+				arr [i].Clear ();
 			}
 			
 			Vector2 pos = new Vector2 ((player.transform.position.x - SpaceState.Running.floorMin.x) / SpaceState.Running.tileSize.x, (player.transform.position.z - SpaceState.Running.floorMin.z) / SpaceState.Running.tileSize.y);
@@ -117,6 +122,7 @@ public class FoVController : MonoBehaviour
 			last = curr;
 			
 			playerPath.points.Add (last);
+			playerPoints.Add (player.transform.position);
 			
 			SpaceState.Running.timeSlice++;
 			acc -= stepSize;
@@ -126,24 +132,26 @@ public class FoVController : MonoBehaviour
 	
 	public void OnApplicationQuit ()
 	{
-		Node final = null;
-		foreach (Node each in playerPath.points) {
-			final = each;
-			while (SmoothNode(final)) {
+		if (smoothPlayerPath) {
+			Node final = null;
+			foreach (Node each in playerPath.points) {
+				final = each;
+				while (SmoothNode(final)) {
+				}
 			}
+			
+			playerPath.points.Clear ();
+			
+			while (final != null) {
+				playerPath.points.Add (final);
+				final = final.parent;
+			}
+			playerPath.points.Reverse ();
 		}
-		
-		playerPath.points.Clear();
-		
-		while (final != null) {
-			playerPath.points.Add (final);
-			final = final.parent;
-		}
-		playerPath.points.Reverse ();
-		
-		List<Path> paths = new List<Path>();
-		paths.Add(playerPath);
-		PathBulk.SavePathsToFile("playerPath.xml", paths);
+		List<Path> paths = new List<Path> ();
+		paths.Add (playerPath);
+		PathBulk.SavePathsToFile ("playerPath.xml", paths);
+		PathML.SavePathsToFile ("playerML.xml", playerPoints);
 	}
 	
 	// TODO: Need to remove this funciton and make it a common library for this and RRT
@@ -167,8 +175,8 @@ public class FoVController : MonoBehaviour
 		int x = (n1.x + n2.x) / 2;
 		int y = (n1.y + n2.y) / 2;
 		int t = (n1.t + n2.t) / 2;
-		Node n3 = new Node();
-		n3.cell = fullMap[t][x][y];
+		Node n3 = new Node ();
+		n3.cell = fullMap [t] [x] [y];
 		n3.x = x;
 		n3.t = t;
 		n3.y = y;

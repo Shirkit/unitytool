@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Xml.Serialization;
 using UnityEngine;
 using Exploration;
+using Objects;
 
 namespace Common
 {
@@ -33,7 +34,6 @@ namespace Common
 		{
 			time = length2d = length3d = danger = los = danger3 = los3 = danger3Norm = los3Norm = crazy = velocity = 0f;
 		}
-		
 	}
 	
 	[XmlRoot("bulk"), XmlType("bulk")]
@@ -79,5 +79,103 @@ namespace Common
 			
 			return loaded.paths;
 		}
+	}
+	
+	public class PathML
+	{
+		
+		public List<TimeStamp> times = new List<TimeStamp> ();
+		
+		public static void SavePathsToFile (string file, List<Vector3> points)
+		{
+			
+			PathML root = new PathML ();
+			for (int i = 0; i < points.Count; i++) {
+				
+				TimeStamp ts = new TimeStamp ();
+				ts.t = i;
+				ts.playerPos = points [i];
+				
+				for (int k = 0; k < SpaceState.Running.enemies.Length; k++) {
+
+					EnemyStamp es = new EnemyStamp ();
+					es.id = k;
+					es.position = SpaceState.Running.enemies [k].positions [i];
+					
+					int mapPX = (int) ((ts.playerPos.x - SpaceState.Running.floorMin.x) / SpaceState.Running.tileSize.x);
+					int mapPY = (int) ((ts.playerPos.z - SpaceState.Running.floorMin.z) / SpaceState.Running.tileSize.y);
+					
+					int mapEX = (int) ((es.position.x - SpaceState.Running.floorMin.x) / SpaceState.Running.tileSize.x);
+					int mapEY = (int) ((es.position.z - SpaceState.Running.floorMin.z) / SpaceState.Running.tileSize.y);
+					
+					Node n1 = new Node();
+					n1.x = mapPX;
+					n1.t = ts.t;
+					n1.y = mapPY;
+					n1.cell = SpaceState.Running.fullMap [n1.t] [n1.x] [n1.y];
+					
+					Node n2 = new Node();
+					n2.x = mapEX;
+					n2.t = ts.t;
+					n2.y = mapEY;
+					n2.cell = SpaceState.Running.fullMap [n2.t] [n2.x] [n2.y];
+					
+					es.angle = Vector3.Angle(SpaceState.Running.enemies[k].forwards[i], (ts.playerPos - es.position).normalized);
+					
+					es.los = ! CheckCollision(n1, n2, 0);
+					
+					ts.enemies.Add (es);
+				}
+				
+				root.times.Add(ts);
+			}
+			
+			XmlSerializer ser = new XmlSerializer (typeof(PathML));
+			
+			using (FileStream stream = new FileStream (file, FileMode.Create)) {
+				ser.Serialize (stream, root);
+				stream.Flush ();
+				stream.Close ();
+			}
+		}
+		
+		private static bool CheckCollision (Node n1, Node n2, int deep = 0)
+		{
+			if (deep > 10)
+				return false;
+			int x = (n1.x + n2.x) / 2;
+			int y = (n1.y + n2.y) / 2;
+			int t = (n1.t + n2.t) / 2;
+			Node n3 = new Node ();
+			n3.cell = SpaceState.Running.fullMap [t] [x] [y];
+			n3.x = x;
+			n3.t = t;
+			n3.y = y;
+		
+			return n3.cell.blocked || CheckCollision (n1, n3, deep + 1) || CheckCollision (n2, n3, deep + 1);
+		
+		}
+		
+	}
+	
+	public class TimeStamp
+	{
+		
+		[XmlAttribute]
+		public int t;
+		public Vector3 playerPos;
+		public List<EnemyStamp> enemies = new List<EnemyStamp> ();
+		
+	}
+	
+	public class EnemyStamp
+	{
+		
+		[XmlAttribute]
+		public int id;
+		public Vector3 position;
+		public bool los;
+		public float angle;
+		
 	}
 }
