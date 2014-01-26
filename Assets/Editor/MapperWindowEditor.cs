@@ -1003,6 +1003,7 @@ namespace EditorArea {
 						pos.z *= SpaceState.Editor.tileSize.y;
 						pos.x += floor.collider.bounds.min.x;
 						pos.z += floor.collider.bounds.min.z;
+						pos.y = 0f;
 
 						each.Value.transform.position = pos;
 					}
