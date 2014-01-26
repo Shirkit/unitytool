@@ -6,10 +6,10 @@ using UnityEditor;
 using KDTreeDLL;
 using Common;
 using Objects;
+using Extra;
 
 namespace Exploration {
-	public class RRTKDTree
-	{
+	public class RRTKDTree : NodeProvider {
 		private Cell[][][] nodeMatrix;
 		private float angle;
 		public KDTree tree;
@@ -20,8 +20,7 @@ namespace Exploration {
 		public float tileSizeX, tileSizeZ;
 		
 		// Gets the node at specified position from the NodeMap, or create the Node based on the Cell position for that Node
-		private Node GetNode (int t, int x, int y)
-		{
+		public Node GetNode (int t, int x, int y) {
 			object o = tree.search (new double[] {x, t, y});
 			if (o == null) {
 				Node n = new Node ();
@@ -44,11 +43,10 @@ namespace Exploration {
 			return (Node)o;
 		}
 	
-		public List<Node> Compute (int startX, int startY, int endX, int endY, int attemps, float speed, Cell[][][] matrix, bool smooth = false)
-		{
+		public List<Node> Compute (int startX, int startY, int endX, int endY, int attemps, float speed, Cell[][][] matrix, bool smooth = false) {
 			// Initialization
 			tree = new KDTree (3);
-			explored = new List<Node>();
+			explored = new List<Node> ();
 			nodeMatrix = matrix;
 			
 			//Start and ending node
@@ -59,7 +57,7 @@ namespace Exploration {
 			// Prepare start and end node
 			Node end = GetNode (0, endX, endY);
 			tree.insert (start.GetArray (), start);
-			explored.Add(start);
+			explored.Add (start);
 			
 			// Prepare the variables		
 			Node nodeVisiting = null;
@@ -68,14 +66,14 @@ namespace Exploration {
 			float tan = speed / 1;
 			angle = 90f - Mathf.Atan (tan) * Mathf.Rad2Deg;
 			
-			List<Distribution.Pair> pairs = new List<Distribution.Pair>();
+			List<Distribution.Pair> pairs = new List<Distribution.Pair> ();
 			
 			for (int x = 0; x < matrix[0].Length; x++) 
 				for (int y = 0; y < matrix[0].Length; y++) 
-					if (((Cell)matrix[0][x][y]).waypoint)
-						pairs.Add(new Distribution.Pair(x,y));
+					if (((Cell)matrix [0] [x] [y]).waypoint)
+						pairs.Add (new Distribution.Pair (x, y));
 			
-			pairs.Add(new Distribution.Pair(end.x, end.y));
+			pairs.Add (new Distribution.Pair (end.x, end.y));
 			
 			//Distribution rd = new Distribution(matrix[0].Length, pairs.ToArray());
 		
@@ -89,12 +87,12 @@ namespace Exploration {
 				int ry = Random.Range (0, nodeMatrix [rt] [rx].Length);
 				//int rx = p.x, ry = p.y;
 				nodeVisiting = GetNode (rt, rx, ry);
-				if (nodeVisiting.visited || !nodeVisiting.cell.IsWalkable()) {
+				if (nodeVisiting.visited || !nodeVisiting.cell.IsWalkable ()) {
 					i--;
 					continue;
 				}
 				
-				explored.Add(nodeVisiting);
+				explored.Add (nodeVisiting);
 				
 				nodeTheClosestTo = (Node)tree.nearest (new double[] {rx, rt, ry});
 				
@@ -111,7 +109,7 @@ namespace Exploration {
 				}
 				
 				// And we have line of sight
-				if (!nodeVisiting.cell.IsWalkable() || CheckCollision (nodeVisiting, nodeTheClosestTo))
+				if (!nodeVisiting.cell.IsWalkable () || Library.CheckCollision (nodeVisiting, nodeTheClosestTo, this, SpaceState.Editor, true))
 					continue;
 				
 				try {
@@ -124,18 +122,18 @@ namespace Exploration {
 				
 				// Attemp to connect to the end node
 				if (Random.Range (0, 1000) > 0) {
-					p1 = nodeVisiting.GetVector3();
-					p2 = end.GetVector3();
+					p1 = nodeVisiting.GetVector3 ();
+					p2 = end.GetVector3 ();
 					p2.y = p1.y;
-					float dist = Vector3.Distance(p1, p2);
+					float dist = Vector3.Distance (p1, p2);
 					
-					float t = dist * Mathf.Tan(angle);
+					float t = dist * Mathf.Tan (angle);
 					pd = p2;
 					pd.y += t;
 					
-					if (pd.y <= nodeMatrix.GetLength(0)) {
-						Node endNode = GetNode((int) pd.y, (int) pd.x, (int) pd.z);
-						if (!CheckCollision (nodeVisiting, endNode, 0)) {
+					if (pd.y <= nodeMatrix.GetLength (0)) {
+						Node endNode = GetNode ((int)pd.y, (int)pd.x, (int)pd.z);
+						if (!Library.CheckCollision (nodeVisiting, endNode, this, SpaceState.Editor, true)) {
 							//Debug.Log ("Done3");
 							endNode.parent = nodeVisiting;
 							return ReturnPath (endNode, smooth);
@@ -154,37 +152,8 @@ namespace Exploration {
 			return new List<Node> ();
 		}
 		
-		// Checks for collision between two nodes and their children
-		private bool CheckCollision (Node n1, Node n2, int deep = 0)
-		{
-			if (deep > 5)
-				return false;
-			int x = (n1.x + n2.x) / 2;
-			int y = (n1.y + n2.y) / 2;
-			int t = (n1.t + n2.t) / 2;
-			Node n3 = GetNode (t, x, y);
-			
-			// Noisy calculation
-			if (enemies != null && ((Cell)n3.cell).noisy) {
-				foreach (Enemy enemy in enemies) {
-					Vector3 dupe = enemy.positions[t];
-					dupe.x = (dupe.x - min.x) / tileSizeX;
-					dupe.y = n3.t;
-					dupe.z = (dupe.z - min.z) / tileSizeZ;
-					
-					// This distance is in number of cells size radius i.e. a 10 tilesize circle around the point
-					if (Vector3.Distance (dupe, n3.GetVector3 ()) < 10)
-						return true;
-				} 
-			}
-			
-			return !n3.cell.IsWalkable() || CheckCollision (n1, n3, deep + 1) || CheckCollision (n2, n3, deep + 1);
-			
-		}
-		
 		// Returns the computed path by the RRT, and smooth it if that's the case
-		private List<Node> ReturnPath (Node endNode, bool smooth)
-		{
+		private List<Node> ReturnPath (Node endNode, bool smooth) {
 			Node n = endNode;
 			List<Node> points = new List<Node> ();
 			
@@ -202,7 +171,7 @@ namespace Exploration {
 				Node final = null;
 				foreach (Node each in points) {
 					final = each;
-					while (SmoothNode(final)) {
+					while (Library.SmoothNode(final, this, SpaceState.Editor, true)) {
 					}
 				}
 				
@@ -218,17 +187,6 @@ namespace Exploration {
 			return points;
 		}
 		
-		private bool SmoothNode (Node n)
-		{
-			if (n.parent != null && n.parent.parent != null) {
-				if (CheckCollision (n, n.parent.parent))
-					return false;
-				else {
-					n.parent = n.parent.parent;
-					return true;
-				}
-			} else
-				return false;
-		}
+
 	}
 }

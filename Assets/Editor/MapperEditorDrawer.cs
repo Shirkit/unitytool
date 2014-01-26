@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using Common;
 
 namespace EditorArea {
-	public class MapperEditorDrawer : MonoBehaviour
-	{
+	public class MapperEditorDrawer : MonoBehaviour {
 		
 		public Cell[][][] fullMap;
 		public float[][] seenNeverSeen;
@@ -18,18 +17,16 @@ namespace EditorArea {
 		public int timeSlice;
 		public Vector2 zero = new Vector2 ();
 		public Vector2 tileSize = new Vector2 ();
-		public bool drawMap = true, drawMoveMap = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = true, drawPath = false, editGrid = false, drawFoVOnly = false;
+		public bool drawMap = true, drawNeverSeen = false, drawHeatMap = true, drawPath = false, editGrid = false, drawFoVOnly = false;
 		public Cell[][] editingGrid;
 		// Fixed values
 		private Color orange = new Color (1.0f, 0.64f, 0f, 1f), transparent = new Color (1f, 1f, 1f, 0f);
 		
-		public void Start ()
-		{
+		public void Start () {
 			hideFlags = HideFlags.HideInInspector;
 		}
 		
-		public void OnDrawGizmos ()
-		{
+		public void OnDrawGizmos () {
 			// We need 2 if blocks since we are using 2 different variables to poke the data from
 			if (editGrid && editingGrid != null) {
 				for (int x = 0; x < editingGrid.Length; x++)
@@ -108,28 +105,13 @@ namespace EditorArea {
 					
 						Gizmos.DrawCube (new Vector3
 								(x * tileSize.x + zero.x + tileSize.x / 2f,
-								drawMoveMap ? timeSlice : 0.1f,
+								0.1f,
 								y * tileSize.y + zero.y + tileSize.y / 2f),
 								new Vector3
 									(tileSize.x - tileSize.x * 0.05f,
 									0.0f,
 									tileSize.y - tileSize.y * 0.05f));
 					}
-			}
-				
-			// RRT exploration tree drawning
-			if (draw3dExploration && rrtMap != null) {
-				foreach (Node n in rrtMap) {
-					if (n.parent != null)
-						Gizmos.DrawLine (new Vector3
-								(n.x * tileSize.x + zero.x + tileSize.x / 2f,
-								n.t * (tileSize.x + tileSize.y) / 2,
-								n.y * tileSize.y + zero.y + tileSize.y / 2f), 
-								new Vector3
-								(n.parent.x * tileSize.x + zero.x + tileSize.x / 2f,
-								n.parent.t * (tileSize.x + tileSize.y) / 2,
-								n.parent.y * tileSize.y + zero.y + tileSize.y / 2f));
-				}
 			}
 				
 			// All Paths drawning

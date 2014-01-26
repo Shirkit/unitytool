@@ -19,7 +19,7 @@ namespace Objects {
 		void OnDrawGizmos () {
 			Gizmos.color = Color.white;
 			if (debug)
-				Gizmos.DrawSphere(transform.position, 0.1f);
+				Gizmos.DrawSphere (transform.position, 0.1f);
 		}
 	}
 }

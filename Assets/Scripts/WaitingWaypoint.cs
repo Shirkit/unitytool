@@ -6,9 +6,9 @@ namespace Objects {
 	public class WaitingWaypoint : Waypoint {
 		
 		public float waitingTime;
-		
 		[HideInInspector]
-		public Dictionary<int, float> times = new Dictionary<int, float>();
+		public Dictionary<int, float>
+			times = new Dictionary<int, float> ();
 		
 	}
 }

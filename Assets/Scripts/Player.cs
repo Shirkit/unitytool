@@ -2,28 +2,23 @@ using UnityEngine;
 using System.Collections.Generic;
 using Common;
 
-namespace Objects
-{
-	public class Player : MonoBehaviour
-	{
+namespace Objects {
+	public class Player : MonoBehaviour {
 		public float speed;
 		private Vector3 initialPosition;
 		private Quaternion initialRotation;
 		
-		public void SetInitialPosition ()
-		{
+		public void SetInitialPosition () {
 			initialPosition = transform.position;
 			initialRotation = transform.rotation;
 		}
 		
-		public void ResetSimulation ()
-		{
+		public void ResetSimulation () {
 			transform.position = initialPosition;
 			transform.rotation = initialRotation;
 		}
 		
-		public void Update ()
-		{
+		public void Update () {
 			float ah = Input.GetAxis ("Horizontal");
 			float av = Input.GetAxis ("Vertical");
 			Vector3 d = new Vector3 (ah, 0f, av);
@@ -34,24 +29,24 @@ namespace Objects
 			Vector2 pos = new Vector2 ((transform.position.x - SpaceState.Running.floorMin.x) / SpaceState.Running.tileSize.x, (transform.position.z - SpaceState.Running.floorMin.z) / SpaceState.Running.tileSize.y);
 			int mapX = (int)pos.x;
 			int mapY = (int)pos.y;
-			
+
+			Debug.Log(SpaceState.Running.fullMap);
 			if (SpaceState.Running.fullMap != null) {
-				if (SpaceState.Running.fullMap [SpaceState.Running.timeSlice-1] [mapX] [mapY].goal)
+				if (SpaceState.Running.fullMap [SpaceState.Running.timeSlice - 1] [mapX] [mapY].goal)
 					state = 1;
-				else if (SpaceState.Running.fullMap [SpaceState.Running.timeSlice-1] [mapX] [mapY].seen)
+				else if (SpaceState.Running.fullMap [SpaceState.Running.timeSlice - 1] [mapX] [mapY].seen)
 					state = 2;
 				else
 					state = 0;
 				
-				if (SpaceState.Running.fullMap [SpaceState.Running.timeSlice-1] [mapX] [mapY].blocked)
+				if (SpaceState.Running.fullMap [SpaceState.Running.timeSlice - 1] [mapX] [mapY].blocked)
 					transform.Translate (-d);
 			}
 		}
 		
 		private short state = 0;
 		
-		void OnGUI ()
-		{
+		void OnGUI () {
 			GUIStyle s = new GUIStyle ();
 			s.fontSize = 144;
 			if (state == 1)

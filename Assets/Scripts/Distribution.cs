@@ -1,15 +1,12 @@
 using UnityEngine;
 
 namespace Common {
-	public class Distribution
-	{
+	public class Distribution {
 		
-		public class Pair
-		{
+		public class Pair {
 			public int x, y;
 	
-			public Pair (int x, int y)
-			{
+			public Pair (int x, int y) {
 				this.x = x;
 				this.y = y;
 			}
@@ -19,8 +16,7 @@ namespace Common {
 		private float[] prob, probCumulative;
 		private Pair[] pairs;
 		
-		public Distribution (int size, params Pair[] pairs)
-		{
+		public Distribution (int size, params Pair[] pairs) {
 			this.size = size;
 			if (pairs == null) {
 				pairs = new Pair[0];
@@ -31,8 +27,7 @@ namespace Common {
 			Compute ();
 		}
 		
-		private void Compute ()
-		{
+		private void Compute () {
 			probCumulative = new float[size * size];
 			
 			float sumAll = 0f;
@@ -63,13 +58,11 @@ namespace Common {
 			}
 		}
 		
-		private float F (int y)
-		{
+		private float F (int y) {
 			return probCumulative [y];
 		}
 		
-		private int X (float p, int i, int u, int j)
-		{
+		private int X (float p, int i, int u, int j) {
 			if (p >= F (u)) {
 				if (u == j)
 					return u;
@@ -82,15 +75,13 @@ namespace Common {
 				return X (p, i, Mathf.FloorToInt ((((float)u - i)) / 2f) + i, u);
 		}
 		
-		public Pair NextRandom ()
-		{
+		public Pair NextRandom () {
 			int random = X (Random.Range (0f, 1f), 0, Mathf.FloorToInt ((prob.Length - 1) * 0.5f), prob.Length - 1);
 			Pair pair = new Pair (random / size, random % size);
 			return pair;
 		}
 		
-		public int NextRandomDebug ()
-		{
+		public int NextRandomDebug () {
 			int random = X (Random.Range (0f, 1f), 0, Mathf.FloorToInt ((prob.Length - 1f) * 0.5f), prob.Length - 1);
 			return random;
 		}

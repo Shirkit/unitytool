@@ -6,8 +6,7 @@ using Exploration;
 using Objects;
 
 namespace Extra {
-	public class Analyzer
-	{
+	public class Analyzer {
 		
 		public enum Heuristic : int {
 			Velocity = 0,
@@ -20,10 +19,9 @@ namespace Extra {
 			Los3Norm = 7
 		}
 		// [Heuristic] [Time]
-		public static Dictionary<Path, float[][]> pathMap = new Dictionary<Path, float[][]>();
+		public static Dictionary<Path, float[][]> pathMap = new Dictionary<Path, float[][]> ();
 		
-		public static float[][] ComputeSeenValuesGrid (Cell[][][] fullMap, out float max)
-		{
+		public static float[][] ComputeSeenValuesGrid (Cell[][][] fullMap, out float max) {
 			float[][] metric = new float[fullMap [0].Length][];
 			max = 0f;
 			for (int x = 0; x < metric.Length; x++) {
@@ -39,15 +37,13 @@ namespace Extra {
 			return metric;
 		}
 		
-		public static void Swap<T> (ref T x, ref T y)
-		{
+		public static void Swap<T> (ref T x, ref T y) {
 			T tmp = y;
 			y = x;
 			x = tmp;
 		}
 		
-		private static float ComputeLength3D (List<Node> length)
-		{
+		private static float ComputeLength3D (List<Node> length) {
 			float total = 0f;
 			Node n = length [length.Count - 1];
 			while (n.parent != null) {
@@ -58,99 +54,79 @@ namespace Extra {
 		}
 		
 		// This must be called before a single path analysis or a batch path analysis
-		public static void PreparePaths(List<Path> paths) {
-			Heuristic[] values = (Heuristic[]) Enum.GetValues(typeof(Analyzer.Heuristic));
+		public static void PreparePaths (List<Path> paths) {
+			Heuristic[] values = (Heuristic[])Enum.GetValues (typeof(Analyzer.Heuristic));
 			
-			pathMap.Clear();
+			pathMap.Clear ();
 			
 			foreach (Path path in paths) {
-				if (!(pathMap.ContainsKey(path))) {
-					pathMap.Add(path, new float[Enum.GetValues(typeof(Analyzer.Heuristic)).Length][]);
+				if (!(pathMap.ContainsKey (path))) {
+					pathMap.Add (path, new float[Enum.GetValues (typeof(Analyzer.Heuristic)).Length][]);
 				}
 				
 				foreach (Heuristic metric in values)
-					pathMap[path][(int) metric] = new float[path.points[path.points.Count - 1].t];
+					pathMap [path] [(int)metric] = new float[path.points [path.points.Count - 1].t];
 			}
 		}
 		
 		#region Comparers
 		
-		public class TimeComparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class TimeComparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path1.time - path2.time);
 			}
 		}
 		
-		public class Length2dComparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class Length2dComparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path1.length2d - path2.length2d);
 			}
 		}
 		
-		public class DangerComparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class DangerComparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path2.danger - path1.danger);
 			}
 		}
 		
-		public class Danger3Comparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class Danger3Comparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path2.danger3 - path1.danger3);
 			}
 		}
 		
-		public class Danger3NormComparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class Danger3NormComparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path2.danger3Norm - path1.danger3Norm);
 			}
 		}
 		
-		public class LoSComparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class LoSComparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path2.los - path1.los);
 			}
 		}
 		
-		public class LoS3Comparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class LoS3Comparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path2.los3 - path1.los3);
 			}
 		}
 		
-		public class LoS3NormComparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class LoS3NormComparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path2.los3Norm - path1.los3Norm);
 			}
 		}
 		
-		public class CrazyComparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class CrazyComparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path2.crazy - path1.crazy);
 			}
 		}
 		
-		public class VelocityComparer : IComparer<Path>
-		{
-			public int Compare (Path path1, Path path2)
-			{
+		public class VelocityComparer : IComparer<Path> {
+			public int Compare (Path path1, Path path2) {
 				return Mathf.FloorToInt (path2.velocity - path1.velocity);
 			}
 		}
@@ -159,14 +135,12 @@ namespace Extra {
 		
 		#region Paths values
 		
-		public static void ComputePathsTimeValues (List<Path> paths)
-		{
+		public static void ComputePathsTimeValues (List<Path> paths) {
 			foreach (Path path in paths)
 				path.time = path.points [path.points.Count - 1].t;
 		}
 		
-		public static void ComputePathsLengthValues (List<Path> paths)
-		{
+		public static void ComputePathsLengthValues (List<Path> paths) {
 			foreach (Path path in paths) {
 				Node n = path.points [path.points.Count - 1];
 				while (n.parent != null) {
@@ -177,8 +151,7 @@ namespace Extra {
 			}
 		}
 		
-		public static void ComputePathsVelocityValues (List<Path> paths)
-		{
+		public static void ComputePathsVelocityValues (List<Path> paths) {
 			foreach (Path path in paths) {
 				Node n = path.points [path.points.Count - 1];
 				while (n.parent != null && n.parent.parent != null) {
@@ -193,8 +166,8 @@ namespace Extra {
 					v2.Normalize ();
 					float angle1 = Vector3.Angle (v1, Vector3.up);
 					float angle2 = Vector3.Angle (v2, Vector3.up);
-					pathMap[path][(int)Heuristic.Velocity][n.parent.t] = Mathf.Abs (angle2 - angle1);
-					path.velocity += pathMap[path][(int)Heuristic.Velocity][n.parent.t];
+					pathMap [path] [(int)Heuristic.Velocity] [n.parent.t] = Mathf.Abs (angle2 - angle1);
+					path.velocity += pathMap [path] [(int)Heuristic.Velocity] [n.parent.t];
 					n = n.parent;
 				}
 				if (path.length3d == 0)
@@ -203,8 +176,7 @@ namespace Extra {
 			}
 		}
 		
-		public static void ComputePathsLoSValues (List<Path> paths, Enemy[] enemies, Vector3 min, float tileSizeX, float tileSizeZ, Cell[][][] fullMap, float[][] dangerCells, float maxDanger)
-		{
+		public static void ComputePathsLoSValues (List<Path> paths, Enemy[] enemies, Vector3 min, float tileSizeX, float tileSizeZ, Cell[][][] fullMap, float[][] dangerCells, float maxDanger) {
 			// Compute the y = ax + b equation for each FoV (i.e. enemy=)
 			float[][] formula = new float[enemies.Length][];
 			for (int i = 0; i < formula.Length; i++) {
@@ -212,6 +184,8 @@ namespace Extra {
 				formula [i] [0] = (180 - enemies [i].fovAngle) * -2;
 				formula [i] [1] = enemies [i].fovAngle - formula [i] [0];
 			}
+
+			DDA dda = new DDA(tileSizeX, tileSizeZ, fullMap [0].Length, fullMap [0] [0].Length);
 			
 			foreach (Path currentPath in paths) {
 				if (currentPath.length3d == 0)
@@ -239,76 +213,8 @@ namespace Extra {
 							
 							Vector2 pos2d = new Vector2 (pos.x, pos.z);
 							Vector2 enemy2d = new Vector2 ((enemy.x - min.x) / tileSizeX, (enemy.z - min.z) / tileSizeZ);
-							
-							// Perform the DDA line algorithm
-							// Based on http://lodev.org/cgtutor/raycasting.html
-					
-							Vector2 res = (enemy2d - pos2d).normalized;
-									
-							//which box of the map we're in
-							int mapX = Mathf.FloorToInt (pos2d.x);
-							int mapY = Mathf.FloorToInt (pos2d.y);
-	       
-							//length of ray from current position to next x or y-side
-							float sideDistX;
-							float sideDistY;
-	       
-							//length of ray from one x or y-side to next x or y-side
-							float deltaDistX = Mathf.Sqrt (1 + (res.y * res.y) / (res.x * res.x));
-							float deltaDistY = Mathf.Sqrt (1 + (res.x * res.x) / (res.y * res.y));
-	       
-							//what direction to step in x or y-direction (either +1 or -1)
-							int stepX;
-							int stepY;
-									
-							//calculate step and initial sideDist
-							if (res.x < 0) {
-								stepX = -1;
-								sideDistX = (pos2d.x - mapX) * deltaDistX;
-							} else {
-								stepX = 1;
-								sideDistX = (mapX + 1 - pos2d.x) * deltaDistX;
-							}
-							if (res.y < 0) {
-								stepY = -1;
-								sideDistY = (pos2d.y - mapY) * deltaDistY;
-							} else {
-								stepY = 1;
-								sideDistY = (mapY + 1 - pos2d.y) * deltaDistY;
-							}
-									
-							bool done = false, seen = false;
-							//perform DDA
-							while (!done) {
-								//jump to next map square, OR in x-direction, OR in y-direction
-								if (sideDistX < sideDistY) {
-									sideDistX += deltaDistX;
-									mapX += stepX;
-								} else {
-									sideDistY += deltaDistY;
-									mapY += stepY;
-								}
-	
-								if (Vector2.Distance (pos2d, new Vector2 (mapX, mapY)) > Vector2.Distance (enemy2d, pos2d)) {
-									seen = true;
-									done = true;
-								}
-								// Check map boundaries
-								if (mapX < 0 || mapY < 0 || mapX >= fullMap [0].Length || mapY >= fullMap [0] [0].Length) {
-									seen = true;
-									done = true;
-								} else {
-									//Check if ray has hit a wall
-									if (((Cell)fullMap [par.t + t] [mapX] [mapY]).blocked) {
-										done = true;
-									}
-									// End the algorithm
-									if (Mathf.FloorToInt (enemy2d.x) == mapX && Mathf.FloorToInt (enemy2d.y) == mapY) {
-										seen = true;
-										done = true;
-									}
-								}
-							}
+
+							bool seen = dda.HasLOS(fullMap[par.t + t], pos2d, enemy2d);
 							
 							// If the cell is in LoS
 							if (seen && enemies [enemyIndex].cells [par.t + t].Length > 0) {
@@ -342,14 +248,14 @@ namespace Extra {
 								}
 								
 								// Store in 'per-time' metric
-								pathMap[currentPath][(int) Heuristic.Los][par.t + t] = f;
-								pathMap[currentPath][(int) Heuristic.Los3][par.t + t] = g;
-								pathMap[currentPath][(int) Heuristic.Los3Norm][par.t + t] = g * (dangerCells [(int)pos2d.x] [(int)pos2d.y] / maxDanger);
+								pathMap [currentPath] [(int)Heuristic.Los] [par.t + t] = f;
+								pathMap [currentPath] [(int)Heuristic.Los3] [par.t + t] = g;
+								pathMap [currentPath] [(int)Heuristic.Los3Norm] [par.t + t] = g * (dangerCells [(int)pos2d.x] [(int)pos2d.y] / maxDanger);
 								
 								// Increment the total metric
-								currentPath.los += pathMap[currentPath][(int) Heuristic.Los][par.t + t];
-								currentPath.los3 += pathMap[currentPath][(int) Heuristic.Los3][par.t + t];
-								currentPath.los3Norm += pathMap[currentPath][(int) Heuristic.Los3Norm][par.t + t];
+								currentPath.los += pathMap [currentPath] [(int)Heuristic.Los] [par.t + t];
+								currentPath.los3 += pathMap [currentPath] [(int)Heuristic.Los3] [par.t + t];
+								currentPath.los3Norm += pathMap [currentPath] [(int)Heuristic.Los3Norm] [par.t + t];
 							}
 						}
 					}
@@ -363,8 +269,7 @@ namespace Extra {
 			}
 		}
 		
-		public static void ComputePathsDangerValues (List<Path> paths, Enemy[] enemies, Vector3 min, float tileSizeX, float tileSizeZ, Cell[][][] fullMap, float[][] dangerCells, float maxDanger)
-		{
+		public static void ComputePathsDangerValues (List<Path> paths, Enemy[] enemies, Vector3 min, float tileSizeX, float tileSizeZ, Cell[][][] fullMap, float[][] dangerCells, float maxDanger) {
 			AStar astar = new AStar ();
 			foreach (Path currentPath in paths) {
 				if (currentPath.length3d == 0)
@@ -400,13 +305,13 @@ namespace Extra {
 							if (astarpath.Count > 0) {
 								float l = ComputeLength3D (astarpath);
 								
-								pathMap[currentPath][(int) Heuristic.Danger][par.t + t] = 1 / (l * l);
-								pathMap[currentPath][(int) Heuristic.Danger3][par.t + t] = 1 / (l * l * l);
-								pathMap[currentPath][(int) Heuristic.Danger3Norm][par.t + t] = (1 / (l * l * l)) * (dangerCells [startX] [startY] / maxDanger);
+								pathMap [currentPath] [(int)Heuristic.Danger] [par.t + t] = 1 / (l * l);
+								pathMap [currentPath] [(int)Heuristic.Danger3] [par.t + t] = 1 / (l * l * l);
+								pathMap [currentPath] [(int)Heuristic.Danger3Norm] [par.t + t] = (1 / (l * l * l)) * (dangerCells [startX] [startY] / maxDanger);
 								
-								currentPath.danger += pathMap[currentPath][(int) Heuristic.Danger][par.t + t];
-								currentPath.danger3 += pathMap[currentPath][(int) Heuristic.Danger3][par.t + t];
-								currentPath.danger3Norm += pathMap[currentPath][(int) Heuristic.Danger3Norm][par.t + t];
+								currentPath.danger += pathMap [currentPath] [(int)Heuristic.Danger] [par.t + t];
+								currentPath.danger3 += pathMap [currentPath] [(int)Heuristic.Danger3] [par.t + t];
+								currentPath.danger3Norm += pathMap [currentPath] [(int)Heuristic.Danger3Norm] [par.t + t];
 							}
 						}
 					}
@@ -420,8 +325,7 @@ namespace Extra {
 			}
 		}
 		
-		public static void ComputeCrazyness (List<Path> paths, Cell[][][] fullMap, int stepsBehind)
-		{
+		public static void ComputeCrazyness (List<Path> paths, Cell[][][] fullMap, int stepsBehind) {
 			foreach (Path currentPath in paths) {
 					
 				Node cur = currentPath.points [currentPath.points.Count - 1];
@@ -460,8 +364,8 @@ namespace Extra {
 							
 						}
 						
-						pathMap[currentPath][(int) Heuristic.Crazyness][par.t + t] = tempCrazy;
-						currentPath.crazy += pathMap[currentPath][(int) Heuristic.Crazyness][par.t + t];
+						pathMap [currentPath] [(int)Heuristic.Crazyness] [par.t + t] = tempCrazy;
+						currentPath.crazy += pathMap [currentPath] [(int)Heuristic.Crazyness] [par.t + t];
 					}
 						
 					cur = par;
@@ -472,8 +376,7 @@ namespace Extra {
 		
 		#endregion
 		
-		public static int[][,] Compute3DHeatMap (List<Path> paths, int sizeX, int sizeY, int sizeT, out int[] maxN)
-		{
+		public static int[][,] Compute3DHeatMap (List<Path> paths, int sizeX, int sizeY, int sizeT, out int[] maxN) {
 			// Initialization
 			int[][,] heatMap = new int[sizeT][,];
 			for (int t = 0; t < sizeT; t++)
@@ -594,8 +497,7 @@ namespace Extra {
 			return heatMap;
 		}
 		
-		public static int[,] Compute2DHeatMap (List<Path> paths, int sizeX, int sizeY, out int maxN)
-		{
+		public static int[,] Compute2DHeatMap (List<Path> paths, int sizeX, int sizeY, out int maxN) {
 			maxN = -1;
 			int[,] heatMap = new int[sizeX, sizeY];
 			

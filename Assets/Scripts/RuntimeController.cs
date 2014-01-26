@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Common;
 using Objects;
+using Extra;
 
-public class FoVController : MonoBehaviour
-{
+public class RuntimeController : MonoBehaviour, NodeProvider {
 	
 	public GameObject floor, end;
 	public int gridSize = 60;
@@ -24,13 +24,14 @@ public class FoVController : MonoBehaviour
 	
 	
 	// Use this for initialization
-	void Start ()
-	{
+	void Start () {
 		// First prepare the mapper class
 		if (mapper == null && floor != null) {
 			mapper = floor.GetComponent<Mapper> ();
 			if (floor == null)
 				mapper = floor.AddComponent<Mapper> ();
+		} else {
+			Debug.LogError("No floor set, can't continue");
 		}
 		
 		// Then, we setup the enviornment needed to make it work
@@ -76,23 +77,21 @@ public class FoVController : MonoBehaviour
 			
 			obstaclesMap [endX] [endY].goal = true;
 			
-			// Run this once before enemies moving
+			// Run this once before enemies moving so we compute the first iteration of map
 			acc += stepSize + 1;
 			LateUpdate ();
 		}
 	}
 	
 	// Update is called once per frame
-	void Update ()
-	{
+	void Update () {
 	}
 	
 	private float acc = 0f;
 	private Node last;
 	
 	// After all Update() are called, this method is invoked
-	void LateUpdate ()
-	{
+	void LateUpdate () {
 		if (acc > stepSize) {
 			for (int en = 0; en < SpaceState.Running.enemies.Length; en++)
 				cells [en].Clear ();
@@ -130,72 +129,39 @@ public class FoVController : MonoBehaviour
 		acc += Time.deltaTime;
 	}
 	
-	public void OnApplicationQuit ()
-	{
+	public void OnApplicationQuit () {
 		if (smoothPlayerPath) {
 			Node final = null;
+
 			foreach (Node each in playerPath.points) {
 				final = each;
-				while (SmoothNode(final)) {
+				while (Library.SmoothNode(final, this, SpaceState.Running, true)) {
 				}
 			}
-			
+				
 			playerPath.points.Clear ();
-			
+				
 			while (final != null) {
 				playerPath.points.Add (final);
 				final = final.parent;
 			}
-			playerPath.points.Reverse ();
+			playerPath.points.Reverse ();				
 		}
+
+		playerPath.color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
+
 		List<Path> paths = new List<Path> ();
 		paths.Add (playerPath);
 		PathBulk.SavePathsToFile ("playerPath.xml", paths);
-		PathML.SavePathsToFile ("playerML.xml", playerPoints);
+		new PathML (SpaceState.Running).SavePathsToFile ("playerML.xml", playerPoints);
 	}
-	
-	// TODO: Need to remove this funciton and make it a common library for this and RRT
-	private bool SmoothNode (Node n)
-	{
-		if (n.parent != null && n.parent.parent != null) {
-			if (CheckCollision (n, n.parent.parent))
-				return false;
-			else {
-				n.parent = n.parent.parent;
-				return true;
-			}
-		} else
-			return false;
-	}
-	
-	private bool CheckCollision (Node n1, Node n2, int deep = 0)
-	{
-		if (deep > 5)
-			return false;
-		int x = (n1.x + n2.x) / 2;
-		int y = (n1.y + n2.y) / 2;
-		int t = (n1.t + n2.t) / 2;
+
+	public Node GetNode (int t, int x, int y) {
 		Node n3 = new Node ();
-		n3.cell = fullMap [t] [x] [y];
+		n3.cell = SpaceState.Running.fullMap [t] [x] [y];
 		n3.x = x;
 		n3.t = t;
 		n3.y = y;
-		
-		// Noisy calculation
-		if (SpaceState.Running.enemies != null && ((Cell)n3.cell).noisy) {
-			foreach (Enemy enemy in SpaceState.Running.enemies) {
-				Vector3 dupe = enemy.positions [t];
-				dupe.x = (dupe.x - SpaceState.Running.floorMin.x) / SpaceState.Running.tileSize.x;
-				dupe.y = n3.t;
-				dupe.z = (dupe.z - SpaceState.Running.floorMin.z) / SpaceState.Running.tileSize.y;
-				
-				// This distance is in number of cells size radius i.e. a 10 tilesize circle around the point
-				if (Vector3.Distance (dupe, n3.GetVector3 ()) < 10)
-					return true;
-			} 
-		}
-		
-		return !n3.cell.IsWalkable () || CheckCollision (n1, n3, deep + 1) || CheckCollision (n2, n3, deep + 1);
-		
+		return n3;
 	}
 }

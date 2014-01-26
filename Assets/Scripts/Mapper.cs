@@ -4,17 +4,16 @@ using System.Collections;
 using System.Collections.Generic;
 using Common;
 using Objects;
+using Extra;
 
-public class Mapper : MonoBehaviour
-{
+public class Mapper : MonoBehaviour {
 	// Stores the positions for later verification and access of data
 	private float tileSizeX, tileSizeZ;
 	private int cellsX, cellsZ;
 	private float minX, minZ;
 
 	// This computes the map that contains only the obstacles
-	public Cell[][] ComputeObstacles ()
-	{
+	public Cell[][] ComputeObstacles () {
 		Cell[][] baseMap = new Cell[cellsX][];
 		
 		int layer = LayerMask.NameToLayer ("Obstacles");
@@ -33,8 +32,7 @@ public class Mapper : MonoBehaviour
 		return baseMap;
 	}
 	
-	public void ComputeTileSize (SpaceState populate, Vector3 floorMin, Vector3 floorMax, int cellsX, int cellsZ)
-	{
+	public void ComputeTileSize (SpaceState populate, Vector3 floorMin, Vector3 floorMax, int cellsX, int cellsZ) {
 		// Initial computation
 		float dx = Mathf.Abs (floorMin.x - floorMax.x);
 		float dz = Mathf.Abs (floorMin.z - floorMax.z);
@@ -51,8 +49,8 @@ public class Mapper : MonoBehaviour
 	}
 	
 	// Precompute a timestamps number of maps in the future by simulating the enemies movement across the map
-	public Cell[][][] PrecomputeMaps (SpaceState populate, Vector3 floorMin, Vector3 floorMax, int cellsX, int cellsZ, int timestamps, float stepSize, int ticksBehind = 0, Cell[][] baseMap = null)
-	{
+	// Stores withiin [populate] the variables [fullMap, enemies, tileSize] with the computed data
+	public Cell[][][] PrecomputeMaps (SpaceState populate, Vector3 floorMin, Vector3 floorMax, int cellsX, int cellsZ, int timestamps, float stepSize, int ticksBehind = 0, Cell[][] baseMap = null) {
 		// Initial computation
 		ComputeTileSize (populate, floorMin, floorMax, cellsX, cellsZ);
 		
@@ -114,8 +112,7 @@ public class Mapper : MonoBehaviour
 		return fullMap;
 	}
 	
-	public Cell[][] ComputeMap (Cell[][] baseMap, Enemy[] enemies, List<List<Vector2>> cellsByEnemy)
-	{
+	public Cell[][] ComputeMap (Cell[][] baseMap, Enemy[] enemies, List<List<Vector2>> cellsByEnemy) {
 		Cell[][] im = new Cell[cellsX][];
 		
 		for (int x = 0; x < cellsX; x++) {
@@ -148,6 +145,8 @@ public class Mapper : MonoBehaviour
 			// if tileSizeX != tileSizeZ we can be in big trouble!
 			float dist = enemy.fovDistance / ((tileSizeX + tileSizeZ) / 2);
 
+			DDA dda = new DDA(tileSizeX, tileSizeZ, cellsX, cellsZ);
+
 			for (int x = 0; x < cellsX; x++) {
 				for (int y = 0; y < cellsZ; y++) {
 					
@@ -168,73 +167,10 @@ public class Mapper : MonoBehaviour
 							
 							// Is the target within our FoV?
 							if (Vector2.Distance (p, pos) < dist && Vector2.Angle (res, dir) < enemy.fovAngle) {
-								// Perform the DDA line algorithm
-								// Based on http://lodev.org/cgtutor/raycasting.html
-								
-								//which box of the map we're in
-								int mapX = Mathf.FloorToInt (pos.x);
-								int mapY = Mathf.FloorToInt (pos.y);
-       
-								//length of ray from current position to next x or y-side
-								float sideDistX;
-								float sideDistY;
-       
-								//length of ray from one x or y-side to next x or y-side
-								float deltaDistX = Mathf.Sqrt (1 + (res.y * res.y) / (res.x * res.x));
-								float deltaDistY = Mathf.Sqrt (1 + (res.x * res.x) / (res.y * res.y));
-       
-								//what direction to step in x or y-direction (either +1 or -1)
-								int stepX;
-								int stepY;
-								
-								//calculate step and initial sideDist
-								if (res.x < 0) {
-									stepX = -1;
-									sideDistX = (pos.x - mapX) * deltaDistX;
-								} else {
-									stepX = 1;
-									sideDistX = (mapX + tileSizeX - pos.x) * deltaDistX;
-								}
-								if (res.y < 0) {
-									stepY = -1;
-									sideDistY = (pos.y - mapY) * deltaDistY;
-								} else {
-									stepY = 1;
-									sideDistY = (mapY + tileSizeZ - pos.y) * deltaDistY;
-								}
-								
-								bool done = im [x] [y].blocked || im [x] [y].seen;
-								//perform DDA
-								while (!done) {
-									//jump to next map square, OR in x-direction, OR in y-direction
-									if (sideDistX < sideDistY) {
-										sideDistX += deltaDistX;
-										mapX += stepX;
-									} else {
-										sideDistY += deltaDistY;
-										mapY += stepY;
-									}
 
-									if (Vector2.Distance (pos, new Vector2 (mapX, mapY)) > Vector2.Distance (p, pos)) {
-										seen = true;
-										done = true;
-									}
-									// Check map boundaries
-									if (mapX < 0 || mapY < 0 || mapX >= cellsX || mapY >= cellsZ) {
-										seen = true;
-										done = true;
-									} else {
-										//Check if ray has hit a wall
-										if (im [mapX] [mapY].blocked) {
-											done = true;
-										}
-										// End the algorithm
-										if (x == mapX && y == mapY) {
-											seen = true;
-											done = true;
-										}
-									}
-								}
+								// Check if target is seen
+								seen = seen || dda.HasLOS(im, p, pos, res, x, y);
+
 							}
 						}
 					}
@@ -246,5 +182,5 @@ public class Mapper : MonoBehaviour
 			}
 		}
 		return im;
-	}
+	}	
 }

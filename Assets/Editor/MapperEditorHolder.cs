@@ -5,9 +5,8 @@ using UnityEngine.Serialization;
 using UnityEngine;
 
 namespace EditorArea {
-[Serializable]
-public class MapperEditorHolder
-	{
+	[Serializable]
+	public class MapperEditorHolder {
 		/*public List<List<List<Cell>>> fullMap = new List<List<List<Cell>>>();
 		public List<Node> path;
 		public List<List<Node>> paths = new List<List<Node>> ();

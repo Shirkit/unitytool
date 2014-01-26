@@ -7,26 +7,18 @@
 *.unityproj
 *.sln
 
+# Added manually
+
+*.xml
 *.svg
+*.pidb
 
 ProjectSettings/GraphicsSettings.asset
 
-pathresults.xml
-
 SvgToPdf.py
-
-Assembly-CSharp-Editor.pidb
-
-Assembly-CSharp-Editor.pidb
-
-Assembly-CSharp.pidb
-
-Assembly-CSharp-Editor.pidb
 
 *.userprefs
 
 Output.pdf
 
 Assets/Levels/Human Study.meta
-
-clusterresults.xml

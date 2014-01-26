@@ -3,11 +3,9 @@ using UnityEngine;
 using Objects;
 
 namespace Extra {
-	public class EnemyMover
-	{
+	public class EnemyMover {
 		
-		public static void Solve (int id, Vector3 position, Quaternion rotation, float moveSpeed, float rotationSpeed, float tpf, Waypoint waypoint, float collisionRadius, out Vector3 outPosition, out Quaternion outRotation, out Waypoint outWaypoint)
-		{
+		public static void Solve (int id, Vector3 position, Quaternion rotation, float moveSpeed, float rotationSpeed, float tpf, Waypoint waypoint, float collisionRadius, out Vector3 outPosition, out Quaternion outRotation, out Waypoint outWaypoint) {
 			if (waypoint is RotationWaypoint) {
 				
 				RotationWaypoint r = (RotationWaypoint)waypoint;
@@ -30,7 +28,7 @@ namespace Extra {
 				
 				if (w.times.TryGetValue (id, out t)) {
 					if (t > w.waitingTime) {
-						w.times[id] = 0f;
+						w.times [id] = 0f;
 						Solve (id, position, rotation, moveSpeed, rotationSpeed, tpf, waypoint.next, collisionRadius, out outPosition, out outRotation, out outWaypoint);
 						return;
 					}
@@ -63,8 +61,7 @@ namespace Extra {
 			}
 		}
 		
-		private static float Dist (Vector3 source, Vector3 goal)
-		{
+		private static float Dist (Vector3 source, Vector3 goal) {
 			Vector3 v1 = new Vector3 (), v2 = new Vector3 ();
 			v1.x = source.x;
 			v1.y = source.z;

@@ -4,23 +4,19 @@ using System.IO;
 using Common;
 
 namespace Exploration {
-	public class AStar : System.Collections.IComparer
-	{
+	public class AStar : System.Collections.IComparer {
 		Node start, end;
 			
-		public AStar ()
-		{
+		public AStar () {
 		}
 		
-		public int Compare (object x, object y)
-		{
+		public int Compare (object x, object y) {
 			return f ((Node)x) > f ((Node)y) ? 1 : -1;
 		}
 	
-		public List<Node> Compute (int startX, int startY, int endX, int endY, Cell[][] matrix, bool improve)
-		{
+		public List<Node> Compute (int startX, int startY, int endX, int endY, Cell[][] matrix, bool improve) {
 			List<Node> opened = new List<Node> ();
-			Priority_Queue.IPriorityQueue<Node> heap2 = new Priority_Queue.HeapPriorityQueue<Node>(600);
+			Priority_Queue.IPriorityQueue<Node> heap2 = new Priority_Queue.HeapPriorityQueue<Node> (600);
 			
 			List<Node> closed = new List<Node> ();
 				
@@ -46,7 +42,7 @@ namespace Exploration {
 			foreach (Node c in getAdjacent(start, newMatrix)) {
 				c.parent = start;
 				if (improve)
-					heap2.Enqueue(c, f (c));
+					heap2.Enqueue (c, f (c));
 				else
 					opened.Add (c);
 			}
@@ -56,7 +52,7 @@ namespace Exploration {
 				// Pick the closest to the goal
 				Node minF = null;
 				if (improve) {
-					minF = heap2.Dequeue();
+					minF = heap2.Dequeue ();
 				} else {
 					for (int i = 0; i < opened.Count; i++) {
 						if (minF == null || f (minF) > f (opened [i]))
@@ -81,16 +77,16 @@ namespace Exploration {
 							adj.parent = minF;
 						}
 					} else {
-						if ((improve && heap2.Contains(adj)) || (!improve && opened.Contains(adj))) {
+						if ((improve && heap2.Contains (adj)) || (!improve && opened.Contains (adj))) {
 							if (g (adj) > soFar) {
 								adj.parent = minF;
 							}
 						} else {
 							adj.parent = minF;
 							if (improve)
-								heap2.Enqueue(adj, f (adj));
+								heap2.Enqueue (adj, f (adj));
 							else
-								opened.Add(adj);
+								opened.Add (adj);
 						}
 					}
 				}
@@ -113,8 +109,7 @@ namespace Exploration {
 		}
 			
 		// Gets all the adjancent cells from the current one
-		private List<Node> getAdjacent (Node n, Node[][] matrix)
-		{
+		private List<Node> getAdjacent (Node n, Node[][] matrix) {
 			List<Node> adj = new List<Node> ();
 			for (int xx = n.x - 1; xx <= n.x +1; xx++) {
 				for (int yy = n.y - 1; yy <= n.y +1; yy++) {
@@ -131,14 +126,12 @@ namespace Exploration {
 		}
 			
 		// current + heuristic costs summed up
-		private float f (Node current)
-		{
+		private float f (Node current) {
 			return g (current) + h (current, end);
 		}
 			
 		// current moving cost
-		private float g (Node current)
-		{
+		private float g (Node current) {
 			if (current.parent == null)
 				return 0;
 			else
@@ -146,8 +139,7 @@ namespace Exploration {
 		}
 			
 		// heuristic cost
-		private float h (Node current, Node to)
-		{
+		private float h (Node current, Node to) {
 			return Vector2.Distance (new Vector2 (to.x, to.y), new Vector2 (current.x, current.y));
 		}	
 	}

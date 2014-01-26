@@ -11,11 +11,9 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using Common;
 
-namespace EditorArea
-{
+namespace EditorArea {
 	[CustomEditor(typeof(Mapper))]
-	public class MapperEditor : Editor
-	{
+	public class MapperEditor : Editor {
 		
 		public static Cell[][] grid;
 		//
@@ -23,15 +21,8 @@ namespace EditorArea
 		//
 		private Mapper mapper;
 		private MapperEditorDrawer drawer;
-		
-		public override void OnInspectorGUI ()
-		{
-			DrawDefaultInspector();
-		}
-		
 	
-		public void OnSceneGUI ()
-		{			
+		public void OnSceneGUI () {			
 			// Update drawer
 			if (drawer != null)
 				drawer.editGrid = editGrid;
@@ -42,7 +33,6 @@ namespace EditorArea
 				return;
 			}
 			
-			
 			// Create grid
 			if (grid == null || grid.Length != MapperWindowEditor.gridSize) {
 				grid = new Cell[MapperWindowEditor.gridSize][];
@@ -52,7 +42,7 @@ namespace EditorArea
 			
 			// Prepare holders
 			if (mapper == null) {
-				mapper = (Mapper) target;
+				mapper = (Mapper)target;
 			}
 			if (drawer == null) {
 				drawer = mapper.gameObject.GetComponent<MapperEditorDrawer> ();

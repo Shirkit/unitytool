@@ -11,23 +11,28 @@ using Path = Common.Path;
 using Extra;
 using Objects;
 
-namespace EditorArea
-{
-	public class MapperWindowEditor : EditorWindow
-	{
+namespace EditorArea {
+	public class MapperWindowEditor : EditorWindow {
+
 		// Data holders
 		public static Cell[][][] fullMap;
 		public static List<Path> paths = new List<Path> ();
-		// Parameters
-		public static int startX, startY, maxHeatMap, endX = 27, endY = 27, timeSlice, timeSamples = 800, attemps = 25000, iterations = 5, gridSize = 60, ticksBehind = 0, imported = 0;
-		public static bool drawMap = true, drawMoveMap = false, drawMoveUnits = false, drawNeverSeen = false, draw3dExploration = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = true, smoothPath = true, drawShortestPath = false, drawLongestPath = false, drawLengthiestPath = false, drawFastestPath = false, drawMostDangerousPath = false, drawFoVOnly = true, seeByTime = false, seeByLength = false, seeByDanger = false, seeByLoS = false, seeByDanger3 = false, seeByLoS3 = false, seeByDanger3Norm = false, seeByLoS3Norm = false, seeByCrazy = false, seeByVelocity = false;
-		public static float stepSize = 1 / 10f, crazySeconds = 5f;
-		public static int[,] heatMap;
-		public static GameObject start = null, end = null, floor = null, playerPrefab = null;
-		public static Dictionary<Path, bool> toggleStatus = new Dictionary<Path, bool> ();
-		public static Dictionary<Path, GameObject> players = new Dictionary<Path, GameObject> ();
+
+		// Parameters with default values
+		public static int timeSamples = 800, attemps = 25000, iterations = 5, gridSize = 60, ticksBehind = 0;
+		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = true, smoothPath = true, drawFoVOnly = false;
+		private static float stepSize = 1 / 10f, crazySeconds = 5f;
+
+		// Computed parameters
+		private static int[,] heatMap;
+		private static GameObject start = null, end = null, floor = null, playerPrefab = null;
+		private static Dictionary<Path, bool> toggleStatus = new Dictionary<Path, bool> ();
+		private static Dictionary<Path, GameObject> players = new Dictionary<Path, GameObject> ();
+		private static int startX, startY, endX, endY, maxHeatMap, timeSlice, imported = 0;
+		private static bool seeByTime, seeByLength, seeByDanger, seeByLoS, seeByDanger3, seeByLoS3, seeByDanger3Norm, seeByLoS3Norm, seeByCrazy, seeByVelocity;
+		private static List<Path> arrangedByTime, arrangedByLength, arrangedByDanger, arrangedByLoS, arrangedByDanger3, arrangedByLoS3, arrangedByDanger3Norm, arrangedByLoS3Norm, arrangedByCrazy, arrangedByVelocity;
+
 		// Helping stuff
-		public static List<Path> arrangedByTime, arrangedByLength, arrangedByDanger, arrangedByLoS, arrangedByDanger3, arrangedByLoS3, arrangedByDanger3Norm, arrangedByLoS3Norm, arrangedByCrazy, arrangedByVelocity;
 		private static Vector2 scrollPos = new Vector2 ();
 		private static GameObject playerNode;
 		private int lastTime = timeSlice;
@@ -36,17 +41,17 @@ namespace EditorArea
 		private Mapper mapper;
 		private RRTKDTree rrt = new RRTKDTree ();
 		private MapperEditorDrawer drawer;
+		private DateTime previous = DateTime.Now;
+		private long accL = 0L;
 		
 		[MenuItem("Window/Mapper")]
-		static void Init ()
-		{
+		static void Init () {
 			MapperWindowEditor window = (MapperWindowEditor)EditorWindow.GetWindow (typeof(MapperWindowEditor));
 			window.title = "Mapper";
 			window.ShowTab ();
 		}
 		
-		void OnGUI ()
-		{
+		void OnGUI () {
 			#region Pre-Init
 			
 			// Wait for the floor to be set and initialize the drawer and the mapper
@@ -63,9 +68,11 @@ namespace EditorArea
 				}
 				if (mapper == null) {
 					mapper = floor.GetComponent<Mapper> ();
-					if (mapper == null) {
+
+					if (mapper == null) 
 						mapper = floor.AddComponent<Mapper> ();
-					}
+					
+					mapper.hideFlags = HideFlags.None;
 				}
 			} 
 			
@@ -125,9 +132,9 @@ namespace EditorArea
 						
 						if (mapper == null)
 							mapper = floor.AddComponent<Mapper> ();
-						
+
 						mapper.hideFlags = HideFlags.None;
-						
+					
 					}
 					drawer = floor.gameObject.GetComponent<MapperEditorDrawer> ();
 					if (drawer == null) {
@@ -227,16 +234,16 @@ namespace EditorArea
 			}
 			
 			if (GUILayout.Button ("(DEBUG) Import Paths")) {
-				paths.Clear();
-				ClearPathsRepresentation();
-				paths.AddRange(PathBulk.LoadPathsFromFile ("pathtest.xml"));
+				paths.Clear ();
+				ClearPathsRepresentation ();
+				paths.AddRange (PathBulk.LoadPathsFromFile ("pathtest.xml"));
 				foreach (Path p in paths) {
 					p.name = "Imported " + (++imported);
 					p.color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
-					toggleStatus.Add(p, true);
+					toggleStatus.Add (p, true);
 				}
-				ComputeHeatMap(paths);
-				SetupArrangedPaths(paths);
+				ComputeHeatMap (paths);
+				SetupArrangedPaths (paths);
 			}
 			
 			EditorGUILayout.LabelField ("");
@@ -256,9 +263,6 @@ namespace EditorArea
 			drawHeatMap = EditorGUILayout.Toggle ("- Draw heat map", drawHeatMap);
 			drawHeatMap3d = EditorGUILayout.Toggle ("-> Draw heat map 3d", drawHeatMap3d);
 			drawPath = EditorGUILayout.Toggle ("Draw path", drawPath);
-			/*drawMoveMap = EditorGUILayout.Toggle ("Move map Y-axis", drawMoveMap);
-			drawMoveUnits = EditorGUILayout.Toggle ("Move units Y-axis", drawMoveUnits);
-			draw3dExploration = EditorGUILayout.Toggle ("Draw 3D exploration", draw3dExploration);*/
 			
 			if (drawer != null) {
 				if (drawHeatMap3d)
@@ -317,7 +321,11 @@ namespace EditorArea
 			}
 			
 			if (GUILayout.Button ("(DEBUG) Export Analysis")) {
-				XmlSerializer ser = new XmlSerializer (typeof(MetricsRoot), new Type[] {typeof(PathResults), typeof(PathValue), typeof(Value)});
+				XmlSerializer ser = new XmlSerializer (typeof(MetricsRoot), new Type[] {
+					typeof(PathResults),
+					typeof(PathValue),
+					typeof(Value)
+				});
 				
 				MetricsRoot root = new MetricsRoot ();
 				
@@ -481,19 +489,6 @@ namespace EditorArea
 				}
 			}
 			
-			#region Voronoi
-			/*
-			EditorGUILayout.LabelField ("");
-			EditorGUILayout.LabelField ("7. Voronoi");
-			
-			
-			
-			if (GUILayout.Button ("Calculate Voronoi")) {
-				CalculateVoronoi ();
-			}
-			*/
-			#endregion
-			
 			#region Temp Player setup
 			
 			if (playerNode == null) {
@@ -503,23 +498,25 @@ namespace EditorArea
 					playerNode.hideFlags = HideFlags.HideAndDontSave;
 				}
 			}
-			foreach (KeyValuePair<Path, bool> p in toggleStatus) {
-				if (p.Value) {
-					if (!players.ContainsKey (p.Key)) {
-						GameObject player = GameObject.Instantiate (playerPrefab) as GameObject;
-						player.transform.position.Set (p.Key.points [0].x, 0f, p.Key.points [0].y);
-						player.transform.parent = playerNode.transform;
-						players.Add (p.Key, player);
-						Material m = new Material (player.renderer.sharedMaterial);
-						m.color = p.Key.color;
-						player.renderer.material = m;
-						player.hideFlags = HideFlags.HideAndDontSave;
+			if (playerPrefab != null) {
+				foreach (KeyValuePair<Path, bool> p in toggleStatus) {
+					if (p.Value) {
+						if (!players.ContainsKey (p.Key)) {
+							GameObject player = GameObject.Instantiate (playerPrefab) as GameObject;
+							player.transform.position.Set (p.Key.points [0].x, 0f, p.Key.points [0].y);
+							player.transform.parent = playerNode.transform;
+							players.Add (p.Key, player);
+							Material m = new Material (player.renderer.sharedMaterial);
+							m.color = p.Key.color;
+							player.renderer.material = m;
+							player.hideFlags = HideFlags.HideAndDontSave;
+						} else {
+							players [p.Key].SetActive (true);
+						}
 					} else {
-						players [p.Key].SetActive (true);
-					}
-				} else {
-					if (players.ContainsKey (p.Key)) {
-						players [p.Key].SetActive (false);
+						if (players.ContainsKey (p.Key)) {
+							players [p.Key].SetActive (false);
+						}
 					}
 				}
 			}
@@ -532,11 +529,9 @@ namespace EditorArea
 			
 			if (drawer != null) {
 				drawer.timeSlice = timeSlice;
-				drawer.draw3dExploration = draw3dExploration;
 				drawer.drawHeatMap = drawHeatMap;
 				drawer.drawMap = drawMap;
 				drawer.drawFoVOnly = drawFoVOnly;
-				drawer.drawMoveMap = drawMoveMap;
 				drawer.drawNeverSeen = drawNeverSeen;
 				drawer.drawPath = drawPath;
 				drawer.paths = toggleStatus;
@@ -550,12 +545,8 @@ namespace EditorArea
 			
 			SceneView.RepaintAll ();
 		}
-		
-		private DateTime previous = DateTime.Now;
-		private long accL = 0L;
 			
-		public void Update ()
-		{
+		public void Update () {
 			if (playing) {
 				long l = DateTime.Now.Ticks - previous.Ticks;
 				playTime += l;
@@ -579,8 +570,7 @@ namespace EditorArea
 			previous = DateTime.Now;
 		}
 		
-		private void ClearPathsRepresentation ()
-		{
+		private void ClearPathsRepresentation () {
 			toggleStatus.Clear ();
 			
 			foreach (GameObject obj in players.Values)
@@ -590,8 +580,7 @@ namespace EditorArea
 			Resources.UnloadUnusedAssets ();
 		}
 		
-		private void SetupArrangedPaths (List<Path> paths)
-		{
+		private void SetupArrangedPaths (List<Path> paths) {
 			arrangedByTime = new List<Path> ();
 			arrangedByTime.AddRange (paths);
 			arrangedByTime.Sort (new Analyzer.TimeComparer ());
@@ -633,8 +622,7 @@ namespace EditorArea
 			arrangedByVelocity.Sort (new Analyzer.VelocityComparer ());
 		}
 		
-		private void ComputeHeatMap (List<Path> paths)
-		{
+		private void ComputeHeatMap (List<Path> paths) {
 			heatMap = Analyzer.Compute2DHeatMap (paths, gridSize, gridSize, out maxHeatMap);
 				
 			drawer.heatMapMax = maxHeatMap;
@@ -642,14 +630,14 @@ namespace EditorArea
 				
 			int[] maxHeatMap3d;
 			drawer.heatMap3d = Analyzer.Compute3DHeatMap (paths, gridSize, gridSize, timeSamples, out maxHeatMap3d);
+
 			drawer.heatMapMax3d = maxHeatMap3d;
 
 			drawer.rrtMap = rrt.explored;
 			drawer.tileSize.Set (SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y);
 		}
 
-		private void ComputeClusters ()
-		{
+		private void ComputeClusters () {
 			if (MapperEditor.grid != null) {
 				Dictionary<int, List<Path>> clusterMap = new Dictionary<int, List<Path>> ();
 				foreach (Path currentPath in paths) {
@@ -701,37 +689,40 @@ namespace EditorArea
 					}
 				}
 				
-				ClustersRoot root = new ClustersRoot();
-				int j =0 ;//for colours
+				ClustersRoot root = new ClustersRoot ();
+				int j = 0;//for colours
 				foreach (int n in clusterMap.Keys) {
 					MetricsRoot cluster = new MetricsRoot ();
 					cluster.number = n + "";
 					
 					
-					foreach (Path path in clusterMap[n]) 
-					{
+					foreach (Path path in clusterMap[n]) {
 						cluster.everything.Add (new PathResults (path, null));
-						switch(j)
-						{
-							case 0:
-								path.color = Color.red;
-								break; 
-							case 1:
-								path.color = Color.blue;
-								break; 
-							case 2:
-								path.color = Color.green;
-								break; 
-							case 3:
-								path.color = Color.magenta;
-								break; 
+						switch (j) {
+						case 0:
+							path.color = Color.red;
+							break; 
+						case 1:
+							path.color = Color.blue;
+							break; 
+						case 2:
+							path.color = Color.green;
+							break; 
+						case 3:
+							path.color = Color.magenta;
+							break; 
 						}
 					}
 					j++; 
-					root.everything.Add(cluster);
+					root.everything.Add (cluster);
 				}
 				
-				XmlSerializer ser = new XmlSerializer (typeof(ClustersRoot), new Type[] {typeof(MetricsRoot), typeof(PathResults), typeof(PathValue), typeof(Value)});
+				XmlSerializer ser = new XmlSerializer (typeof(ClustersRoot), new Type[] {
+					typeof(MetricsRoot),
+					typeof(PathResults),
+					typeof(PathValue),
+					typeof(Value)
+				});
 				
 				using (FileStream stream = new FileStream ("clusterresults.xml", FileMode.Create)) {
 					ser.Serialize (stream, root);
@@ -741,8 +732,7 @@ namespace EditorArea
 			}
 		}
 	
-		private void BatchComputing ()
-		{
+		private void BatchComputing () {
 			ResultsRoot root = new ResultsRoot ();
 				
 			float speed = GameObject.FindGameObjectWithTag ("AI").GetComponent<Player> ().speed;
@@ -809,7 +799,10 @@ namespace EditorArea
 					
 				Debug.Log ("Serializing 1");
 					
-				XmlSerializer ser = new XmlSerializer (typeof(ResultsRoot), new Type[] {typeof(ResultBatch), typeof(Result)});
+				XmlSerializer ser = new XmlSerializer (typeof(ResultsRoot), new Type[] {
+					typeof(ResultBatch),
+					typeof(Result)
+				});
 				ser.Serialize (stream, root);
 				stream.Flush ();
 				stream.Close ();
@@ -872,7 +865,10 @@ namespace EditorArea
 					
 				Debug.Log ("Serializing 2");
 					
-				XmlSerializer ser = new XmlSerializer (typeof(ResultsRoot), new Type[] {typeof(ResultBatch), typeof(Result)});
+				XmlSerializer ser = new XmlSerializer (typeof(ResultsRoot), new Type[] {
+					typeof(ResultBatch),
+					typeof(Result)
+				});
 				ser.Serialize (stream, root);
 				stream.Flush ();
 				stream.Close ();
@@ -934,7 +930,10 @@ namespace EditorArea
 					
 				fullMap = null;
 					
-				XmlSerializer ser = new XmlSerializer (typeof(ResultsRoot), new Type[] {typeof(ResultBatch), typeof(Result)});
+				XmlSerializer ser = new XmlSerializer (typeof(ResultsRoot), new Type[] {
+					typeof(ResultBatch),
+					typeof(Result)
+				});
 				ser.Serialize (stream, root);
 				stream.Flush ();
 				stream.Close ();
@@ -943,30 +942,8 @@ namespace EditorArea
 			//}
 		}
 		
-		private void CalculateVoronoi ()
-		{
-			if (floor == null) {
-				floor = GameObject.FindGameObjectWithTag ("Floor");
-			}
-			
-			
-			//Get all the point to calculate the voronoi
-			GameObject[] gos;
-			List<Vector2> pointsVoronoi = new List<Vector2> ();
-			gos = GameObject.FindGameObjectsWithTag ("Voronoi").OrderBy (go => go.transform.position.x).ToArray ();
-			
-			foreach (GameObject g in gos) {
-				pointsVoronoi.Add (new Vector2 (g.transform.position.x, g.transform.position.z));
-			}
-			
-			//Debug.DrawLine(gos[0].transform.position,gos[1].transform.position);
-			//Triangulator triangulator = new Triangulator();
-			//triangulator.CreateInfluencePolygon(pointsVoronoi.ToArray());
-		}
-		
 		// Resets the AI back to it's original position
-		private void ResetAI ()
-		{
+		private void ResetAI () {
 			GameObject[] objs = GameObject.FindGameObjectsWithTag ("AI") as GameObject[];
 			foreach (GameObject ob in objs)
 				ob.GetComponent<Player> ().ResetSimulation ();
@@ -981,8 +958,7 @@ namespace EditorArea
 		}
 		
 		// Updates everyone's position to the current timeslice
-		private void UpdatePositions (int t, Mapper mapper, float diff = 0f)
-		{
+		private void UpdatePositions (int t, Mapper mapper, float diff = 0f) {
 			for (int i = 0; i < SpaceState.Editor.enemies.Length; i++) {
 				if (SpaceState.Editor.enemies [i] == null)
 					continue;
@@ -998,9 +974,6 @@ namespace EditorArea
 					rot = SpaceState.Editor.enemies [i].transform.rotation;
 				}
 				
-				if (drawMoveUnits)
-					pos.y = t;
-				
 				if (diff > 0 && t + 1 < SpaceState.Editor.enemies [i].positions.Length) {
 					pos += (SpaceState.Editor.enemies [i].positions [t + 1] - SpaceState.Editor.enemies [i].positions [t]) * diff;
 					//rot = Quaternion.Lerp(rot, SpaceState.Editor.enemies[i].rotations[t+1], diff);
@@ -1009,34 +982,6 @@ namespace EditorArea
 				SpaceState.Editor.enemies [i].transform.position = pos;
 				SpaceState.Editor.enemies [i].transform.rotation = rot;
 			}
-			
-			/*GameObject[] objs = GameObject.FindGameObjectsWithTag ("AI") as GameObject[];
-			for (int i = 0; i < objs.Length; i++) {
-				if (path != null && path.Count > 0) {
-					Node p = null;
-					foreach (Node n in path) {
-						if (n.t > t) {
-							p = n;
-							break;
-						}
-					}
-					if (p != null) {
-						Vector3 n2 = p.GetVector3 ();
-						Vector3 n1 = p.parent.GetVector3 ();
-						Vector3 pos = n1 * (1 - (float)(t - p.parent.t) / (float)(p.t - p.parent.t)) + n2 * ((float)(t - p.parent.t) / (float)(p.t - p.parent.t));
-						
-						pos.x *= mapper.tileSizeX;
-						pos.z *= mapper.tileSizeZ;
-						pos.x += floor.collider.bounds.min.x;
-						pos.z += floor.collider.bounds.min.z;
-						if (!drawMoveUnits) {
-							pos.y = 0f;
-						}
-						objs [i].transform.position = pos;
-					}
-				
-				}
-			}*/
 			
 			foreach (KeyValuePair<Path, GameObject> each in players) {
 				bool used = false;
@@ -1058,17 +1003,14 @@ namespace EditorArea
 						pos.z *= SpaceState.Editor.tileSize.y;
 						pos.x += floor.collider.bounds.min.x;
 						pos.z += floor.collider.bounds.min.z;
-						if (!drawMoveUnits) {
-							pos.y = 0f;
-						}
+
 						each.Value.transform.position = pos;
 					}
 				}
 			}
 		}
 		
-		private void StorePositions ()
-		{
+		private void StorePositions () {
 			GameObject[] objs = GameObject.FindGameObjectsWithTag ("Enemy") as GameObject[];
 			for (int i = 0; i < objs.Length; i++) {
 				objs [i].GetComponent<Enemy> ().SetInitialPosition ();

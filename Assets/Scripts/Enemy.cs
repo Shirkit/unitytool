@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using Extra;
 
 namespace Objects {
-	public class Enemy : MonoBehaviour
-	{
+	public class Enemy : MonoBehaviour {
 		
 		public Waypoint target;
 		public float moveSpeed;
@@ -29,17 +28,15 @@ namespace Objects {
 		//
 		private Vector3 currentPosition;
 		private Quaternion currentRotation;
-		
-		public Color LineForFOV = new Color(1.0f,0.3f,0.0f,1f);
+		public Color LineForFOV = new Color (1.0f, 0.3f, 0.0f, 1f);
 		
 		// This moves the enemy in the game running environment
-		void Update ()
-		{
+		void Update () {
 			Vector3 outPos;
 			Quaternion outRot;
 			Waypoint outWay;
 			
-			EnemyMover.Solve(gameObject.GetHashCode(), transform.position, transform.rotation, moveSpeed, rotationSpeed, Time.deltaTime, target, 0.25f, out outPos, out outRot, out outWay);
+			EnemyMover.Solve (gameObject.GetHashCode (), transform.position, transform.rotation, moveSpeed, rotationSpeed, Time.deltaTime, target, 0.25f, out outPos, out outRot, out outWay);
 			
 			transform.position = outPos;
 			transform.rotation = outRot;
@@ -50,8 +47,7 @@ namespace Objects {
 		}
 		
 		// Reset back the dummy and actual gameobject back to the initial position
-		public void ResetSimulation ()
-		{
+		public void ResetSimulation () {
 			transform.position = initialPosition;
 			transform.rotation = initialRotation;
 			target = initialTarget;
@@ -62,8 +58,7 @@ namespace Objects {
 		}
 		
 		// Sets the initial position with the current transform coordinates
-		public void SetInitialPosition ()
-		{
+		public void SetInitialPosition () {
 			initialTarget = target;
 			initialPosition = transform.position;
 			initialRotation = transform.rotation;
@@ -72,13 +67,12 @@ namespace Objects {
 		}
 		
 		// This siumulates the enemy's movement based on the actual enemy movement
-		public void Simulate (float time)
-		{
+		public void Simulate (float time) {
 			Vector3 outPos;
 			Quaternion outRot;
 			Waypoint outWay;
 			
-			EnemyMover.Solve(gameObject.GetHashCode(), dummyPosition, dummyRotation, moveSpeed, rotationSpeed, time, dummyTarget, 0.25f, out outPos, out outRot, out outWay);
+			EnemyMover.Solve (gameObject.GetHashCode (), dummyPosition, dummyRotation, moveSpeed, rotationSpeed, time, dummyTarget, 0.25f, out outPos, out outRot, out outWay);
 			
 			dummyPosition = outPos;
 			dummyRotation = outRot;
@@ -88,8 +82,7 @@ namespace Objects {
 			currentRotation = dummyRotation;
 		}
 		
-		public void OnDrawGizmos() 
-		{
+		public void OnDrawGizmos () {
 			/*if (transform.FindChild("FOV") != null)
 			{
 				GameObject FOV = transform.FindChild("FOV").gameObject;
@@ -138,18 +131,15 @@ namespace Objects {
 			
 		}
 		
-		public Vector3 GetSimulationPosition ()
-		{
+		public Vector3 GetSimulationPosition () {
 			return currentPosition;
 		}
 		
-		public Vector3 GetSimulatedForward ()
-		{
+		public Vector3 GetSimulatedForward () {
 			return currentRotation * Vector3.forward;
 		}
 		
-		public Quaternion GetSimulatedRotation ()
-		{
+		public Quaternion GetSimulatedRotation () {
 			return currentRotation;
 		}
 	}

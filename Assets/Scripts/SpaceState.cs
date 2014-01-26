@@ -4,17 +4,14 @@ using Objects;
 using Common;
 
 namespace Common {
-	public class SpaceState
-	{
+	public class SpaceState {
 		// Instance related
 		private static SpaceState editor, running;
 		
-		private SpaceState ()
-		{
+		private SpaceState () {
 		}
 		
-		static SpaceState ()
-		{
+		static SpaceState () {
 			editor = new SpaceState ();
 			running = new SpaceState ();
 		}
