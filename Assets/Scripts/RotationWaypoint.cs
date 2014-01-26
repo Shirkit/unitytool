@@ -2,8 +2,10 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor;
 
-public class RotationWaypoint : Waypoint {
+namespace Objects {
+	public class RotationWaypoint : Waypoint {
+		
+		public Vector3 lookDir;
 	
-	public Vector3 lookDir;
-
+	}
 }
