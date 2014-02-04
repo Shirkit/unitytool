@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using Common;
@@ -135,7 +135,7 @@ public class RuntimeController : MonoBehaviour, NodeProvider {
 
 			foreach (Node each in playerPath.points) {
 				final = each;
-				while (Library.SmoothNode(final, this, SpaceState.Running, true)) {
+				while (Extra.Collision.SmoothNode(final, this, SpaceState.Running, true)) {
 				}
 			}
 				

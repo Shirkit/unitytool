@@ -105,6 +105,9 @@ public class Mapper : MonoBehaviour {
 							if (fullMap [counter - ticks] [(int)v.x] [(int)v.y].seen) {
 								fullMap [counter] [(int)v.x] [(int)v.y].seen = true;
 							}
+
+		foreach (Enemy e in enemies)
+			e.ComputeSeenCells(fullMap);
 		
 		populate.enemies = enemies;
 		populate.fullMap = fullMap;

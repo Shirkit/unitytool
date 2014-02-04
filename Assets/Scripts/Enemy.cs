@@ -2,6 +2,8 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using Extra;
+using System;
+using Common;
 
 namespace Objects {
 	public class Enemy : MonoBehaviour {
@@ -12,11 +14,14 @@ namespace Objects {
 		public float fovAngle = 33;
 		public float fovDistance = 5;
 		public float radius = 0.5f;
+		public float dps = 2;
+		public float maxHealth = 100;
 		// The first index is always the time span you want to peek
 		public Vector3[] positions;
 		public Vector3[] forwards;
 		public Quaternion[] rotations;
 		public Vector2[][] cells; // The second index goes from 0 to the amount of seen cells in that time span
+		public Cell[][][] seenCells;
 		//
 		private Waypoint dummyTarget;
 		private Vector3 dummyPosition;
@@ -141,6 +146,24 @@ namespace Objects {
 		
 		public Quaternion GetSimulatedRotation () {
 			return currentRotation;
+		}
+
+		public void ComputeSeenCells(Cell[][][] fullmap) {
+			seenCells = new Cell[fullmap.Length][][];
+
+			for (int t = 0; t < fullmap.Length; t++) {
+				seenCells[t] = new Cell[fullmap[0].Length][];
+
+				for (int x = 0; x < fullmap[0][0].Length; x++) {
+					seenCells[t][x] = new Cell[fullmap[0][0].Length];
+				}
+			}
+
+			for (int t = 0; t < this.cells.Length; t++) {
+				foreach (Vector2 p in this.cells[t]) {
+					seenCells[t][(int)p.x][(int)p.y] = fullmap[t][(int)p.x][(int)p.y];
+				}
+			}
 		}
 	}
 }

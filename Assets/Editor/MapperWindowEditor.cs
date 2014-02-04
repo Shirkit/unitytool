@@ -19,9 +19,9 @@ namespace EditorArea {
 		public static List<Path> paths = new List<Path> ();
 
 		// Parameters with default values
-		public static int timeSamples = 800, attemps = 25000, iterations = 5, gridSize = 60, ticksBehind = 0;
-		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = true, smoothPath = true, drawFoVOnly = false;
-		private static float stepSize = 1 / 10f, crazySeconds = 5f;
+		public static int timeSamples = 800, attemps = 25000, iterations = 1, gridSize = 60, ticksBehind = 0;
+		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = true, smoothPath = false, drawFoVOnly = false;
+		private static float stepSize = 1 / 10f, crazySeconds = 5f, playerDPS = 10;
 
 		// Computed parameters
 		private static int[,] heatMap;
@@ -40,6 +40,7 @@ namespace EditorArea {
 		private static bool simulated = false, playing = false;
 		private Mapper mapper;
 		private RRTKDTree rrt = new RRTKDTree ();
+		private RRTKDTreeCombat combat = new RRTKDTreeCombat ();
 		private MapperEditorDrawer drawer;
 		private DateTime previous = DateTime.Now;
 		private long accL = 0L;
@@ -89,6 +90,13 @@ namespace EditorArea {
 			
 			floor = (GameObject)EditorGUILayout.ObjectField ("Floor", floor, typeof(GameObject), true);
 			gridSize = EditorGUILayout.IntSlider ("Grid size", gridSize, 10, 300);
+
+			if (GUILayout.Button ((MapperEditor.editGrid ? "Finish Editing" : "Edit Grid"))) {
+				if (floor != null) {
+					MapperEditor.editGrid = !MapperEditor.editGrid;
+					Selection.activeGameObject = mapper.gameObject;
+				}
+			}
 	
 			EditorGUILayout.LabelField ("");
 			
@@ -99,7 +107,8 @@ namespace EditorArea {
 			#region 2. Units
 			
 			EditorGUILayout.LabelField ("2. Units");
-			
+
+			playerDPS = EditorGUILayout.Slider("Player DPS", playerDPS, 0.1f, 100f);
 			if (GUILayout.Button ("Store Positions")) {
 				StorePositions ();
 			}
@@ -209,14 +218,14 @@ namespace EditorArea {
 				endX = (int)((end.transform.position.x - floor.collider.bounds.min.x) / SpaceState.Editor.tileSize.x);
 				endY = (int)((end.transform.position.z - floor.collider.bounds.min.z) / SpaceState.Editor.tileSize.y);
 				
-				rrt.min = floor.collider.bounds.min;
-				rrt.tileSizeX = SpaceState.Editor.tileSize.x;
-				rrt.tileSizeZ = SpaceState.Editor.tileSize.y;
-				rrt.enemies = SpaceState.Editor.enemies;
+				combat.min = floor.collider.bounds.min;
+				combat.tileSizeX = SpaceState.Editor.tileSize.x;
+				combat.tileSizeZ = SpaceState.Editor.tileSize.y;
+				combat.enemies = SpaceState.Editor.enemies;
 				
 				List<Node> nodes = null;
 				for (int it = 0; it < iterations; it++) {
-					nodes = rrt.Compute (startX, startY, endX, endY, attemps, speed, fullMap, smoothPath);
+					nodes = combat.Compute (startX, startY, endX, endY, attemps, speed, playerDPS, fullMap, smoothPath);
 					if (nodes.Count > 0) {
 						paths.Add (new Path (nodes));
 						toggleStatus.Add (paths.Last (), true);
@@ -482,13 +491,6 @@ namespace EditorArea {
 			
 			// ----------------------------------
 			
-			if (GUILayout.Button ("(WIP) " + (MapperEditor.editGrid ? "Finish Editing" : "Edit Grid"))) {
-				if (floor != null) {
-					MapperEditor.editGrid = !MapperEditor.editGrid;
-					Selection.activeGameObject = mapper.gameObject;
-				}
-			}
-			
 			#region Temp Player setup
 			
 			if (playerNode == null) {
@@ -577,6 +579,9 @@ namespace EditorArea {
 				GameObject.DestroyImmediate (obj);
 				
 			players.Clear ();
+
+			GameObject.DestroyImmediate(GameObject.Find("TempPlayerNode"));
+
 			Resources.UnloadUnusedAssets ();
 		}
 		
@@ -1003,6 +1008,7 @@ namespace EditorArea {
 						pos.z *= SpaceState.Editor.tileSize.y;
 						pos.x += floor.collider.bounds.min.x;
 						pos.z += floor.collider.bounds.min.z;
+						pos.y = 0f;
 
 						each.Value.transform.position = pos;
 					}

@@ -2,12 +2,16 @@ using System;
 using UnityEngine;
 using System.Xml;
 using System.Xml.Serialization;
+using Objects;
 
 namespace Common {
 	[Serializable]
 	// Structure that holds the information used in the AStar cells
 		public class Node : Priority_Queue.PriorityQueueNode {
 		public int x, y, t;
+		public float playerhp;
+		public float[] enemyhp;
+		public Enemy fighting;
 		[XmlIgnore]
 		public Node parent;
 		[XmlIgnore]

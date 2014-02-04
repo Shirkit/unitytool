@@ -8,7 +8,7 @@ namespace Extra {
 		Node GetNode (int t, int x, int y);
 	}
 
-	public class Library {
+	public class Collision {
 
 		// Checks for collision between two nodes and their children
 		public static bool CheckCollision (Node n1, Node n2, NodeProvider provider, SpaceState state, bool noisy = false, int deep = 0) {
@@ -61,6 +61,127 @@ namespace Extra {
 			this.tileSizeZ = tileSizeZ;
 			this.cellsX = cellsX;
 			this.cellsZ = cellsZ;
+		}
+
+		public Node Los3D(Cell[][][] im, Node start, Node end, Cell[][][][] seenList = null) {
+			Vector3 pos = new Vector3 (start.x, start.y, start.t);
+			Vector3 p = new Vector3 (end.x, end.y, end.t);
+			Vector3 res = (p - pos).normalized;
+			if (seenList == null)
+				seenList = new Cell[0][][][];
+			
+			//which box of the map we're in
+			int mapX = start.x;
+			int mapY = start.y;
+			int mapT = start.t;
+			
+			//length of ray from current position to next x or y-side
+			float sideDistX;
+			float sideDistY;
+			float sideDistT;
+			
+			//length of ray from one x or y-side to next x or y-side
+			float deltaDistX = 1 / Mathf.Abs (res.x);
+			float deltaDistY = 1 / Mathf.Abs (res.y);
+			float deltaDistT = 1 / Mathf.Abs (res.z);
+			
+			
+			//what direction to step in x or y-direction (either +1 or -1)
+			int stepX;
+			int stepY;
+			int stepT;
+			
+			//calculate step and initial sideDist
+			if (res.x < 0) {
+				stepX = -1;
+				sideDistX = (pos.x - mapX) * deltaDistX;
+			} else {
+				stepX = 1;
+				sideDistX = (mapX + 1 - pos.x) * deltaDistX;
+			}
+			if (res.y < 0) {
+				stepY = -1;
+				sideDistY = (pos.y - mapY) * deltaDistY;
+			} else {
+				stepY = 1;
+				sideDistY = (mapY + 1 - pos.y) * deltaDistY;
+			}
+			if (res.z < 0) {
+				stepT = -1;
+				sideDistT = (pos.z - mapT) * deltaDistT;
+			} else {
+				stepT = 1;
+				sideDistT = (mapT + 1 - pos.z) * deltaDistT;
+			}
+			
+			bool done = false;
+			Node result = null;
+			//perform DDA
+			while (!done) {			
+				
+				//jump to next map square, OR in x-direction, OR in y-direction
+				if (sideDistX <= sideDistY && sideDistX <= sideDistT) {
+					sideDistX += deltaDistX;
+					mapX += stepX;
+				} else if (sideDistY <= sideDistT) {
+					sideDistY += deltaDistY;
+					mapY += stepY;
+				} else {
+					sideDistT += deltaDistT;
+					mapT += stepT;
+				}
+				
+				// Check map boundaries
+				if (stepX == 1) {
+					if (mapX > end.x)
+						done = true;
+				} else if (mapX < end.x)
+					done = true;
+				
+				if (stepY == 1) {
+					if (mapY > end.y)
+						done = true;
+				} else if (mapY < end.y)
+					done = true;
+				
+				if (stepT == 1) {
+					if (mapT > end.t)
+						done = true;
+				} else if (mapT < end.t)
+					done = true;
+
+				if (Vector3.Distance (p, new Vector3 (mapX, mapY, mapT)) > Vector3.Distance (p, pos)) {
+					// Check for maximum distance
+					done = true;
+				}
+
+				if (end.x == mapX && end.y == mapY) {
+					// End the algorithm on reach
+					done = true;
+				}
+
+				if (!done && !im[mapT][mapX][mapY].safe) {
+					// Check for ending conditions: safespot, blocked or seen by enemy
+					bool ignored = true;
+					if (im[mapT][mapX][mapY].blocked)
+						ignored = false;
+					else 
+						foreach (Cell[][][] map in seenList) 
+							if (map[mapT][mapX][mapY] != null) 
+								ignored = false;
+
+					if (!ignored) {
+						result = new Node();
+						result.t = mapT;
+						result.x = mapX;
+						result.y = mapY;
+						result.cell = im[mapT][mapX][mapY];
+						done = true;
+					}
+				}
+			}
+
+			return result;
 		}
 
 		public bool HasLOS (Cell[][] im, Vector2 p1, Vector2 p2) {

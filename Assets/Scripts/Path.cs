@@ -125,7 +125,7 @@ namespace Common {
 					es.angle = Vector3.Angle (SpaceState.Running.enemies [k].forwards [i], (ts.playerPos - es.position).normalized);
 					
 					//es.los = ! CheckCollision (n1, n2, 0);
-					es.los = ! Library.CheckCollision (n1, n2, this, state);
+					es.los = ! Extra.Collision.CheckCollision (n1, n2, this, state);
 					
 					ts.enemies.Add (es);
 				}
