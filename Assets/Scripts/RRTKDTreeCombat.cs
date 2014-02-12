@@ -9,6 +9,7 @@ using Objects;
 using Extra;
 
 namespace Exploration {
+
 	public class RRTKDTreeCombat : NodeProvider {
 		private Cell[][][] nodeMatrix;
 		private float angle;
@@ -27,7 +28,7 @@ namespace Exploration {
 				n.x = x;
 				n.y = y;
 				n.t = t;
-				n.enemyhp = new float[enemies.Length];
+				n.enemyhp = new Dictionary<Enemy, float> ();
 				n.cell = nodeMatrix [t] [x] [y];
 				o = n;
 			}
@@ -44,10 +45,11 @@ namespace Exploration {
 			start.visited = true; 
 			start.parent = null;
 			start.playerhp = 10000;
-			start.enemyhp = new float[enemies.Length];
-			for (int i = 0; i < enemies.Length; i++) 
-				start.enemyhp[i] = enemies[i].maxHealth;
-			
+			start.enemyhp = new Dictionary<Enemy, float> ();
+			foreach (Enemy e in enemies) {
+				start.enemyhp.Add (e, e.maxHealth);
+			}
+
 			// Prepare start and end node
 			Node end = GetNode (0, endX, endY);
 			tree.insert (start.GetArray (), start);
@@ -59,7 +61,8 @@ namespace Exploration {
 			float tan = speed / 1;
 			angle = 90f - Mathf.Atan (tan) * Mathf.Rad2Deg;
 			
-			List<Distribution.Pair> pairs = new List<Distribution.Pair> ();
+			/*Distribution algorithm
+			 * List<Distribution.Pair> pairs = new List<Distribution.Pair> ();
 			
 			for (int x = 0; x < matrix[0].Length; x++) 
 				for (int y = 0; y < matrix[0].Length; y++) 
@@ -68,18 +71,18 @@ namespace Exploration {
 			
 			pairs.Add (new Distribution.Pair (end.x, end.y));
 			
-			//Distribution rd = new Distribution(matrix[0].Length, pairs.ToArray());
+			Distribution rd = new Distribution(matrix[0].Length, pairs.ToArray());*/
 		
-			DDA dda = new DDA (tileSizeX, tileSizeZ, nodeMatrix[0].Length, nodeMatrix[0][0].Length);
-
+			DDA dda = new DDA (tileSizeX, tileSizeZ, nodeMatrix [0].Length, nodeMatrix [0] [0].Length);
+			Random.seed = 2;
 			//RRT algo
 			for (int i = 0; i <= attemps; i++) {
 	
 				//Get random point
 				int rt = Random.Range (1, nodeMatrix.Length);
-				//Distribution.Pair p = rd.NextRandom();
 				int rx = Random.Range (0, nodeMatrix [rt].Length);
 				int ry = Random.Range (0, nodeMatrix [rt] [rx].Length);
+				//Distribution.Pair p = rd.NextRandom();
 				//int rx = p.x, ry = p.y;
 				nodeVisiting = GetNode (rt, rx, ry);
 				if (nodeVisiting.visited || !nodeVisiting.cell.IsWalkable ()) {
@@ -106,46 +109,166 @@ namespace Exploration {
 					continue;
 				}
 
-				List<Cell[][][]> seenList = new List<Cell[][][]>();
-				for (int j = 0; j < enemies.Length; j++) {
-					if (nodeTheClosestTo.enemyhp[j] > 0)
-						seenList.Add(enemies[j].seenCells);
+				// Check for all alive enemies
+				List<Cell[][][]> seenList = new List<Cell[][][]> ();
+				foreach (Enemy e in enemies) {
+					if (nodeTheClosestTo.enemyhp [e] > 0)
+						seenList.Add (e.seenCells);
 				}
 
-				Node hit = dda.Los3D(nodeMatrix, nodeTheClosestTo, nodeVisiting, seenList.ToArray());
+				Node hit = dda.Los3D (nodeMatrix, nodeTheClosestTo, nodeVisiting, seenList.ToArray ());
 
 				if (hit != null) {
-					if (hit.cell.blocked)
+					if (hit.cell.blocked) // Collision with obstacle, ignore
 						continue;
 					else {
+						// Which enemy has seen me?
 						Enemy toFight = null;
-						int index = -1;
 						foreach (Enemy e in enemies) {
-							index++;
-							if (e.seenCells[hit.t][hit.x][hit.y] != null)
+							if (e.seenCells [hit.t] [hit.x] [hit.y] != null && nodeTheClosestTo.enemyhp [e] > 0)
 								toFight = e;
 						}
 
-						float timef = nodeTheClosestTo.enemyhp[index] / dps;
-						int timeT = Mathf.CeilToInt(timef);
-						
-						Node toAdd = GetNode(hit.t, hit.x, hit.y);
-						nodeVisiting = GetNode(hit.t + timeT, hit.x, hit.y);
-						
-						nodeVisiting.parent = toAdd;
-						toAdd.parent = nodeTheClosestTo;
-						
-						nodeVisiting.playerhp -= timef * toFight.dps;
-						nodeVisiting.enemyhp[index] = 0;
+						// Solve the time
+						float timef = nodeTheClosestTo.enemyhp [toFight] / dps;
+						int timeT = Mathf.CeilToInt (timef);
 
-						toAdd.playerhp = nodeTheClosestTo.playerhp;
-						copy(nodeTheClosestTo.enemyhp, toAdd.enemyhp);
-						toAdd.fighting = toFight;
+						// Search for more enemies
+						List<object> more = new List<object> ();
+						foreach (Enemy e2 in enemies) {
+							if (toFight != e2)
+								for (int t = hit.t; t < hit.t + timeT; t++)
+									if (e2.seenCells [t] [hit.x] [hit.y] != null && nodeTheClosestTo.enemyhp [e2] > 0) {
+										Tuple<Enemy, int> whenSeen = new Tuple<Enemy, int> (e2, t);
+										more.Add (whenSeen);
+										break; // Skip this enemy
+									}
+						}
+
+						// Did another enemy saw the player while he was fighting?
+						if (more.Count > 0) {
+
+							// Who dies when
+							List<object> dyingAt = new List<object> ();
+
+							// First, save when the first fight starts
+							Node firstFight = GetNode (hit.t, hit.x, hit.y);
+							firstFight.parent = nodeTheClosestTo;
+
+							// Then when the first guy dies
+							Tuple<Enemy, int> death = new Tuple<Enemy, int> (toFight, firstFight.t + timeT);
+							dyingAt.Add (death);
+
+							// And proccess the other stuff
+							firstFight.fighting = new List<Enemy> ();
+							firstFight.fighting.Add (toFight);
+							copy (nodeTheClosestTo.enemyhp, firstFight.enemyhp);
+
+							// Navigation node
+							Node lastNode = firstFight;
+
+							// Solve for all enemies joining the fight
+							foreach (object o in more) {
+								Tuple<Enemy, int> joined = (Tuple<Enemy, int>)o;							
+
+								// Calculate dying time
+								timef = timef + lastNode.enemyhp [joined.First] / dps;
+								timeT = Mathf.CeilToInt (timef);
+								death = new Tuple<Enemy, int> (joined.First, timeT + hit.t);
+								dyingAt.Add (death);
+
+								// Create the node structure
+								Node startingFight = GetNode (joined.Second, hit.x, hit.y);
+
+								// Add to fighting list
+								startingFight.fighting = new List<Enemy> ();
+								startingFight.fighting.AddRange (lastNode.fighting);
+								startingFight.fighting.Add (joined.First);
+								copy (lastNode.enemyhp, startingFight.enemyhp);
+
+								// Correct parenting
+								startingFight.parent = lastNode;
+								lastNode = startingFight;
+							}
+
+							// Solve for all deaths
+							foreach (object o in dyingAt) {
+
+								Tuple<Enemy, int> dead = (Tuple<Enemy, int>)o;
+								Node travel = lastNode;
+								bool didDie = false;
+								while (!didDie && travel.parent != null) {
+
+									// Does this guy dies between two nodes?
+									if (dead.Second > travel.parent.t && dead.Second < travel.t) {
+
+										// Add the node
+										Node adding = GetNode (dead.Second + hit.t, hit.x, hit.y);
+										adding.fighting = new List<Enemy> ();
+										adding.fighting.AddRange (travel.parent.fighting);
+
+										// And remove the dead people
+										adding.fighting.Remove (dead.First);
+										adding.died = dead.First;
+
+										Node remove = lastNode;
+
+										// Including from nodes deeper in the tree
+										while (remove != travel.parent) {
+											remove.fighting.Remove (dead.First);
+											remove = remove.parent;
+										}
+
+										// Reparent the nodes
+										adding.parent = travel.parent;
+										travel.parent = adding;
+										didDie = true;
+									}
+
+									travel = travel.parent;
+								}
+								if (!didDie) {
+									// The guy didn't die between, that means he's farthest away than lastNode
+									Node adding = GetNode (dead.Second, hit.x, hit.y);
+									adding.fighting = new List<Enemy> ();
+									adding.fighting.AddRange (lastNode.fighting);
+									adding.fighting.Remove (dead.First);
+									copy (lastNode.enemyhp, adding.enemyhp);
+									adding.enemyhp [dead.First] = 0;
+									adding.died = dead.First;
+									adding.parent = lastNode;
+
+									// This is the new lastNode
+									lastNode = adding;
+								}
+							}
+
+							nodeVisiting = lastNode;
+
+						} else {
+							// Only one enemy has seen me
+							Node toAdd = GetNode (hit.t, hit.x, hit.y);
+							nodeVisiting = GetNode (hit.t + timeT, hit.x, hit.y);
+							
+							nodeVisiting.parent = toAdd;
+							toAdd.parent = nodeTheClosestTo;
+
+							toAdd.playerhp = nodeTheClosestTo.playerhp;
+							toAdd.fighting = new List<Enemy> ();
+							toAdd.fighting.Add (toFight);
+							copy (nodeTheClosestTo.enemyhp, toAdd.enemyhp);
+
+							copy (nodeTheClosestTo.enemyhp, nodeVisiting.enemyhp);
+							nodeVisiting.playerhp -= timef * toFight.dps;
+							nodeVisiting.enemyhp [toFight] = 0;
+							nodeVisiting.died = toFight;
+						}
 					}
 				} else {
+					// Nobody has seen me
 					nodeVisiting.parent = nodeTheClosestTo;
 					nodeVisiting.playerhp = nodeTheClosestTo.playerhp;
-					copy(nodeTheClosestTo.enemyhp, nodeVisiting.enemyhp);
+					copy (nodeTheClosestTo.enemyhp, nodeVisiting.enemyhp);
 				}
 
 				try {
@@ -171,17 +294,18 @@ namespace Exploration {
 						Node endNode = GetNode ((int)pd.y, (int)pd.x, (int)pd.z);
 						// Try connecting
 
-						seenList = new List<Cell[][][]>();
-						for (int j = 0; j < enemies.Length; j++) {
-							if (nodeTheClosestTo.enemyhp[j] > 0)
-								seenList.Add(enemies[j].seenCells);
+						seenList = new List<Cell[][][]> ();
+						foreach (Enemy e in enemies) {
+							if (nodeTheClosestTo.enemyhp [e] > 0)
+								seenList.Add (e.seenCells);
 						}
 						
-						hit = dda.Los3D(nodeMatrix, nodeVisiting, endNode, seenList.ToArray());
+						hit = dda.Los3D (nodeMatrix, nodeVisiting, endNode, seenList.ToArray ());
 
 
 						if (hit == null) {
 							endNode.parent = nodeVisiting;
+							copy(endNode.parent.enemyhp, endNode.enemyhp);
 							return ReturnPath (endNode, smooth);
 						}
 					}
@@ -198,17 +322,17 @@ namespace Exploration {
 			return new List<Node> ();
 		}
 
-		private Vector3 GridToWorldCoords(int x, int y) {
-			Vector3 coord = new Vector3();
+		private Vector3 GridToWorldCoords (int x, int y) {
+			Vector3 coord = new Vector3 ();
 			coord.x = (x * tileSizeX) - min.x;
 			coord.y = 0f;
 			coord.z = (y * tileSizeZ) - min.z;
 			return coord;
 		}
 
-		private void copy(float[] source, float[] dest) {
-			for (int i = 0; i < source.Length; i++)
-				dest[i] = source[i];
+		private void copy (Dictionary<Enemy, float> source, Dictionary<Enemy, float> dest) {
+			foreach (Enemy e in enemies)
+				dest.Add (e, source [e]);
 		}
 		
 		// Returns the computed path by the RRT, and smooth it if that's the case
@@ -244,53 +368,69 @@ namespace Exploration {
 			}
 
 			// Updating the stuff after the player/enemies have fought each other
-			Node fought = null;
+			Node lastNode = null;
 			foreach (Node each in points) {
-				if (fought != null) {
-					for (int t = fought.t; t < each.t; t++) {
-						// Update positioning while fighting
-						fought.fighting.positions[t] = fought.fighting.positions[fought.t];
-						fought.fighting.rotations[t] = fought.fighting.rotations[fought.t];
-						fought.fighting.forwards[t] = fought.fighting.forwards[fought.t];
-
-						// And update it's FOV
-						Cell[][] seen = fought.fighting.seenCells[fought.t];
-						for (int x = 0; x < seen.Length; x++)
-							for (int y = 0; y < seen[0].Length; y++)
-								if (seen[x][y] != null) {
-									fought.fighting.seenCells[t][x][y] = this.nodeMatrix[t][x][y];
-									fought.fighting.seenCells[t][x][y].safe = true;
-								}
-								else if (fought.fighting.seenCells[t][x][y] != null) {
-									fought.fighting.seenCells[t][x][y].seen = false;
-									fought.fighting.seenCells[t][x][y] = null;
-								}
-					}
-
+				if (each.died != null) {
 					// After the enemy is dead
-					Vector3 outside = new Vector3(100f, 0f, 100f);
+					Vector3 outside = new Vector3 (100f, 0f, 100f);
 					for (int t = each.t; t < this.nodeMatrix.Length; t++) {
 						// Move the guy to a place far away
-						fought.fighting.positions[t] = outside;
-						fought.fighting.rotations[t] = fought.fighting.rotations[fought.t];
-						fought.fighting.forwards[t] = fought.fighting.forwards[fought.t];
-
+						each.died.positions [t] = outside;
+						each.died.rotations [t] = each.died.rotations [each.t];
+						each.died.forwards [t] = each.died.forwards [each.t];
+						
 						// And remove any seen cells by him
-						for (int x = 0; x < fought.fighting.seenCells[0].Length; x++)
-							for (int y = 0; y < fought.fighting.seenCells[0][0].Length; y++) 
-								if (fought.fighting.seenCells[t][x][y] != null) {
-									fought.fighting.seenCells[t][x][y].seen = false;
-									fought.fighting.seenCells[t][x][y] = null;
+						for (int x = 0; x < each.died.seenCells[0].Length; x++)
+							for (int y = 0; y < each.died.seenCells[0][0].Length; y++) 
+								if (each.died.seenCells [t] [x] [y] != null) {
+									bool cellSeen = false;
+									foreach (Enemy e in each.fighting)
+										if (e != each.died) {
+											Node correct = points[points.Count - 1];
+											while (correct.t > t)
+												correct = correct.parent;
+
+											if (correct.enemyhp[e] > 0 && e.seenCells [t] [x] [y] != null)
+												cellSeen = true;
+										}
+									if (!cellSeen)
+										each.died.seenCells[t][x][y].seen = false;
+									each.died.seenCells [t] [x] [y] = null;
 								}
-
 					}
+				}
 
-					// Go for next enemy!
-					fought = null;
+				if (lastNode != null && lastNode.fighting != null) {
+					foreach (Enemy e in lastNode.fighting) {
+
+						Node fightStarted = lastNode;
+						while (fightStarted.parent.fighting != null && fightStarted.parent.fighting.Contains(e))
+							fightStarted = fightStarted.parent;
+
+						Cell[][] seen = e.seenCells [fightStarted.t];
+
+						for (int t = lastNode.t; t < each.t; t++) {
+							e.positions [t] = e.positions [fightStarted.t];
+							e.rotations [t] = e.rotations [fightStarted.t];
+							e.forwards [t] = e.forwards [fightStarted.t];
+
+							for (int x = 0; x < seen.Length; x++) {
+								for (int y = 0; y < seen[0].Length; y++) {
+									if (seen [x] [y] != null) {
+										e.seenCells [t] [x] [y] = this.nodeMatrix [t] [x] [y];
+										e.seenCells[t][x][y].seen = true;
+										//e.seenCells [t] [x] [y].safe = true;
+									} else if (e.seenCells [t] [x] [y] != null) {
+										e.seenCells [t] [x] [y].seen = false;
+										e.seenCells [t] [x] [y] = null;
+									}
+								}
+							}
+						}
+					}
 				}
-				if (each.fighting != null) {
-					fought = each;
-				}
+
+				lastNode = each;
 			}
 			
 			return points;

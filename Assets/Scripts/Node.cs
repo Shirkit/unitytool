@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using System.Xml;
 using System.Xml.Serialization;
@@ -10,8 +11,9 @@ namespace Common {
 		public class Node : Priority_Queue.PriorityQueueNode {
 		public int x, y, t;
 		public float playerhp;
-		public float[] enemyhp;
-		public Enemy fighting;
+		public Dictionary<Enemy, float> enemyhp;
+		public List<Enemy> fighting;
+		public Enemy died;
 		[XmlIgnore]
 		public Node parent;
 		[XmlIgnore]

@@ -15,7 +15,7 @@ namespace EditorArea {
 	public class MapperWindowEditor : EditorWindow {
 
 		// Data holders
-		public static Cell[][][] fullMap;
+		private static Cell[][][] fullMap, original;
 		public static List<Path> paths = new List<Path> ();
 
 		// Parameters with default values
@@ -169,11 +169,11 @@ namespace EditorArea {
 					}
 				}
 				
-				fullMap = mapper.PrecomputeMaps (SpaceState.Editor, floor.collider.bounds.min, floor.collider.bounds.max, gridSize, gridSize, timeSamples, stepSize, ticksBehind, baseMap);
-				
-				drawer.fullMap = fullMap;
+				original = mapper.PrecomputeMaps (SpaceState.Editor, floor.collider.bounds.min, floor.collider.bounds.max, gridSize, gridSize, timeSamples, stepSize, ticksBehind, baseMap);
+
+				drawer.fullMap = original;
 				float maxSeenGrid;
-				drawer.seenNeverSeen = Analyzer.ComputeSeenValuesGrid (fullMap, out maxSeenGrid);
+				drawer.seenNeverSeen = Analyzer.ComputeSeenValuesGrid (original, out maxSeenGrid);
 				drawer.seenNeverSeenMax = maxSeenGrid;
 				drawer.tileSize = SpaceState.Editor.tileSize;
 				drawer.zero.Set (floor.collider.bounds.min.x, floor.collider.bounds.min.z);
@@ -222,16 +222,50 @@ namespace EditorArea {
 				combat.tileSizeX = SpaceState.Editor.tileSize.x;
 				combat.tileSizeZ = SpaceState.Editor.tileSize.y;
 				combat.enemies = SpaceState.Editor.enemies;
+
+				// Make a copy of the original map
+				fullMap = new Cell[original.Length][][];
+				for (int t = 0; t < original.Length; t++) {
+					fullMap[t] = new Cell[original[0].Length][];
+					for (int x = 0; x < original[0].Length; x++) {
+						fullMap[t][x] = new Cell[original[0][0].Length];
+						for (int y = 0; y < original[0][0].Length; y++)
+								fullMap[t][x][y] = original[t][x][y].Copy();
+					}
+				}
+
+				// Use the copied map so the RRT can modify it
+				foreach (Enemy e in SpaceState.Editor.enemies) {
+					for (int t = 0; t < original.Length; t++)
+						for (int x = 0; x < original[0].Length; x++)
+							for (int y = 0; y < original[0][0].Length; y++)
+								if (e.seenCells[t][x][y] != null)
+									e.seenCells[t][x][y] = fullMap[t][x][y];
+					// Need to make a backup of the enemies positions, rotations and forwards
+
+				}
+
+
 				
 				List<Node> nodes = null;
 				for (int it = 0; it < iterations; it++) {
 					nodes = combat.Compute (startX, startY, endX, endY, attemps, speed, playerDPS, fullMap, smoothPath);
 					if (nodes.Count > 0) {
+						Debug.Log("Path count:" + nodes.Count);	
+						foreach (Node n in nodes) {
+							Debug.Log("N:"+n);
+							if (n.died != null)
+							Debug.Log("-Died:"+n.died);
+							if (n.fighting != null)
+							Debug.Log("-Fighting:"+n.fighting.Count);
+						}
 						paths.Add (new Path (nodes));
 						toggleStatus.Add (paths.Last (), true);
 						paths.Last ().color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
 					}
 				}
+
+				drawer.fullMap = fullMap;
 				
 				Debug.Log ("Paths found: " + paths.Count);
 				
@@ -321,9 +355,9 @@ namespace EditorArea {
 				Analyzer.ComputePathsTimeValues (paths);
 				Analyzer.ComputePathsLengthValues (paths);
 				Analyzer.ComputePathsVelocityValues (paths);
-				Analyzer.ComputePathsLoSValues (paths, SpaceState.Editor.enemies, floor.collider.bounds.min, SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y, fullMap, drawer.seenNeverSeen, drawer.seenNeverSeenMax);
-				Analyzer.ComputePathsDangerValues (paths, SpaceState.Editor.enemies, floor.collider.bounds.min, SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y, fullMap, drawer.seenNeverSeen, drawer.seenNeverSeenMax);
-				Analyzer.ComputeCrazyness (paths, fullMap, Mathf.FloorToInt (crazySeconds / stepSize));
+				Analyzer.ComputePathsLoSValues (paths, SpaceState.Editor.enemies, floor.collider.bounds.min, SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y, original, drawer.seenNeverSeen, drawer.seenNeverSeenMax);
+				Analyzer.ComputePathsDangerValues (paths, SpaceState.Editor.enemies, floor.collider.bounds.min, SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y, original, drawer.seenNeverSeen, drawer.seenNeverSeenMax);
+				Analyzer.ComputeCrazyness (paths, original, Mathf.FloorToInt (crazySeconds / stepSize));
 				Analyzer.ComputePathsVelocityValues (paths);
 				
 				SetupArrangedPaths (paths);
@@ -540,7 +574,7 @@ namespace EditorArea {
 				
 			}
 			
-			if (fullMap != null && lastTime != timeSlice) {
+			if (original != null && lastTime != timeSlice) {
 				lastTime = timeSlice;
 				UpdatePositions (timeSlice, mapper);
 			}

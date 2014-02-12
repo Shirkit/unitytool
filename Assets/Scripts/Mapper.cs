@@ -154,9 +154,11 @@ public class Mapper : MonoBehaviour {
 				for (int y = 0; y < cellsZ; y++) {
 					
 					// Skip cells that are staticly blocked or seen by other enemies
-					if (im [x] [y].blocked || im [x] [y].seen || im [x] [y].safe)
+					// Don't skip cells seen by other enemies or we won't have the correct seenCells computed
+					if (im [x] [y].blocked || im [x] [y].safe)
 						continue;
-					
+
+					// This enemy haven't seen it yet
 					bool seen = false;
 					
 					for (int px = 0; px <= 1; px++) {
@@ -171,16 +173,19 @@ public class Mapper : MonoBehaviour {
 							// Is the target within our FoV?
 							if (Vector2.Distance (p, pos) < dist && Vector2.Angle (res, dir) < enemy.fovAngle) {
 
-								// Check if target is seen
+								// Check if target is seen by this enemy
 								seen = seen || dda.HasLOS(im, p, pos, res, x, y);
 
 							}
 						}
 					}
+
+					// If this enemy has seen it
 					if (seen)
 						cellsByEnemy [i].Add (new Vector2 (x, y));
-					
-					im [x] [y].seen = seen;
+
+					// Now take into account other enemies before modifying the cells value
+					im [x] [y].seen = im [x] [y].seen || seen;
 				}
 			}
 		}

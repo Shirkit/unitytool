@@ -5,7 +5,7 @@ using Common;
 
 namespace EditorArea {
 	public class MapperEditorDrawer : MonoBehaviour {
-		
+
 		public Cell[][][] fullMap;
 		public float[][] seenNeverSeen;
 		public List<Node> rrtMap;
@@ -68,8 +68,8 @@ namespace EditorArea {
 					}
 			} else if (drawMap && fullMap != null) {
 				for (int x = 0; x < fullMap[timeSlice].Length; x++)
-					for (int y = 0; y < fullMap[timeSlice][x].Length; y++) {
-						Cell c = fullMap [timeSlice] [x] [y];
+				for (int y = 0; y < fullMap[timeSlice][x].Length; y++) {
+					Cell c = fullMap [timeSlice] [x] [y];
 							
 						if (drawHeatMap) {
 							if (heatMap != null)

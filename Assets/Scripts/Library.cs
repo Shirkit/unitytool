@@ -227,8 +227,9 @@ namespace Extra {
 				stepY = 1;
 				sideDistY = (mapY + tileSizeZ - p2.y) * deltaDistY;
 			}
-			
-			bool done = im [x] [y].blocked || im [x] [y].seen;
+
+			// Don't skip seen cells
+			bool done = im [x] [y].blocked;
 			bool seen = false;
 			//perform DDA
 			while (!done) {
