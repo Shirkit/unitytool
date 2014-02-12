@@ -74,7 +74,6 @@ namespace Exploration {
 			Distribution rd = new Distribution(matrix[0].Length, pairs.ToArray());*/
 		
 			DDA dda = new DDA (tileSizeX, tileSizeZ, nodeMatrix [0].Length, nodeMatrix [0] [0].Length);
-			Random.seed = 2;
 			//RRT algo
 			for (int i = 0; i <= attemps; i++) {
 	
@@ -384,7 +383,7 @@ namespace Exploration {
 							for (int y = 0; y < each.died.seenCells[0][0].Length; y++) 
 								if (each.died.seenCells [t] [x] [y] != null) {
 									bool cellSeen = false;
-									foreach (Enemy e in each.fighting)
+									foreach (Enemy e in enemies)
 										if (e != each.died) {
 											Node correct = points[points.Count - 1];
 											while (correct.t > t)
