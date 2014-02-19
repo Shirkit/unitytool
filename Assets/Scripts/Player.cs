@@ -5,6 +5,7 @@ using Common;
 namespace Objects {
 	public class Player : MonoBehaviour {
 		public float speed;
+		public float maxHp;
 		private Vector3 initialPosition;
 		private Quaternion initialRotation;
 		

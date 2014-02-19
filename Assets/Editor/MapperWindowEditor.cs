@@ -16,15 +16,16 @@ namespace EditorArea {
 
 		// Data holders
 		private static Cell[][][] fullMap, original;
-		public static List<Path> paths = new List<Path> ();
+		public static List<Path> paths = new List<Path> (), deaths = new List<Path>();
 
 		// Parameters with default values
-		public static int timeSamples = 800, attemps = 25000, iterations = 1, gridSize = 60, ticksBehind = 0;
-		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawPath = true, smoothPath = false, drawFoVOnly = false;
+		public static int timeSamples = 2000, attemps = 25000, iterations = 1, gridSize = 60, ticksBehind = 0;
+		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawDeathHeatMap = false, drawPath = true, smoothPath = false, drawFoVOnly = false;
 		private static float stepSize = 1 / 10f, crazySeconds = 5f, playerDPS = 10;
 
 		// Computed parameters
-		private static int[,] heatMap;
+		private static int[,] heatMap, deathHeatMap;
+		private static int[][,] heatMap3d;
 		private static GameObject start = null, end = null, floor = null, playerPrefab = null;
 		private static Dictionary<Path, bool> toggleStatus = new Dictionary<Path, bool> ();
 		private static Dictionary<Path, GameObject> players = new Dictionary<Path, GameObject> ();
@@ -198,7 +199,8 @@ namespace EditorArea {
 			smoothPath = EditorGUILayout.Toggle ("Smooth path", smoothPath);
 			
 			if (GUILayout.Button ("Compute Path")) {
-				float speed = GameObject.FindGameObjectWithTag ("AI").GetComponent<Player> ().speed;
+				float playerSpeed = GameObject.FindGameObjectWithTag ("AI").GetComponent<Player> ().speed;
+				float playerMaxHp = GameObject.FindGameObjectWithTag ("AI").GetComponent<Player> ().maxHp;
 				
 				
 				//Check the start and the end and get them from the editor. 
@@ -210,66 +212,69 @@ namespace EditorArea {
 				}
 				
 				paths.Clear ();
+				deaths.Clear ();
 				ClearPathsRepresentation ();
 				arrangedByCrazy = arrangedByDanger = arrangedByDanger3 = arrangedByDanger3Norm = arrangedByLength = arrangedByLoS = arrangedByLoS3 = arrangedByLoS3Norm = arrangedByTime = arrangedByVelocity = null;
-				
+
+				// Prepare start and end position
 				startX = (int)((start.transform.position.x - floor.collider.bounds.min.x) / SpaceState.Editor.tileSize.x);
 				startY = (int)((start.transform.position.z - floor.collider.bounds.min.z) / SpaceState.Editor.tileSize.y);
 				endX = (int)((end.transform.position.x - floor.collider.bounds.min.x) / SpaceState.Editor.tileSize.x);
 				endY = (int)((end.transform.position.z - floor.collider.bounds.min.z) / SpaceState.Editor.tileSize.y);
-				
+
+				// Update the parameters on the RRT class
 				combat.min = floor.collider.bounds.min;
 				combat.tileSizeX = SpaceState.Editor.tileSize.x;
 				combat.tileSizeZ = SpaceState.Editor.tileSize.y;
 				combat.enemies = SpaceState.Editor.enemies;
 
-				// Make a copy of the original map
-				fullMap = new Cell[original.Length][][];
-				for (int t = 0; t < original.Length; t++) {
-					fullMap[t] = new Cell[original[0].Length][];
-					for (int x = 0; x < original[0].Length; x++) {
-						fullMap[t][x] = new Cell[original[0][0].Length];
-						for (int y = 0; y < original[0][0].Length; y++)
-								fullMap[t][x][y] = original[t][x][y].Copy();
-					}
-				}
-
-				// Use the copied map so the RRT can modify it
-				foreach (Enemy e in SpaceState.Editor.enemies) {
-					for (int t = 0; t < original.Length; t++)
-						for (int x = 0; x < original[0].Length; x++)
-							for (int y = 0; y < original[0][0].Length; y++)
-								if (e.seenCells[t][x][y] != null)
-									e.seenCells[t][x][y] = fullMap[t][x][y];
-					// Need to make a backup of the enemies positions, rotations and forwards
-
-				}
-
-
-				
 				List<Node> nodes = null;
 				for (int it = 0; it < iterations; it++) {
-					nodes = combat.Compute (startX, startY, endX, endY, attemps, speed, playerDPS, fullMap, smoothPath);
-					if (nodes.Count > 0) {
-						Debug.Log("Path count:" + nodes.Count);	
-						foreach (Node n in nodes) {
-							Debug.Log("N:"+n);
-							if (n.died != null)
-							Debug.Log("-Died:"+n.died);
-							if (n.fighting != null)
-							Debug.Log("-Fighting:"+n.fighting.Count);
+
+					// Make a copy of the original map
+					fullMap = new Cell[original.Length][][];
+					for (int t = 0; t < original.Length; t++) {
+						fullMap[t] = new Cell[original[0].Length][];
+						for (int x = 0; x < original[0].Length; x++) {
+							fullMap[t][x] = new Cell[original[0][0].Length];
+							for (int y = 0; y < original[0][0].Length; y++)
+								fullMap[t][x][y] = original[t][x][y].Copy();
 						}
-						paths.Add (new Path (nodes));
-						toggleStatus.Add (paths.Last (), true);
-						paths.Last ().color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
+					}
+					
+					// Use the copied map so the RRT can modify it
+					foreach (Enemy e in SpaceState.Editor.enemies) {
+						for (int t = 0; t < original.Length; t++)
+							for (int x = 0; x < original[0].Length; x++)
+								for (int y = 0; y < original[0][0].Length; y++)
+									if (e.seenCells[t][x][y] != null)
+										e.seenCells[t][x][y] = fullMap[t][x][y];
+
+						// TODO: Need to make a backup of the enemies positions, rotations and forwards
+						
+					}
+					// We have this try/catch block here to account for the issue that we don't solve when we find a path when t is near the limit
+					try {
+						nodes = combat.Compute (startX, startY, endX, endY, attemps, stepSize, playerMaxHp, playerSpeed, playerDPS, fullMap, smoothPath);
+						// Did we found a path?
+						if (nodes.Count > 0) {
+							paths.Add (new Path (nodes));
+							toggleStatus.Add (paths.Last (), true);
+							paths.Last ().color = new Color (UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f), UnityEngine.Random.Range (0.0f, 1.0f));
+						}
+						// Grab the death list
+						foreach (List<Node> deathNodes in combat.deathPaths) {
+							deaths.Add(new Path(deathNodes));
+						}
+					} catch (IndexOutOfRangeException e) {
+						Debug.LogError("Error calculating path");
 					}
 				}
-
+				// Set the map to be drawn
 				drawer.fullMap = fullMap;
+				ComputeHeatMap (paths, deaths);
 				
 				Debug.Log ("Paths found: " + paths.Count);
-				
-				ComputeHeatMap (paths);
 			}
 			
 			if (GUILayout.Button ("(DEBUG) Export Paths")) {
@@ -305,13 +310,24 @@ namespace EditorArea {
 			drawFoVOnly = EditorGUILayout.Toggle ("- Draw only fields of view", drawFoVOnly);
 			drawHeatMap = EditorGUILayout.Toggle ("- Draw heat map", drawHeatMap);
 			drawHeatMap3d = EditorGUILayout.Toggle ("-> Draw heat map 3d", drawHeatMap3d);
+			drawDeathHeatMap = EditorGUILayout.Toggle ("-> Draw death heat map", drawDeathHeatMap);
 			drawPath = EditorGUILayout.Toggle ("Draw path", drawPath);
 			
 			if (drawer != null) {
-				if (drawHeatMap3d)
-					drawer.heatMap = null;
-				else
-					drawer.heatMap = heatMap;
+				drawer.heatMap = null;
+				drawer.deathHeatMap = null;
+				drawer.heatMap3d = null;
+
+				if (drawHeatMap) {
+					if (drawHeatMap3d)
+						drawer.heatMap3d = heatMap3d;
+
+					else if (drawDeathHeatMap)
+						drawer.deathHeatMap = deathHeatMap;
+
+					else
+						drawer.heatMap = heatMap;
+				}
 			}
 			
 			EditorGUILayout.LabelField ("");
@@ -661,15 +677,16 @@ namespace EditorArea {
 			arrangedByVelocity.Sort (new Analyzer.VelocityComparer ());
 		}
 		
-		private void ComputeHeatMap (List<Path> paths) {
+		private void ComputeHeatMap (List<Path> paths, List<Path> deaths = null) {
 			heatMap = Analyzer.Compute2DHeatMap (paths, gridSize, gridSize, out maxHeatMap);
-				
 			drawer.heatMapMax = maxHeatMap;
 			drawer.heatMap = heatMap;
-				
-			int[] maxHeatMap3d;
-			drawer.heatMap3d = Analyzer.Compute3DHeatMap (paths, gridSize, gridSize, timeSamples, out maxHeatMap3d);
 
+			deathHeatMap = Analyzer.ComputeDeathHeatMap (deaths, gridSize, gridSize, out maxHeatMap);
+			drawer.deathHeatMapMax = maxHeatMap;
+
+			int[] maxHeatMap3d;
+			heatMap3d = Analyzer.Compute3DHeatMap (paths, gridSize, gridSize, timeSamples, out maxHeatMap3d);
 			drawer.heatMapMax3d = maxHeatMap3d;
 
 			drawer.rrtMap = rrt.explored;

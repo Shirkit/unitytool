@@ -10,9 +10,9 @@ namespace EditorArea {
 		public float[][] seenNeverSeen;
 		public List<Node> rrtMap;
 		public Dictionary<Path, bool> paths = new Dictionary<Path, bool> ();
-		public int[,] heatMap;
+		public int[,] heatMap, deathHeatMap;
 		public int[][,] heatMap3d;
-		public float heatMapMax = 0, seenNeverSeenMax;
+		public float heatMapMax = 0, seenNeverSeenMax, deathHeatMapMax;
 		public int[] heatMapMax3d;
 		public int timeSlice;
 		public Vector2 zero = new Vector2 ();
@@ -76,7 +76,8 @@ namespace EditorArea {
 								Gizmos.color = Color.Lerp (Color.white, Color.black, (float)heatMap [x, y] / (heatMapMax * 6f / 8f));
 							else if (heatMap3d != null)
 								Gizmos.color = Color.Lerp (Color.white, Color.black, heatMapMax3d [timeSlice] != 0 ? (float)heatMap3d [timeSlice] [x, y] / (float)heatMapMax3d [timeSlice] : 0f);
-						
+							else if (deathHeatMap != null)
+								Gizmos.color = Color.Lerp (Color.white, Color.black, (float)deathHeatMap [x, y] / (deathHeatMapMax * 6f / 8f));
 						} else {
 							if (drawFoVOnly) {
 								if (c.seen)

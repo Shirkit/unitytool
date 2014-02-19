@@ -13,7 +13,8 @@ namespace Exploration {
 	public class RRTKDTreeCombat : NodeProvider {
 		private Cell[][][] nodeMatrix;
 		private float angle;
-		public KDTree tree;
+		private KDTree tree;
+		public List<List<Node>> deathPaths;
 		// Only do noisy calculations if enemies is different from null
 		public Enemy[] enemies;
 		public Vector3 min;
@@ -34,17 +35,33 @@ namespace Exploration {
 			}
 			return (Node)o;
 		}
+
+		// Creates a node with the specified coordinates, no matter if it already exists in the tree or not
+		// This is mainly to create the connections between nodes that shouldn't be added to the tree
+		// Like the nodes with combat in then
+		// This avoids crashing exceptions collisions while retrieving nodes
+		private Node NewNode (int t, int x, int y) {
+			Node n = new Node ();
+			
+			n.x = x;
+			n.y = y;
+			n.t = t;
+			n.enemyhp = new Dictionary<Enemy, float> ();
+			n.cell = nodeMatrix [t] [x] [y];
+			return n;
+		}
 	
-		public List<Node> Compute (int startX, int startY, int endX, int endY, int attemps, float speed, float dps, Cell[][][] matrix, bool smooth = false) {
+		public List<Node> Compute (int startX, int startY, int endX, int endY, int attemps, float stepSize, float playerMaxHp, float playerSpeed, float playerDps, Cell[][][] matrix, bool smooth = false) {
 			// Initialization
 			tree = new KDTree (3);
+			deathPaths = new List<List<Node>> ();
 			nodeMatrix = matrix;
 			
 			//Start and ending node
 			Node start = GetNode (0, startX, startY);
 			start.visited = true; 
 			start.parent = null;
-			start.playerhp = 10000;
+			start.playerhp = playerMaxHp;
 			start.enemyhp = new Dictionary<Enemy, float> ();
 			foreach (Enemy e in enemies) {
 				start.enemyhp.Add (e, e.maxHealth);
@@ -58,7 +75,7 @@ namespace Exploration {
 			Node nodeVisiting = null;
 			Node nodeTheClosestTo = null;
 			
-			float tan = speed / 1;
+			float tan = playerSpeed / 1;
 			angle = 90f - Mathf.Atan (tan) * Mathf.Rad2Deg;
 			
 			/*Distribution algorithm
@@ -72,7 +89,7 @@ namespace Exploration {
 			pairs.Add (new Distribution.Pair (end.x, end.y));
 			
 			Distribution rd = new Distribution(matrix[0].Length, pairs.ToArray());*/
-		
+
 			DDA dda = new DDA (tileSizeX, tileSizeZ, nodeMatrix [0].Length, nodeMatrix [0] [0].Length);
 			//RRT algo
 			for (int i = 0; i <= attemps; i++) {
@@ -94,7 +111,11 @@ namespace Exploration {
 				// Skip downwards movement
 				if (nodeTheClosestTo.t > nodeVisiting.t)
 					continue;
-				
+
+				// Skip if player is dead
+				if (nodeTheClosestTo.playerhp <= 0)
+					continue;
+
 				// Only add if we are going in ANGLE degrees or higher
 				Vector3 p1 = nodeVisiting.GetVector3 ();
 				Vector3 p2 = nodeTheClosestTo.GetVector3 ();
@@ -129,7 +150,7 @@ namespace Exploration {
 						}
 
 						// Solve the time
-						float timef = nodeTheClosestTo.enemyhp [toFight] / dps;
+						float timef = nodeTheClosestTo.enemyhp [toFight] / (playerDps * stepSize);
 						int timeT = Mathf.CeilToInt (timef);
 
 						// Search for more enemies
@@ -151,7 +172,7 @@ namespace Exploration {
 							List<object> dyingAt = new List<object> ();
 
 							// First, save when the first fight starts
-							Node firstFight = GetNode (hit.t, hit.x, hit.y);
+							Node firstFight = NewNode (hit.t, hit.x, hit.y);
 							firstFight.parent = nodeTheClosestTo;
 
 							// Then when the first guy dies
@@ -168,16 +189,16 @@ namespace Exploration {
 
 							// Solve for all enemies joining the fight
 							foreach (object o in more) {
-								Tuple<Enemy, int> joined = (Tuple<Enemy, int>)o;							
+								Tuple<Enemy, int> joined = (Tuple<Enemy, int>)o;						
 
 								// Calculate dying time
-								timef = timef + lastNode.enemyhp [joined.First] / dps;
+								timef = timef + lastNode.enemyhp [joined.First] / (playerDps * stepSize);
 								timeT = Mathf.CeilToInt (timef);
 								death = new Tuple<Enemy, int> (joined.First, timeT + hit.t);
 								dyingAt.Add (death);
 
 								// Create the node structure
-								Node startingFight = GetNode (joined.Second, hit.x, hit.y);
+								Node startingFight = NewNode (joined.Second, hit.x, hit.y);
 
 								// Add to fighting list
 								startingFight.fighting = new List<Enemy> ();
@@ -202,7 +223,7 @@ namespace Exploration {
 									if (dead.Second > travel.parent.t && dead.Second < travel.t) {
 
 										// Add the node
-										Node adding = GetNode (dead.Second + hit.t, hit.x, hit.y);
+										Node adding = NewNode (dead.Second + hit.t, hit.x, hit.y);
 										adding.fighting = new List<Enemy> ();
 										adding.fighting.AddRange (travel.parent.fighting);
 
@@ -228,7 +249,7 @@ namespace Exploration {
 								}
 								if (!didDie) {
 									// The guy didn't die between, that means he's farthest away than lastNode
-									Node adding = GetNode (dead.Second, hit.x, hit.y);
+									Node adding = NewNode (dead.Second, hit.x, hit.y);
 									adding.fighting = new List<Enemy> ();
 									adding.fighting.AddRange (lastNode.fighting);
 									adding.fighting.Remove (dead.First);
@@ -242,12 +263,35 @@ namespace Exploration {
 								}
 							}
 
-							nodeVisiting = lastNode;
+							// Grab the first node with fighting
+							Node first = lastNode;
+							while (first.parent != nodeTheClosestTo)
+								first = first.parent;
 
+							while (first != lastNode) {
+
+								Node navigate = lastNode;
+								// And grab the node just after the first
+								while (navigate.parent != first)
+									navigate = navigate.parent;
+
+								// Copy the damage already applied
+								navigate.playerhp = first.playerhp;
+
+								// And deal more damage
+								foreach (Enemy dmgDealer in first.fighting)
+									navigate.playerhp -= (navigate.t - first.t) * dmgDealer.dps * stepSize;
+
+								// Goto next node
+								first = navigate;
+
+							}
+							// Make the tree structure
+							nodeVisiting = lastNode;
 						} else {
 							// Only one enemy has seen me
-							Node toAdd = GetNode (hit.t, hit.x, hit.y);
-							nodeVisiting = GetNode (hit.t + timeT, hit.x, hit.y);
+							Node toAdd = NewNode (hit.t, hit.x, hit.y);
+							nodeVisiting = NewNode (hit.t + timeT, hit.x, hit.y);
 							
 							nodeVisiting.parent = toAdd;
 							toAdd.parent = nodeTheClosestTo;
@@ -258,7 +302,7 @@ namespace Exploration {
 							copy (nodeTheClosestTo.enemyhp, toAdd.enemyhp);
 
 							copy (nodeTheClosestTo.enemyhp, nodeVisiting.enemyhp);
-							nodeVisiting.playerhp -= timef * toFight.dps;
+							nodeVisiting.playerhp = toAdd.playerhp - timef * toFight.dps * stepSize;
 							nodeVisiting.enemyhp [toFight] = 0;
 							nodeVisiting.died = toFight;
 						}
@@ -276,9 +320,18 @@ namespace Exploration {
 				}
 				
 				nodeVisiting.visited = true;
-				
+
+				// Add the path to the death paths list
+				if (nodeVisiting.playerhp <= 0) {
+					Node playerDeath = nodeVisiting;
+					while (playerDeath.parent.playerhp <= 0)
+						playerDeath = playerDeath.parent;
+
+					deathPaths.Add (ReturnPath (playerDeath, smooth));
+				}
+
 				// Attemp to connect to the end node
-				if (true) {
+				if (nodeVisiting.playerhp > 0) {
 					// Compute minimum time to reach the end node
 					p1 = nodeVisiting.GetVector3 ();
 					p2 = end.GetVector3 ();
@@ -301,11 +354,14 @@ namespace Exploration {
 						
 						hit = dda.Los3D (nodeMatrix, nodeVisiting, endNode, seenList.ToArray ());
 
-
+						// To simplify things, only connect if player isn't seen or collides with an obstacle
 						if (hit == null) {
 							endNode.parent = nodeVisiting;
-							copy(endNode.parent.enemyhp, endNode.enemyhp);
-							return ReturnPath (endNode, smooth);
+							copy (endNode.parent.enemyhp, endNode.enemyhp);
+							endNode.playerhp = endNode.parent.playerhp;
+							List<Node> done = ReturnPath (endNode, smooth);
+							UpdateNodeMatrix (done);
+							return done;
 						}
 					}
 				}
@@ -313,7 +369,9 @@ namespace Exploration {
 				//Might be adding the neighboor as a the goal
 				if (nodeVisiting.x == end.x & nodeVisiting.y == end.y) {
 					//Debug.Log ("Done2");
-					return ReturnPath (nodeVisiting, smooth);
+					List<Node> done = ReturnPath (nodeVisiting, smooth);
+					UpdateNodeMatrix (done);
+					return done;
 						
 				}
 			}
@@ -365,7 +423,11 @@ namespace Exploration {
 				}
 				points.Reverse ();
 			}
+						
+			return points;
+		}
 
+		private void UpdateNodeMatrix (List<Node> points) {
 			// Updating the stuff after the player/enemies have fought each other
 			Node lastNode = null;
 			foreach (Node each in points) {
@@ -385,39 +447,39 @@ namespace Exploration {
 									bool cellSeen = false;
 									foreach (Enemy e in enemies)
 										if (e != each.died) {
-											Node correct = points[points.Count - 1];
+											Node correct = points [points.Count - 1];
 											while (correct.t > t)
 												correct = correct.parent;
-
-											if (correct.enemyhp[e] > 0 && e.seenCells [t] [x] [y] != null)
+									
+											if (correct.enemyhp [e] > 0 && e.seenCells [t] [x] [y] != null)
 												cellSeen = true;
 										}
 									if (!cellSeen)
-										each.died.seenCells[t][x][y].seen = false;
+										each.died.seenCells [t] [x] [y].seen = false;
 									each.died.seenCells [t] [x] [y] = null;
 								}
 					}
 				}
-
+				
 				if (lastNode != null && lastNode.fighting != null) {
 					foreach (Enemy e in lastNode.fighting) {
-
+						
 						Node fightStarted = lastNode;
 						while (fightStarted.parent.fighting != null && fightStarted.parent.fighting.Contains(e))
 							fightStarted = fightStarted.parent;
-
+						
 						Cell[][] seen = e.seenCells [fightStarted.t];
-
+						
 						for (int t = lastNode.t; t < each.t; t++) {
 							e.positions [t] = e.positions [fightStarted.t];
 							e.rotations [t] = e.rotations [fightStarted.t];
 							e.forwards [t] = e.forwards [fightStarted.t];
-
+							
 							for (int x = 0; x < seen.Length; x++) {
 								for (int y = 0; y < seen[0].Length; y++) {
 									if (seen [x] [y] != null) {
 										e.seenCells [t] [x] [y] = this.nodeMatrix [t] [x] [y];
-										e.seenCells[t][x][y].seen = true;
+										e.seenCells [t] [x] [y].seen = true;
 										//e.seenCells [t] [x] [y].safe = true;
 									} else if (e.seenCells [t] [x] [y] != null) {
 										e.seenCells [t] [x] [y].seen = false;
@@ -428,13 +490,9 @@ namespace Exploration {
 						}
 					}
 				}
-
+				
 				lastNode = each;
 			}
-			
-			return points;
 		}
-		
-
 	}
 }

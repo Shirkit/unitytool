@@ -11,8 +11,11 @@ namespace Common {
 		public class Node : Priority_Queue.PriorityQueueNode {
 		public int x, y, t;
 		public float playerhp;
+		[XmlIgnore]
 		public Dictionary<Enemy, float> enemyhp;
+		[XmlIgnore]
 		public List<Enemy> fighting;
+		[XmlIgnore]
 		public Enemy died;
 		[XmlIgnore]
 		public Node parent;

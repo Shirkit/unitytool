@@ -496,6 +496,36 @@ namespace Extra {
 			
 			return heatMap;
 		}
+
+		public static int[,] ComputeDeathHeatMap (List<Path> paths, int sizeX, int sizeY, out int maxN) {
+			maxN = -1;
+			int[,] heatMap = new int[sizeX, sizeY];
+			
+			foreach (Path path in paths) {
+				Node death = path.points[path.points.Count-1];
+
+				// Paint adjacent nodes
+				for (int x = death.x -2; x >= 0 && x <= death.x + 2 && x < sizeX; x++)
+					for (int y = death.y -2; y >= 0 && y <= death.y + 2 && y < sizeY; y++) {
+						int dx = Math.Abs(death.x - x);
+						int dy = Math.Abs(death.y - y);
+						heatMap[x,y] += (5 - dx - dy);
+					}
+
+				// Main node
+				heatMap[death.x, death.y] += 10;
+			}
+
+			// Get maxN
+			for (int x = 0; x < sizeX; x++) {
+				for (int y = 0; y < sizeY; y++) {
+					if (maxN < heatMap [x, y])
+						maxN = heatMap [x, y];
+				}
+			}
+			
+			return heatMap;
+		}
 		
 		public static int[,] Compute2DHeatMap (List<Path> paths, int sizeX, int sizeY, out int maxN) {
 			maxN = -1;
