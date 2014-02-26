@@ -17,6 +17,7 @@ namespace Exploration {
 		public List<List<Node>> deathPaths;
 		// Only do noisy calculations if enemies is different from null
 		public Enemy[] enemies;
+		public HealthPack[] packs;
 		public Vector3 min;
 		public float tileSizeX, tileSizeZ;
 		
@@ -63,6 +64,7 @@ namespace Exploration {
 			start.parent = null;
 			start.playerhp = playerMaxHp;
 			start.enemyhp = new Dictionary<Enemy, float> ();
+			start.picked = new List<HealthPack>();
 			foreach (Enemy e in enemies) {
 				start.enemyhp.Add (e, e.maxHealth);
 			}
@@ -315,6 +317,20 @@ namespace Exploration {
 				}
 
 				try {
+					// Pass along all HealthPack information
+					Node travel = nodeVisiting;
+					Node dest = nodeTheClosestTo;
+					while (dest != nodeVisiting) {
+						while (travel.parent != dest)
+							travel = travel.parent;
+
+						travel.picked = new List<HealthPack>();
+						travel.picked.AddRange(travel.parent.picked);
+
+						dest = travel;
+						travel = nodeVisiting;
+					}
+
 					tree.insert (nodeVisiting.GetArray (), nodeVisiting);
 				} catch (KeyDuplicateException) {
 				}
@@ -360,17 +376,61 @@ namespace Exploration {
 							copy (endNode.parent.enemyhp, endNode.enemyhp);
 							endNode.playerhp = endNode.parent.playerhp;
 							List<Node> done = ReturnPath (endNode, smooth);
-							UpdateNodeMatrix (done);
+							//UpdateNodeMatrix (done);
 							return done;
 						}
 					}
+
+					if (nodeVisiting.playerhp < 100)
+						// Health pack solving
+						foreach (HealthPack pack in packs) {
+							if (!nodeVisiting.picked.Contains(pack)) {
+								// Compute minimum time to reach the pack
+								p1 = nodeVisiting.GetVector3 ();
+								p2 = new Vector3(pack.posX, p1.y, pack.posZ);
+								dist = Vector3.Distance (p1, p2);
+
+								t = dist * Mathf.Tan (angle);
+								pd = p2;
+								pd.y += t;
+
+								if (pd.y <= nodeMatrix.GetLength (0)) {
+									// TODO If the node is already on the Tree, things may break!
+									// but we need to add it to the tree and retrieve from it to make it a possible path!
+									Node packNode = GetNode ((int)pd.y, (int)pd.x, (int)pd.z);
+
+									// Try connecting
+									seenList = new List<Cell[][][]> ();
+									foreach (Enemy e in enemies) {
+										if (nodeVisiting.enemyhp [e] > 0)
+											seenList.Add (e.seenCells);
+									}
+									
+									hit = dda.Los3D (nodeMatrix, nodeVisiting, packNode, seenList.ToArray ());
+									
+									// To simplify things, only connect if player isn't seen or collides with an obstacle
+									if (hit == null) {
+										packNode.parent = nodeVisiting;
+										packNode.picked = new List<HealthPack>();
+										packNode.picked.AddRange(nodeVisiting.picked);
+										packNode.picked.Add(pack);
+										copy (packNode.parent.enemyhp, packNode.enemyhp);
+										packNode.playerhp = 100;
+										try {
+											tree.insert(packNode.GetArray(), packNode);
+										} catch (KeyDuplicateException) {
+										}
+									}
+								}
+							}
+						}
 				}
 					
 				//Might be adding the neighboor as a the goal
 				if (nodeVisiting.x == end.x & nodeVisiting.y == end.y) {
 					//Debug.Log ("Done2");
 					List<Node> done = ReturnPath (nodeVisiting, smooth);
-					UpdateNodeMatrix (done);
+					//UpdateNodeMatrix (done);
 					return done;
 						
 				}

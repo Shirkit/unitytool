@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 using Common;
+using Extra;
 
 namespace EditorArea {
 	public class MapperEditorDrawer : MonoBehaviour {
@@ -11,14 +12,15 @@ namespace EditorArea {
 		public List<Node> rrtMap;
 		public Dictionary<Path, bool> paths = new Dictionary<Path, bool> ();
 		public int[,] heatMap, deathHeatMap;
-		public int[][,] heatMap3d;
+		public int[][,] heatMap3d, deathHeatMap3d;
 		public float heatMapMax = 0, seenNeverSeenMax, deathHeatMapMax;
-		public int[] heatMapMax3d;
+		public int[] heatMapMax3d, deathHeatMapMax3d;
 		public int timeSlice;
 		public Vector2 zero = new Vector2 ();
 		public Vector2 tileSize = new Vector2 ();
 		public bool drawMap = true, drawNeverSeen = false, drawHeatMap = true, drawPath = false, editGrid = false, drawFoVOnly = false;
 		public Cell[][] editingGrid;
+		public List<Tuple<Vector3, string>> textDraw;
 		// Fixed values
 		private Color orange = new Color (1.0f, 0.64f, 0f, 1f), transparent = new Color (1f, 1f, 1f, 0f);
 		
@@ -78,6 +80,8 @@ namespace EditorArea {
 								Gizmos.color = Color.Lerp (Color.white, Color.black, heatMapMax3d [timeSlice] != 0 ? (float)heatMap3d [timeSlice] [x, y] / (float)heatMapMax3d [timeSlice] : 0f);
 							else if (deathHeatMap != null)
 								Gizmos.color = Color.Lerp (Color.white, Color.black, (float)deathHeatMap [x, y] / (deathHeatMapMax * 6f / 8f));
+							else if (deathHeatMap3d != null)
+							Gizmos.color = Color.Lerp (Color.white, Color.black, deathHeatMapMax3d [timeSlice] != 0 ? (float)deathHeatMap3d [timeSlice] [x, y] / (float)deathHeatMapMax3d [timeSlice] : 0f);
 						} else {
 							if (drawFoVOnly) {
 								if (c.seen)
@@ -134,7 +138,16 @@ namespace EditorArea {
 									(n.parent.y * tileSize.y + zero.y)));
 					}
 			}
-			
+
+			GUIStyle style = new GUIStyle();
+			style.normal.textColor = Color.red;
+			style.fontSize = 16;
+			style.normal.background = new Texture2D(100,20);
+
+			if (textDraw != null)
+				foreach (Tuple<Vector3, string> t in textDraw)
+					Handles.Label(t.First, t.Second, style);
 		}
 	}
+
 }

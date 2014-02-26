@@ -23,6 +23,10 @@ namespace Common {
 		public Cell cell;
 		[XmlIgnore]
 		public bool visited = false;
+		[XmlIgnore]
+		public double accSpeed = 0.0d;
+		[XmlIgnore]
+		public List<HealthPack> picked;
 
 		public float DistanceFrom (Node n) {
 			Vector2 v1, v2;
