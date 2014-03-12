@@ -91,11 +91,11 @@ namespace Exploration {
 			pairs.Add (new Distribution.Pair (end.x, end.y));
 			
 			Distribution rd = new Distribution(matrix[0].Length, pairs.ToArray());*/
-
+			 
 			DDA dda = new DDA (tileSizeX, tileSizeZ, nodeMatrix [0].Length, nodeMatrix [0] [0].Length);
 			//RRT algo
 			for (int i = 0; i <= attemps; i++) {
-	
+
 				//Get random point
 				int rt = Random.Range (1, nodeMatrix.Length);
 				int rx = Random.Range (0, nodeMatrix [rt].Length);

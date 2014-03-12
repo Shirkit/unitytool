@@ -270,6 +270,11 @@ namespace EditorArea {
 				combat.packs = packs;
 
 				List<Node> nodes = null;
+
+
+				//Seed
+				UnityEngine.Random.seed = 1;
+
 				for (int it = 0; it < iterations; it++) {
 
 					// Make a copy of the original map
