@@ -22,6 +22,7 @@ namespace EditorArea {
 		public static int timeSamples = 2000, attemps = 25000, iterations = 1, gridSize = 60, ticksBehind = 0;
 		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawDeathHeatMap = false, drawDeathHeatMap3d = false, drawPath = true, smoothPath = false, drawFoVOnly = false;
 		private static float stepSize = 1 / 10f, crazySeconds = 5f, playerDPS = 10;
+		private static int randomSeed = -1;
 
 		// Computed parameters
 		private static int[,] heatMap, deathHeatMap;
@@ -198,6 +199,7 @@ namespace EditorArea {
 			attemps = EditorGUILayout.IntSlider ("Attempts", attemps, 1000, 100000);
 			iterations = EditorGUILayout.IntSlider ("Iterations", iterations, 1, 1500);
 			smoothPath = EditorGUILayout.Toggle ("Smooth path", smoothPath);
+			randomSeed = EditorGUILayout.IntSlider("Random Seed", randomSeed, -1, 10000);
 
 			if (GUILayout.Button ("(WIP) Compute 3D A* Path")) {
 				float playerSpeed = GameObject.FindGameObjectWithTag ("AI").GetComponent<Player> ().speed;
@@ -269,12 +271,14 @@ namespace EditorArea {
 				combat.enemies = SpaceState.Editor.enemies;
 				combat.packs = packs;
 
+				if (randomSeed != -1)
+					UnityEngine.Random.seed = randomSeed;
+				else {
+					DateTime now = DateTime.Now;
+					UnityEngine.Random.seed = now.Millisecond + now.Second + now.Minute + now.Hour + now.Day + now.Month+ now.Year;
+				}
+
 				List<Node> nodes = null;
-
-
-				//Seed
-				UnityEngine.Random.seed = 1;
-
 				for (int it = 0; it < iterations; it++) {
 
 					// Make a copy of the original map
