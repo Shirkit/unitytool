@@ -316,8 +316,12 @@ namespace EditorArea {
 						foreach (List<Node> deathNodes in combat.deathPaths) {
 							deaths.Add(new Path(deathNodes));
 						}
-					} catch (IndexOutOfRangeException e) {
+					} catch (Exception e) {
 						Debug.LogWarning("Skip errored calculated path");
+						// This can happen in two different cases:
+						// In line 376 by having a duplicate node being picked (coincidence picking the EndNode as visiting but the check is later on)
+						// We also cant just bring the check earlier since there's data to be copied (really really rare cases)
+						// The other case is yet unkown, but it's a conicidence by trying to insert a node in the tree that already exists (really rare cases)
 					}
 				}
 				// Set the map to be drawn
