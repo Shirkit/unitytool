@@ -93,6 +93,7 @@ namespace Objects {
 		}
 		
 		public void OnDrawGizmos () {
+			return; 
 			/*if (transform.FindChild("FOV") != null)
 			{
 				GameObject FOV = transform.FindChild("FOV").gameObject;
