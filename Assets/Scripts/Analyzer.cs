@@ -677,5 +677,34 @@ namespace Extra {
 			
 			return heatMap;
 		}
+
+		public static int[,] Compute2DCombatHeatMap (List<Path> paths, List<Path> deaths, int sizeX, int sizeY, out int maxN) {
+			List<Path> all = new List<Path>(paths);
+			all.AddRange(deaths);
+
+			int[,] map = new int[sizeX,sizeY];
+			maxN = 0;
+			foreach (Path path in all) {
+				foreach (Node n in path.points) {
+					if (n.fighting != null && n.fighting.Count > 0) {
+
+						// Paint adjacent nodes
+						for (int x = n.x -2; x >= 0 && x <= n.x + 2 && x < sizeX; x++){
+							for (int y = n.y -2; y >= 0 && y <= n.y + 2 && y < sizeY; y++) {
+								int dx = Math.Abs(n.x - x);
+								int dy = Math.Abs(n.y - y);
+								map[x,y] += (5 - dx - dy);
+							}
+						}
+
+
+						map[n.x,n.y] += 10;
+						maxN = Mathf.Max(map[n.x, n.y], maxN);
+					}
+				}
+			}
+
+			return map;
+		}
 	}
 }

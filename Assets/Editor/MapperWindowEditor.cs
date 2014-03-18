@@ -20,12 +20,12 @@ namespace EditorArea {
 
 		// Parameters with default values
 		public static int timeSamples = 2000, attemps = 25000, iterations = 1, gridSize = 60, ticksBehind = 0;
-		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawDeathHeatMap = false, drawDeathHeatMap3d = false, drawPath = true, smoothPath = false, drawFoVOnly = false;
+		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawDeathHeatMap = false, drawDeathHeatMap3d = false, drawCombatHeatMap = false, drawPath = true, smoothPath = false, drawFoVOnly = false;
 		private static float stepSize = 1 / 10f, crazySeconds = 5f, playerDPS = 10;
 		private static int randomSeed = -1;
 
 		// Computed parameters
-		private static int[,] heatMap, deathHeatMap;
+		private static int[,] heatMap, deathHeatMap, combatHeatMap;
 		private static int[][,] heatMap3d, deathHeatMap3d;
 		private static GameObject start = null, end = null, floor = null, playerPrefab = null;
 		private static Dictionary<Path, bool> toggleStatus = new Dictionary<Path, bool> ();
@@ -327,8 +327,33 @@ namespace EditorArea {
 				// Set the map to be drawn
 				drawer.fullMap = fullMap;
 				ComputeHeatMap (paths, deaths);
-				
-				Debug.Log ("Paths found: " + paths.Count);
+
+				// Compute the summary about the paths and print it
+				String summary = "Summary:\n";
+				summary += "Successful paths found: " + paths.Count;
+				summary += "\nDead paths: " + deaths.Count;
+
+				// How many paths killed how many enemies
+				List<Path> all = new List<Path>(paths);
+				all.AddRange(deaths);
+				Dictionary<int, int> map = new Dictionary<int, int>();
+				foreach (Path p in all) {
+					int killed = 0;
+					foreach (Node n in p.points)
+						if (n.died != null)
+							killed++;
+
+					if (map.ContainsKey(killed))
+						map[killed]++;
+					else
+						map.Add(killed, 1);
+				}
+
+				foreach (int k in map.Keys) {
+					summary += "\n" + map[k] + " paths killed " + k + " enemies";
+				}
+
+				Debug.Log(summary);
 			}
 			
 			if (GUILayout.Button ("(DEBUG) Export Paths")) {
@@ -370,9 +395,10 @@ namespace EditorArea {
 			drawNeverSeen = EditorGUILayout.Toggle ("- Draw safe places", drawNeverSeen);
 			drawFoVOnly = EditorGUILayout.Toggle ("- Draw only fields of view", drawFoVOnly);
 			drawHeatMap = EditorGUILayout.Toggle ("- Draw heat map", drawHeatMap);
+			drawCombatHeatMap = EditorGUILayout.Toggle ("-> Draw combat heat map", drawCombatHeatMap);
 			drawHeatMap3d = EditorGUILayout.Toggle ("-> Draw heat map 3d", drawHeatMap3d);
 			drawDeathHeatMap = EditorGUILayout.Toggle ("-> Draw death heat map", drawDeathHeatMap);
-			drawDeathHeatMap3d = EditorGUILayout.Toggle ("-> Draw 3d death heat map", drawDeathHeatMap3d);
+			drawDeathHeatMap3d = EditorGUILayout.Toggle ("--> Draw 3d death heat map", drawDeathHeatMap3d);
 			drawPath = EditorGUILayout.Toggle ("Draw path", drawPath);
 			
 			if (drawer != null) {
@@ -380,9 +406,13 @@ namespace EditorArea {
 				drawer.heatMap3d = null;
 				drawer.deathHeatMap = null;
 				drawer.deathHeatMap3d = null;
+				drawer.combatHeatMap = null;
 
 				if (drawHeatMap) {
-					if (drawHeatMap3d)
+					if (drawCombatHeatMap)
+						drawer.combatHeatMap = combatHeatMap;
+
+					else if (drawHeatMap3d)
 						drawer.heatMap3d = heatMap3d;
 
 					else if (drawDeathHeatMap) {
@@ -761,6 +791,9 @@ namespace EditorArea {
 
 			deathHeatMap3d = Analyzer.Compute3dDeathHeatMap(deaths, gridSize, gridSize, timeSamples, out maxHeatMap3d);
 			drawer.deathHeatMapMax3d = maxHeatMap3d;
+
+			combatHeatMap = Analyzer.Compute2DCombatHeatMap(paths, deaths, gridSize, gridSize, out maxHeatMap);
+			drawer.combatHeatMap2dMax = maxHeatMap;
 
 			drawer.rrtMap = rrt.explored;
 			drawer.tileSize.Set (SpaceState.Editor.tileSize.x, SpaceState.Editor.tileSize.y);
