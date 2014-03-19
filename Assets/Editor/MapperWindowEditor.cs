@@ -334,10 +334,10 @@ namespace EditorArea {
 				summary += "\nDead paths: " + deaths.Count;
 
 				// How many paths killed how many enemies
-				List<Path> all = new List<Path>(paths);
-				all.AddRange(deaths);
 				Dictionary<int, int> map = new Dictionary<int, int>();
-				foreach (Path p in all) {
+				for (int i = 0; i < SpaceState.Editor.enemies.Length; i++)
+					map.Add(i, 0);
+				foreach (Path p in paths) {
 					int killed = 0;
 					foreach (Node n in p.points)
 						if (n.died != null)
