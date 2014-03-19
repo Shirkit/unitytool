@@ -335,7 +335,7 @@ namespace EditorArea {
 
 				// How many paths killed how many enemies
 				Dictionary<int, int> map = new Dictionary<int, int>();
-				for (int i = 0; i < SpaceState.Editor.enemies.Length; i++)
+				for (int i = 0; i <= SpaceState.Editor.enemies.Length; i++)
 					map.Add(i, 0);
 				foreach (Path p in paths) {
 					int killed = 0;
