@@ -5,6 +5,7 @@ using Common;
 using Extra;
 
 namespace EditorArea {
+
 	public class MapperEditorDrawer : MonoBehaviour {
 
 		public Cell[][][] fullMap;
@@ -18,7 +19,7 @@ namespace EditorArea {
 		public int timeSlice;
 		public Vector2 zero = new Vector2 ();
 		public Vector2 tileSize = new Vector2 ();
-		public bool drawMap = true, drawNeverSeen = false, drawHeatMap = true, drawPath = false, editGrid = false, drawFoVOnly = false;
+		public bool drawMap = true, drawNeverSeen = false, drawHeatMap = true, drawPath = false, editGrid = false, drawFoVOnly = false, drawCombatLines = false;
 		public Cell[][] editingGrid;
 		public List<Tuple<Vector3, string>> textDraw;
 		// Fixed values
@@ -126,9 +127,9 @@ namespace EditorArea {
 				Gizmos.color = Color.blue;
 				foreach (KeyValuePair<Path, bool> kv in paths)
 					if (kv.Value) {
-						Gizmos.color = kv.Key.color;
-						foreach (Node n in kv.Key.points)
-							if (n.parent != null)
+						foreach (Node n in kv.Key.points) {
+							Gizmos.color = kv.Key.color;
+							if (n.parent != null) {
 								Gizmos.DrawLine (new Vector3
 									((n.x * tileSize.x + zero.x),
 									0.1f,
@@ -138,6 +139,19 @@ namespace EditorArea {
 									((n.parent.x * tileSize.y + zero.x),
 									0.1f,
 									(n.parent.y * tileSize.y + zero.y)));
+
+								if (drawCombatLines && n.parent.fighting != null && n.parent.fighting.Count > 0 && n.t >= timeSlice && n.parent.t <= timeSlice) {
+									Gizmos.color = Color.red;
+
+								for (int ei = 0; ei < n.parent.fighting.Count; ei++)
+									Gizmos.DrawLine (new Vector3
+							                 	((n.x * tileSize.x + zero.x),
+												 0.1f,
+							 					(n.y * tileSize.x + zero.y)),
+							                 n.parent.fighting[ei].positions[timeSlice]);
+								}
+							}
+						}
 					}
 			}
 

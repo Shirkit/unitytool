@@ -20,7 +20,7 @@ namespace EditorArea {
 
 		// Parameters with default values
 		public static int timeSamples = 2000, attemps = 25000, iterations = 1, gridSize = 60, ticksBehind = 0;
-		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawDeathHeatMap = false, drawDeathHeatMap3d = false, drawCombatHeatMap = false, drawPath = true, smoothPath = false, drawFoVOnly = false;
+		private static bool drawMap = true, drawNeverSeen = false, drawHeatMap = false, drawHeatMap3d = false, drawDeathHeatMap = false, drawDeathHeatMap3d = false, drawCombatHeatMap = false, drawPath = true, smoothPath = false, drawFoVOnly = false, drawCombatLines = false;
 		private static float stepSize = 1 / 10f, crazySeconds = 5f, playerDPS = 10;
 		private static int randomSeed = -1;
 
@@ -400,6 +400,7 @@ namespace EditorArea {
 			drawDeathHeatMap = EditorGUILayout.Toggle ("-> Draw death heat map", drawDeathHeatMap);
 			drawDeathHeatMap3d = EditorGUILayout.Toggle ("--> Draw 3d death heat map", drawDeathHeatMap3d);
 			drawPath = EditorGUILayout.Toggle ("Draw path", drawPath);
+			drawCombatLines = EditorGUILayout.Toggle ("Draw combat lines", drawCombatLines);
 			
 			if (drawer != null) {
 				drawer.heatMap = null;
@@ -683,6 +684,7 @@ namespace EditorArea {
 				drawer.drawFoVOnly = drawFoVOnly;
 				drawer.drawNeverSeen = drawNeverSeen;
 				drawer.drawPath = drawPath;
+				drawer.drawCombatLines = drawCombatLines;
 				drawer.paths = toggleStatus;
 				drawer.textDraw = textDraw;
 				
