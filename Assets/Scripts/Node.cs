@@ -15,6 +15,8 @@ namespace Common {
 		[XmlIgnore]
 		public bool visited = false;
 
+		public bool combatNode = false; 
+
 		public float DistanceFrom (Node n) {
 			Vector2 v1, v2;
 			v1 = new Vector2 (this.x, this.y);
