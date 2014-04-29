@@ -6,3 +6,19 @@
 *.csproj
 *.unityproj
 *.sln
+
+# Added manually
+
+*.xml
+*.svg
+*.pidb
+
+ProjectSettings/GraphicsSettings.asset
+
+SvgToPdf.py
+
+*.userprefs
+
+Output.pdf
+
+Assets/Levels/Human Study.meta
