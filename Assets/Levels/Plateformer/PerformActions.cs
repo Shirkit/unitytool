@@ -1,28 +1,28 @@
-﻿#pragma strict
-import System.Collections.Generic;
+﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
-class PerformActions extends MonoBehaviour
-{
+public class PerformActions : MonoBehaviour {
 
-private var aIndex : int;
-private var actions : List.<String>;
-private var durations : List.<int>;
-private var actionTypes : Hashtable;
+	private int aIndex;
+	private List<string> actions;
+	private List<int> durations;
+	private Dictionary<string, AbstractAction> actionTypes;
 
-	function Start () 
-	{
-		actionTypes = new Hashtable();
-		actions = new List.<String>();
-		durations = new List.<int>();
+	// Use this for initialization
+	void Start () {
+		actionTypes = new Dictionary<string, AbstractAction>();
+		actions = new List<string>();
+		durations = new List<int>();
 		//Initialize action types
-		var moveLeftAction = new moveLeftAction(gameObject);
-		var moveRightAction = new moveRightAction(gameObject);
-		var wait = new AbstractAction(gameObject);
-		var jumpAction = new jumpAction(gameObject);
-		actionTypes.Add("jump", jumpAction);
+		moveLeftAction mla = new moveLeftAction(gameObject);
+		moveRightAction mra = new moveRightAction(gameObject);
+		waitAction wait = new waitAction(gameObject);
+		jumpAction ja = new jumpAction(gameObject);
+		actionTypes.Add("jump", ja);
 		actionTypes.Add("wait", wait);
-		actionTypes.Add("moveLeft", moveLeftAction);
-		actionTypes.Add("moveRight", moveRightAction);
+		actionTypes.Add("moveLeft", mla);
+		actionTypes.Add("moveRight", mra);
 		
 		
 		//Initialize actions to be performed.
@@ -53,10 +53,10 @@ private var actionTypes : Hashtable;
 		
 		//Start first action
 		aIndex = 0;		
-
 	}
-
-	function FixedUpdate () {
+	
+	// Update is called once per frame
+	void FixedUpdate () {
 		if(aIndex < actions.Count){
 			Debug.Log("Performing action: " + actions[aIndex] + " for duration: " + durations[aIndex]);
 			doAction(actions[aIndex], durations[aIndex]);
@@ -65,12 +65,11 @@ private var actionTypes : Hashtable;
 			Debug.Log("Finished");
 		}
 	}
-	
-	function doAction(aName : String, aDuration : int){
-		var action : AbstractAction = actionTypes[aName];
+
+	void doAction(string aName, int aDuration){
+		AbstractAction action = actionTypes[aName];
 		if(action.execute(aDuration)){
 			aIndex++;
 		}
 	}
-
 }
