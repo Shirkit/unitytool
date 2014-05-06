@@ -173,14 +173,14 @@ public class movementModel : MonoBehaviour {
 	private void doCollisions(){
 		updateCorners();
 		Collider2D coll = Physics2D.OverlapArea(blCorner, trCorner);
-		/*if(coll != null){
-			Debug.Log (coll.gameObject.name);
-		}*/
+
 		if(coll != null && coll.gameObject != gameObject){
-			//Assume collision with ground and you are falling from on top of it.
 			if(!state.isOnGround){
-				state.isOnGround = true;
-				gameObject.transform.position = new Vector3(gameObject.transform.position.x, (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + gameObject.transform.localScale.y*0.5f + 0.01f), gameObject.transform.position.z);
+
+				if((state.velocity.y < 0) && (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + gameObject.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < gameObject.transform.position.y){
+					state.isOnGround = true;
+					gameObject.transform.position = new Vector3(gameObject.transform.position.x, (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + gameObject.transform.localScale.y*0.5f + 0.01f), gameObject.transform.position.z);
+				}
 			}
 		}
 	}
