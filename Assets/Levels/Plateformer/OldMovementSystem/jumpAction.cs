@@ -12,7 +12,7 @@ public class jumpAction : AbstractAction {
 	public override bool execute(int duration) {
 		if(reachedPeak){
 			if(curTime < duration){
-				player.transform.position -= new Vector3(0, 0.05f, 0);
+				player.transform.position -= new Vector3(0, 0.1f, 0);
 				curTime++;
 				return false;
 			}
@@ -24,7 +24,7 @@ public class jumpAction : AbstractAction {
 		}
 		else{
 			if(curTime < duration){
-				player.transform.position += new Vector3(0, 0.05f, 0);
+				player.transform.position += new Vector3(0, 0.1f, 0);
 				curTime++;
 				return false;
 			}

@@ -8,9 +8,14 @@ public class PerformActions : MonoBehaviour {
 	private List<string> actions;
 	private List<int> durations;
 	private Dictionary<string, AbstractAction> actionTypes;
+	//private playerState state;
 
 	// Use this for initialization
 	void Start () {
+		//state = new playerState();
+
+
+
 		actionTypes = new Dictionary<string, AbstractAction>();
 		actions = new List<string>();
 		durations = new List<int>();
@@ -19,6 +24,10 @@ public class PerformActions : MonoBehaviour {
 		moveRightAction mra = new moveRightAction(gameObject);
 		waitAction wait = new waitAction(gameObject);
 		jumpAction ja = new jumpAction(gameObject);
+		jumpLeftAction jla = new jumpLeftAction(gameObject);
+		jumpRightAction jra = new jumpRightAction(gameObject);
+		actionTypes.Add("jump left", jla);
+		actionTypes.Add("jump right", jra);
 		actionTypes.Add("jump", ja);
 		actionTypes.Add("wait", wait);
 		actionTypes.Add("moveLeft", mla);
@@ -38,6 +47,8 @@ public class PerformActions : MonoBehaviour {
 		durations.Add(15);
 		actions.Add("moveLeft");
 		durations.Add(36);
+		actions.Add("jump left");
+		durations.Add (15);
 		actions.Add("moveRight");
 		durations.Add(16);
 		actions.Add("wait");
@@ -46,6 +57,8 @@ public class PerformActions : MonoBehaviour {
 		durations.Add(15);
 		actions.Add("moveRight");
 		durations.Add(12);
+		actions.Add("jump right");
+		durations.Add (15);
 		actions.Add("moveLeft");
 		durations.Add(32);
 		actions.Add("moveRight");
