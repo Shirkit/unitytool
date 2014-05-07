@@ -113,7 +113,6 @@ public class movementModel : MonoBehaviour{
 			player.transform.position += (Vector3)state.adjustmentVelocity;
 		}
 		else{
-			state.numJumps = 0;
 			state.velocity.y = 0;
 			player.transform.position += (Vector3)state.velocity;
 		}
@@ -126,9 +125,11 @@ public class movementModel : MonoBehaviour{
 		if(coll != null && coll.gameObject != player){
 			if(!state.isOnGround){
 
-				if((state.velocity.y < 0) && (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y){
+				if((state.velocity.y < 0.1f) && (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
 					state.isOnGround = true;
-					player.transform.position = new Vector3(player.transform.position.x, (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + 0.01f), player.transform.position.z);
+					state.numJumps = 0;
+					player.transform.position = new Vector3(player.transform.position.x, (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
+					state.velocity.y = 0;
 				}
 			}
 		}
@@ -139,8 +140,8 @@ public class movementModel : MonoBehaviour{
 
 	private void updateCorners(){
 
-		blCorner = new Vector2((player.transform.position.x - 0.5f*player.transform.localScale.x), (player.transform.position.y - 0.5f*player.transform.localScale.y));
-		trCorner = new Vector2((player.transform.position.x + 0.5f*player.transform.localScale.x), (player.transform.position.y + 0.5f*player.transform.localScale.y));
+		blCorner = new Vector2((player.transform.position.x - 0.5f*player.transform.localScale.x)-0.1f, (player.transform.position.y - 0.5f*player.transform.localScale.y)-0.1f);
+		trCorner = new Vector2((player.transform.position.x + 0.5f*player.transform.localScale.x)+0.1f, (player.transform.position.y + 0.5f*player.transform.localScale.y)+0.1f);
 	}
 
 }

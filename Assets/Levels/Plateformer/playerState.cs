@@ -22,4 +22,11 @@ public class PlayerState {
 		gravity = new Vector2(0, -0.025f);
 		jumpPower = 0.5f;
 	}
+
+	public void reset(){
+		isOnGround = false;
+		numJumps = 0;
+		velocity = new Vector2(0,0);
+		adjustmentVelocity = new Vector2(0,0);
+	}
 }

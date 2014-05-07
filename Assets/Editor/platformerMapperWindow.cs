@@ -78,9 +78,27 @@ namespace EditorArea {
 				//playerMModel.actions = mModel.actions;
 				//playerMModel.durations = mModel.durations;
 				//Debug.Log (goalLoc);
-				Debug.Log ("Found a solution" + i);
+				//for(int j = 0; j < 10; j++){
+
+					Vector3 oldPos = player.transform.position;
+					mModel.aIndex = 0;
+					mModel.state.reset();
+					player.transform.position = startingLoc;
+					mModel.loopUpdate();
+					if((player.transform.position - goalLoc).magnitude < 0.5){
+					}
+					else{
+						//Debug.Log ("ATTEMPT" + j + "------");
+						Debug.Log ("old" + oldPos);
+						Debug.Log ("??????????????" + player.transform.position);
+					}
+
+				//}
+
+				//Debug.Log ("Found a solution" + i);
 				mModel.aIndex = 0;
 				player.transform.position = startingLoc;
+				mModel.state.reset ();
 				//playerMovement pMov = player.GetComponent(typeof(playerMovement)) as playerMovement;
 				//pMov.model = mModel;
 				//Debug.Log(pMov.model);
@@ -88,8 +106,8 @@ namespace EditorArea {
 				//Debug.Log ((player.GetComponent(typeof(playerMovement)) as playerMovement).setModel(mModel));
 			}
 			else{
-				Debug.Log ("No solution found" + i);
-				Debug.Log (player.transform.position);
+				//Debug.Log ("No solution found" + i);
+				//Debug.Log (player.transform.position);
 				if(!showDeaths){
 					DestroyImmediate(GameObject.Find ("player" + count));
 					DestroyImmediate(GameObject.Find ("modelObject" + count));
@@ -132,14 +150,16 @@ namespace EditorArea {
 					mModel.actions.Add("jump right");
 					break;
 				default:
+					Debug.Log ("-------------------------------------");
 					mModel.actions.Add ("wait");
 					break;
 				}
 				mModel.aIndex = 0;
+				mModel.state.reset();
 				player.transform.position = startingLoc;
 				mModel.loopUpdate();
 				if((player.transform.position - goalLoc).magnitude < 0.5){
-					Debug.Log (player.transform.position);
+					//Debug.Log (player.transform.position);
 					//player.transform.position = startingLoc;
 					return true;
 				}
