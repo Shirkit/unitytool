@@ -10,6 +10,7 @@ namespace EditorArea {
 		public GameObject modelObj;
 		public Vector3 startingLoc;
 		public Vector3 goalLoc;
+		public bool showDeaths;
 		private movementModel mModel;
 		public static int numPlayers;
 
@@ -37,6 +38,7 @@ namespace EditorArea {
 
 			playerFab = (GameObject)EditorGUILayout.ObjectField ("player prefab", playerFab, typeof(GameObject), true);
 			modelFab = (GameObject)EditorGUILayout.ObjectField ("modelObject prefab", modelFab, typeof(GameObject), true);
+			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
 		}
 
 		private void multiMCTSearch(){
@@ -53,7 +55,6 @@ namespace EditorArea {
 				DestroyImmediate(GameObject.Find ("player" + i));
 				DestroyImmediate(GameObject.Find ("modelObject" + i));
 			}
-			playerMovement.curIndex = 0;
 		}
 
 		private void MCTSearch(){
@@ -89,8 +90,15 @@ namespace EditorArea {
 			else{
 				Debug.Log ("No solution found" + i);
 				Debug.Log (player.transform.position);
+				if(!showDeaths){
+					DestroyImmediate(GameObject.Find ("player" + count));
+					DestroyImmediate(GameObject.Find ("modelObject" + count));
+				}
+				else{
+					player.transform.position = startingLoc;
+				}
 			}
-			player.transform.position = startingLoc;
+
 		}
 
 		private bool MCTSearchIteration(){
