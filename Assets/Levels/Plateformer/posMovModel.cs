@@ -36,8 +36,8 @@ public class posMovModel : MonoBehaviour {
 	public bool updater(){
 		curFrame++;
 		bool toReturn;
-		if(curFrame%5 < positions.Count){
-			player.transform.position = positions[curFrame%5];
+		if(Mathf.FloorToInt(curFrame/5) < positions.Count){
+			player.transform.position = positions[Mathf.FloorToInt(curFrame/5)];
 			toReturn = false;
 		}
 		else{

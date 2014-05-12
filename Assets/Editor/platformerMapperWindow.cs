@@ -116,10 +116,9 @@ namespace EditorArea {
 					}
 					foreach(posMovModel pModel in pmModels){
 						if(pModel != null){
-							pModel.updater ();
+							pModel.goToFrame(curFrame);
 						}
 					}
-
 				}
 			}
 		}
