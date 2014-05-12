@@ -13,11 +13,6 @@ public class movementModel : MonoBehaviour{
 	public Vector2 trCorner;
 	public bool dead;
 	public GameObject player;
-	public Color color;
-	public int numFrames;
-
-	public movementModel(){
-	}
 
 	public movementModel(GameObject pPlayer){
 		player = pPlayer;
@@ -72,21 +67,11 @@ public class movementModel : MonoBehaviour{
 		player.transform.position = GameObject.Find("startingPosition").transform.position;
 	}
 
-	public int loopUpdate (){
-		int toReturn  = 0;
-		while(!updater()){
-			toReturn++;
-		};
-		return toReturn;
+	public void loopUpdate (){
+		while(!updater()){};
 	}
 
-	public bool runFrames(int num){
-		bool toReturn = false;
-		for(int i = 0; i < num; i++){
-			toReturn = updater();
-		}
-		return toReturn;
-	}
+
 
 	public bool updater(){
 		bool toReturn;

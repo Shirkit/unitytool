@@ -13,12 +13,11 @@ public class playerMovement : MonoBehaviour {
 
 
 	void Awake () {
-
 		string num = gameObject.name.Substring(6);
 		int.TryParse(num, out index);
 		model = GameObject.Find("modelObject" + index).GetComponent<movementModel>() as movementModel;
 
-		gameObject.renderer.material.color = model.color; //new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+		gameObject.renderer.material.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
 		waited = 0;
 	}
 	
