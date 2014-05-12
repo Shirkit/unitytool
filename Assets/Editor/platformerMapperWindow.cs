@@ -52,7 +52,9 @@ namespace EditorArea {
 
 		void OnGUI () {
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
-				multiMCTSearch();
+				startingLoc = GameObject.Find ("startingPosition").transform.position;
+				goalLoc = GameObject.Find("goalPosition").transform.position;
+				multiMCTSearch(startingLoc, goalLoc, new PlayerState());
 			}
 			if (GUILayout.Button ("Print Solution")) {
 				printSolution();
@@ -237,11 +239,12 @@ namespace EditorArea {
 
 
 
-		private void multiMCTSearch(){
+		private void multiMCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state){
 			cleanUp();
 			count = 0;
+
 			for(int i = 0; i < numPlayers; i++){
-				MCTSearch();
+				MCTSearch(startLoc, golLoc, state);
 				count++;
 			}
 		}
@@ -258,7 +261,7 @@ namespace EditorArea {
 
 		}
 
-		private void MCTSearch(){
+		private RTNode MCTSearch(Vector3 startLoc,Vector3 golLoc, PlayerState state){
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + count;
 			modelObj.transform.parent = models.transform;
@@ -267,36 +270,30 @@ namespace EditorArea {
 			player.transform.parent = players.transform;
 			mModel = modelObj.GetComponent<movementModel>() as movementModel;
 			mModel.player = player;
+			//mModel.state = state.clone ();
 			mModels.Add (mModel);
-			startingLoc = GameObject.Find ("startingPosition").transform.position;
-			goalLoc = GameObject.Find("goalPosition").transform.position;
 			int i = 0;
 			bool foundAnswer = false;
 			while(i < numIters && !foundAnswer){
-				foundAnswer = MCTSearchIteration();
+				foundAnswer = MCTSearchIteration(startLoc, golLoc, state);
 				i++;
 			}
 			if(foundAnswer)
 			{
-				/*Vector3 oldPos = player.transform.position;
+				RTNode toReturn = new RTNode();
+				toReturn.position = player.transform.position;
+				toReturn.state = mModel.state;
+				toReturn.actions = mModel.actions;
+				toReturn.durations = mModel.durations;
+				toReturn.frame = mModel.numFrames;
 				mModel.aIndex = 0;
-				mModel.state.reset();
-				player.transform.position = startingLoc;
-				mModel.loopUpdate();
-				if((player.transform.position - goalLoc).magnitude < 0.5){
-				}
-				else{
-				Debug.Log ("old" + oldPos);
-				Debug.Log ("??????????????" + player.transform.position);
-				}*/
-
-				mModel.aIndex = 0;
-				player.transform.position = startingLoc;
+				player.transform.position = startLoc;
 				mModel.state.reset ();
+				//mModel.state = state.clone ();
 				if(drawPaths){
 					mModel.drawPath(paths);
 				}
-
+				return toReturn;
 			}
 			else{
 
@@ -308,18 +305,19 @@ namespace EditorArea {
 				else{
 					mModel.aIndex = 0;
 					player.transform.position = startingLoc;
-					mModel.state.reset ();
+					//mModel.state.reset ();
+					//mModel.state = state.clone ();
 					if(drawPaths){
 						mModel.drawPath(paths);
 					}
 				}
+				return null;
 			}
-
 		}
 
-		private bool MCTSearchIteration(){
+		private bool MCTSearchIteration(Vector3 startLoc,Vector3 golLoc, PlayerState state){
 			//Debug.Log ("--------------------------------------------------------");
-			player.transform.position = startingLoc;
+			player.transform.position = startLoc;
 			mModel.initialize();
 			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
 
@@ -361,14 +359,24 @@ namespace EditorArea {
 				}
 				mModel.aIndex = 0;
 				mModel.state.reset();
-				player.transform.position = startingLoc;
+				mModel.state.reset();
+				player.transform.position = startLoc;
+				Debug.Log (player.transform.position);
+				Debug.Log (mModel.player.transform.position);
 				int frames = mModel.loopUpdate();
+				Debug.Log ("LOOP UPDATE");
+				Debug.Log (player.transform.position);
+				Debug.Log (mModel.player.transform.position);
 				mModel.numFrames = frames;
-				if((player.transform.position - goalLoc).magnitude < 0.5){
+				if((player.transform.position - golLoc).magnitude < 0.5){
 					//Debug.Log (player.transform.position);
 					//player.transform.position = startingLoc;
 					totalFrames = Mathf.Max(totalFrames, frames);
 					return true;
+				}
+				else{
+					Debug.Log (golLoc);
+					Debug.Log ((player.transform.position - golLoc).magnitude);
 				}
 				count++;
 			}
@@ -384,45 +392,73 @@ namespace EditorArea {
 			}
 		}
 
-		private void drawPath(){
-			/*GameObject path = Instantiate(pathFab) as GameObject;
-			path.transform.parent = paths.transform;
-			path.name = "path" + count;
-			LineRenderer pathRend = path.GetComponent<LineRenderer>();
+		public bool goalReached = false;
+		public int rrtIters = 1000;
+		public List<RTNode> rrtTree;
+		public RTNode root;
 
-			var tempMaterial = new Material(pathRend.sharedMaterial);
-			tempMaterial.color = mModel.color;
-			pathRend.sharedMaterial = tempMaterial;
+		public float maxDistRTNodes;
 
-			//pathRend.material.color = mModel.color;*/
-			//pathRend.SetPosition(0, player.transform.position);
+		private void RRT(){
+			startingLoc = GameObject.Find ("startingPosition").transform.position;
+			goalLoc = GameObject.Find("goalPosition").transform.position;
+			Vector3 bl = GameObject.Find ("bottomLeft").transform.position;
+			Vector3 tr = GameObject.Find ("topRight").transform.position;
+			rrtTree = new List<RTNode>();
+			root = new RTNode(startingLoc, 0, new PlayerState());
+			rrtTree.Add (root);
 
-			List<Vector3> pointsList = new List<Vector3>();
-			pointsList.Add(new Vector3(player.transform.position.x, player.transform.position.y, player.transform.position.z));
-			//int numVerts = 1;
-			bool finished = false;
-			while(!finished){
-				finished = mModel.runFrames(5);
-				//numVerts++;
-				pointsList.Add(new Vector3(player.transform.position.x, player.transform.position.y, player.transform.position.z));
-				//pathRend.SetVertexCount(numVerts);
-				//pathRend.SetPosition (numVerts-1, player.transform.position);
+			for(int i = 0; i < rrtIters; i++){
+				tryAddNode(Random.Range (bl.x, tr.x), Random.Range (bl.y, tr.y));
+				if(goalReached){
+					break;
+				}
 			}
-
-			Vector3[] pointsArray = new Vector3[pointsList.Count];
-			int i = 0;
-			foreach(Vector3 point in pointsList){
-				pointsArray[i] = point;
-				i++;
+			if(goalReached){
+				Debug.Log ("Success");
 			}
-
-			VectorLine line = new VectorLine("path" + count, pointsArray, mModel.color, null, 2.0f, LineType.Continuous);
-			line.Draw3D();
-			line.vectorObject.transform.parent = paths.transform;
-			mModel.aIndex = 0;
-			player.transform.position = startingLoc;
-			mModel.state.reset ();
+			else{
+				Debug.Log ("Failure");
+			}
 		}
+
+		private bool tryAddNode(float x, float y){
+			RTNode closest = findClosest(x,y);
+			if(closest == null){
+				return false;
+			}
+			else{
+				RTNode final = MCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state);
+				if(final != null){
+					final.parent = closest;
+					closest.children.Add (final);
+					final.frame = closest.frame + final.frame;
+					rrtTree.Add (final);
+					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5){
+						goalReached = true;
+					}
+					return true;
+				}
+				else{
+					return false;
+				}
+			}
+		}
+
+		private RTNode findClosest(float x,float y){
+			float minDist = maxDistRTNodes;
+			float dist;
+			RTNode curNode = null;
+			foreach(RTNode node in rrtTree){
+				dist = Vector2.Distance(node.position, new Vector2(x,y));
+				if(dist < minDist){
+					minDist = dist;
+					curNode = node;
+				}
+			}
+			return curNode;
+		}
+
 
 
 

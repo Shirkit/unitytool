@@ -29,4 +29,13 @@ public class PlayerState {
 		velocity = new Vector2(0,0);
 		adjustmentVelocity = new Vector2(0,0);
 	}
+
+	public PlayerState clone(){
+		PlayerState state = new PlayerState();
+		state.isOnGround = isOnGround;
+		state.numJumps = numJumps;
+		state.velocity = new Vector2(velocity.x, velocity.y);
+		state.adjustmentVelocity = new Vector2(adjustmentVelocity.x, adjustmentVelocity.y);
+		return state;
+	}
 }
