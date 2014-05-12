@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Vectrosity;
 
 public class movementModel : MonoBehaviour{
 	
@@ -13,6 +14,13 @@ public class movementModel : MonoBehaviour{
 	public Vector2 trCorner;
 	public bool dead;
 	public GameObject player;
+	public Color color;
+	public int numFrames;
+	public bool pathComputed = false;
+	public Vector3[] pointsArray;
+
+	public movementModel(){
+	}
 
 	public movementModel(GameObject pPlayer){
 		player = pPlayer;
@@ -67,11 +75,21 @@ public class movementModel : MonoBehaviour{
 		player.transform.position = GameObject.Find("startingPosition").transform.position;
 	}
 
-	public void loopUpdate (){
-		while(!updater()){};
+	public int loopUpdate (){
+		int toReturn  = 0;
+		while(!updater()){
+			toReturn++;
+		};
+		return toReturn;
 	}
 
-
+	public bool runFrames(int num){
+		bool toReturn = false;
+		for(int i = 0; i < num; i++){
+			toReturn = updater();
+		}
+		return toReturn;
+	}
 
 	public bool updater(){
 		bool toReturn;
@@ -142,6 +160,54 @@ public class movementModel : MonoBehaviour{
 
 		blCorner = new Vector2((player.transform.position.x - 0.5f*player.transform.localScale.x)-0.1f, (player.transform.position.y - 0.5f*player.transform.localScale.y)-0.1f);
 		trCorner = new Vector2((player.transform.position.x + 0.5f*player.transform.localScale.x)+0.1f, (player.transform.position.y + 0.5f*player.transform.localScale.y)+0.1f);
+	}
+
+	public void computePath(GameObject paths){
+		List<Vector3> pointsList = new List<Vector3>();
+		pointsList.Add(new Vector3(player.transform.position.x, player.transform.position.y, player.transform.position.z));
+		bool finished = false;
+		while(!finished){
+			finished = runFrames(5);
+			pointsList.Add(new Vector3(player.transform.position.x, player.transform.position.y, player.transform.position.z));
+		}
+		
+		pointsArray = new Vector3[pointsList.Count];
+		int i = 0;
+		foreach(Vector3 point in pointsList){
+			pointsArray[i] = point;
+			i++;
+		}
+		
+		VectorLine line = new VectorLine("path" + gameObject.name.Substring(11), pointsArray, color, null, 2.0f, LineType.Continuous);
+		line.Draw3D();
+		line.vectorObject.transform.parent = paths.transform;
+		aIndex = 0;
+		player.transform.position = GameObject.Find("startingPosition").transform.position;
+		state.reset ();
+		pathComputed = true;
+	}
+	public void drawPath(GameObject paths){
+		if(!pathComputed){
+			computePath(paths);
+		}
+		else{
+			VectorLine line = new VectorLine("path" + gameObject.name.Substring(11), pointsArray, color, null, 2.0f, LineType.Continuous);
+			line.Draw3D();
+			line.vectorObject.transform.parent = paths.transform;
+		}
+	}
+
+	public posMovModel toPosModel(){
+		List<Vector3> positions = new List<Vector3>();
+		player.transform.position = GameObject.Find("startingPosition").transform.position;
+		state.reset();
+		positions.Add (player.transform.position);
+		while(!runFrames(5)){
+			positions.Add (player.transform.position);
+		}
+		player.transform.position = GameObject.Find("startingPosition").transform.position;
+		state.reset();
+		return new posMovModel(player, positions);
 	}
 
 }

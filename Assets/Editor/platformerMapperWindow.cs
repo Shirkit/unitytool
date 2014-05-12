@@ -1,24 +1,47 @@
-﻿using UnityEngine;
+﻿
+
+
+using UnityEngine;
 using UnityEditor;
+using Vectrosity;
+using System.IO;
+using System.Xml.Serialization;
 using System.Collections;
 using System.Collections.Generic;
 
 namespace EditorArea {
 	public class PlatformerEditorWindow : EditorWindow  {
-
+		public GameObject players;
+		public GameObject models;
+		public GameObject posMods;
+		public GameObject paths;
 		public GameObject player;
 		public GameObject modelObj;
+		public GameObject posModObj;
 		public Vector3 startingLoc;
 		public Vector3 goalLoc;
 		public bool showDeaths;
+		public bool drawPaths;
+		public bool playing = false;
 		private movementModel mModel;
-		public static int numPlayers;
+		private posMovModel pmModel;
+		public static int numPlayers = 1;
+		public static int numIters = 10;
+		public static int depthIter = 250;
+		public static int totalFrames = 0;
+		public static int curFrame;
+		public static string filename;
+		public static string destCount;
+
+		public List<movementModel> mModels;
+		public List<posMovModel> pmModels;
 
 		public int count = 0;
 
 
 		public GameObject playerFab;
 		public GameObject modelFab;
+		public GameObject posModFab;
 
 		[MenuItem("Window/RRTMapper")]
 		static void Init () {
@@ -35,11 +58,185 @@ namespace EditorArea {
 				printSolution();
 			}
 			numPlayers = EditorGUILayout.IntSlider ("Number of Players", numPlayers, 1, 100);
+			numIters = EditorGUILayout.IntSlider ("Iterations Per Player", numIters, 1, 100);
+			depthIter = EditorGUILayout.IntSlider ("Max Depth per Iteration", depthIter, 1, 1000);
+
 
 			playerFab = (GameObject)EditorGUILayout.ObjectField ("player prefab", playerFab, typeof(GameObject), true);
 			modelFab = (GameObject)EditorGUILayout.ObjectField ("modelObject prefab", modelFab, typeof(GameObject), true);
+			posModFab = (GameObject)EditorGUILayout.ObjectField ("posMod prefab", posModFab, typeof(GameObject), true);
+
 			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
+			drawPaths = EditorGUILayout.Toggle ("Draw Paths", drawPaths);
+
+			if (GUILayout.Button ("Clear")) {
+				cleanUp();
+			}
+
+			curFrame = EditorGUILayout.IntSlider ("frame", curFrame, 0, totalFrames);
+
+			if (GUILayout.Button ("Go To Frame")) {
+				goToFrame(curFrame);
+			}
+
+			if (GUILayout.Button (playing ? "Stop" : "Play")) {
+				playing = !playing;
+			}
+
+			if (GUILayout.Button ("Export Current Paths")) {
+				exportPaths();
+			}
+			if (GUILayout.Button ("Export Current Paths as PosSets")) {
+				exportPathsAsPos();
+			}
+
+			filename = EditorGUILayout.TextField("filename: ", filename);
+			destCount = EditorGUILayout.TextField("destCount: ", destCount);
+
+			if (GUILayout.Button ("Import Path")) {
+				importPath(filename, destCount);
+			}
+			if (GUILayout.Button ("Import PosSet")) {
+				importPos(filename, destCount);
+			}
+
 		}
+
+		public void Update(){
+			if(playing){
+				if(curFrame <= totalFrames){
+					curFrame++;
+					foreach(movementModel model in mModels){
+						if(model != null){
+							if(model.updater())
+							{
+								model.doAction("wait", 1);
+							}
+						}
+					}
+					foreach(posMovModel pModel in pmModels){
+						if(pModel != null){
+							pModel.updater ();
+						}
+					}
+
+				}
+			}
+		}
+
+		private void exportPaths(){
+			foreach(movementModel model in mModels){
+				if(model != null){
+					exportPath(model);
+				}
+			}
+		}
+
+		private void exportPath(movementModel model){
+			Debug.Log (model.gameObject.name);
+			serializableModel sModel = new serializableModel(model.actions, model.durations, model.numFrames, startingLoc);
+			XmlSerializer ser = new XmlSerializer (typeof(serializableModel));
+			using (FileStream stream = new FileStream ("path" + model.gameObject.name.Substring(11) + ".xml", FileMode.Create)) {
+				ser.Serialize (stream, sModel);
+				stream.Flush ();
+				stream.Close ();
+			}
+		}
+
+		private void exportPathsAsPos(){
+			foreach(movementModel model in mModels){
+				if(model != null){
+					exportPathAsPos(model);
+				}
+			}
+		}
+
+		private void exportPathAsPos(movementModel model){
+			Debug.Log (model.gameObject.name);
+			serializablePosMovModel sModel = model.toPosModel().toSerializable();
+			XmlSerializer ser = new XmlSerializer (typeof(serializablePosMovModel));
+			using (FileStream stream = new FileStream ("pos" + model.gameObject.name.Substring(11) + ".xml", FileMode.Create)) {
+				ser.Serialize (stream, sModel);
+				stream.Flush ();
+				stream.Close ();
+			}
+		}
+
+
+		private void importPos(string filename, string destCount){
+			posModObj = Instantiate(posModFab) as GameObject;
+			posModObj.name = "posMod" + destCount;
+			posModObj.transform.parent = posMods.transform;
+			player = Instantiate(playerFab) as GameObject;
+			player.name = "player" + destCount;
+			player.transform.parent = players.transform;
+			pmModel = posModObj.GetComponent<posMovModel>() as posMovModel;
+			pmModel.player = player;
+			pmModels.Add (pmModel);
+			pmModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+			var tempMaterial = new Material(player.renderer.sharedMaterial);
+			tempMaterial.color = pmModel.color;
+			player.renderer.sharedMaterial = tempMaterial;
+
+			serializablePosMovModel sModel;
+			XmlSerializer ser = new XmlSerializer (typeof(serializablePosMovModel));
+			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
+				sModel = ser.Deserialize (stream) as serializablePosMovModel;
+				stream.Flush ();
+				stream.Close ();
+			}
+			pmModel.positions = sModel.positions;
+			player.transform.position = sModel.startLoc;
+			totalFrames = Mathf.Max(totalFrames, sModel.numFrames);
+			if(drawPaths){
+				pmModel.drawPath(paths);
+			}
+		}
+
+		private void importPath(string filename, string destCount){
+			modelObj = Instantiate(modelFab) as GameObject;
+			modelObj.name = "modelObject" + destCount;
+			modelObj.transform.parent = models.transform;
+			player = Instantiate(playerFab) as GameObject;
+			player.name = "player" + destCount;
+			player.transform.parent = players.transform;
+			mModel = modelObj.GetComponent<movementModel>() as movementModel;
+			mModel.player = player;
+			mModels.Add (mModel);
+			mModel.initialize();
+			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+			var tempMaterial = new Material(player.renderer.sharedMaterial);
+			tempMaterial.color = mModel.color;
+			player.renderer.sharedMaterial = tempMaterial;
+			
+			serializableModel sModel;
+			XmlSerializer ser = new XmlSerializer (typeof(serializableModel));
+			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
+				sModel = ser.Deserialize (stream) as serializableModel;
+				stream.Flush ();
+				stream.Close ();
+			}
+			mModel.actions = sModel.actions;
+			mModel.durations = sModel.durations;
+			player.transform.position = sModel.startLoc;
+			totalFrames = Mathf.Max(totalFrames, sModel.numFrames);
+			if(drawPaths){
+				mModel.drawPath(paths);
+			}
+		}
+
+		private void goToFrame(int curFrame){
+			foreach(movementModel model in mModels){
+				if(model != null){
+					model.aIndex = 0;
+					model.player.transform.position = startingLoc;
+					model.state.reset ();
+					model.runFrames(curFrame);
+				}
+			}
+		}
+
+
 
 		private void multiMCTSearch(){
 			cleanUp();
@@ -51,69 +248,71 @@ namespace EditorArea {
 		}
 
 		private void cleanUp(){
-			for(int i = 0; i <= count; i++){
-				DestroyImmediate(GameObject.Find ("player" + i));
-				DestroyImmediate(GameObject.Find ("modelObject" + i));
-			}
+			DestroyImmediate(GameObject.Find ("players"));
+			players = new GameObject("players");
+			models = new GameObject("models");
+			paths = new GameObject("paths");
+			posMods = new GameObject("posMods");
+			paths.transform.parent = players.transform;
+			models.transform.parent = players.transform;
+			posMods.transform.parent = players.transform;
+
 		}
 
 		private void MCTSearch(){
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + count;
+			modelObj.transform.parent = models.transform;
 			player = Instantiate(playerFab) as GameObject;
 			player.name = "player" + count;
+			player.transform.parent = players.transform;
 			mModel = modelObj.GetComponent<movementModel>() as movementModel;
 			mModel.player = player;
+			mModels.Add (mModel);
 			startingLoc = GameObject.Find ("startingPosition").transform.position;
 			goalLoc = GameObject.Find("goalPosition").transform.position;
 			int i = 0;
 			bool foundAnswer = false;
-			while(i < 10 && !foundAnswer){
+			while(i < numIters && !foundAnswer){
 				foundAnswer = MCTSearchIteration();
 				i++;
 			}
 			if(foundAnswer)
 			{
-				//movementModel playerMModel = player.GetComponent<movementModel>() as movementModel;
-				//playerMModel.actions = mModel.actions;
-				//playerMModel.durations = mModel.durations;
-				//Debug.Log (goalLoc);
-				//for(int j = 0; j < 10; j++){
+				/*Vector3 oldPos = player.transform.position;
+				mModel.aIndex = 0;
+				mModel.state.reset();
+				player.transform.position = startingLoc;
+				mModel.loopUpdate();
+				if((player.transform.position - goalLoc).magnitude < 0.5){
+				}
+				else{
+				Debug.Log ("old" + oldPos);
+				Debug.Log ("??????????????" + player.transform.position);
+				}*/
 
-					Vector3 oldPos = player.transform.position;
-					mModel.aIndex = 0;
-					mModel.state.reset();
-					player.transform.position = startingLoc;
-					mModel.loopUpdate();
-					if((player.transform.position - goalLoc).magnitude < 0.5){
-					}
-					else{
-						//Debug.Log ("ATTEMPT" + j + "------");
-						Debug.Log ("old" + oldPos);
-						Debug.Log ("??????????????" + player.transform.position);
-					}
-
-				//}
-
-				//Debug.Log ("Found a solution" + i);
 				mModel.aIndex = 0;
 				player.transform.position = startingLoc;
 				mModel.state.reset ();
-				//playerMovement pMov = player.GetComponent(typeof(playerMovement)) as playerMovement;
-				//pMov.model = mModel;
-				//Debug.Log(pMov.model);
-				//Debug.Log ((player.GetComponent(typeof(playerMovement)) as playerMovement).model);
-				//Debug.Log ((player.GetComponent(typeof(playerMovement)) as playerMovement).setModel(mModel));
+				if(drawPaths){
+					mModel.drawPath(paths);
+				}
+
 			}
 			else{
-				//Debug.Log ("No solution found" + i);
-				//Debug.Log (player.transform.position);
+
 				if(!showDeaths){
+					mModels.Remove(mModel);
 					DestroyImmediate(GameObject.Find ("player" + count));
 					DestroyImmediate(GameObject.Find ("modelObject" + count));
 				}
 				else{
+					mModel.aIndex = 0;
 					player.transform.position = startingLoc;
+					mModel.state.reset ();
+					if(drawPaths){
+						mModel.drawPath(paths);
+					}
 				}
 			}
 
@@ -123,7 +322,14 @@ namespace EditorArea {
 			//Debug.Log ("--------------------------------------------------------");
 			player.transform.position = startingLoc;
 			mModel.initialize();
-			while(!mModel.dead){
+			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+
+			var tempMaterial = new Material(player.renderer.sharedMaterial);
+			tempMaterial.color = mModel.color;
+			player.renderer.sharedMaterial = tempMaterial;
+
+			int count = 0;
+			while(!mModel.dead && count < depthIter){
 				int action = Random.Range (0, 6);
 				int duration = 1;
 				if(action < 3){
@@ -157,12 +363,15 @@ namespace EditorArea {
 				mModel.aIndex = 0;
 				mModel.state.reset();
 				player.transform.position = startingLoc;
-				mModel.loopUpdate();
+				int frames = mModel.loopUpdate();
+				mModel.numFrames = frames;
 				if((player.transform.position - goalLoc).magnitude < 0.5){
 					//Debug.Log (player.transform.position);
 					//player.transform.position = startingLoc;
+					totalFrames = Mathf.Max(totalFrames, frames);
 					return true;
 				}
+				count++;
 			}
 			//player.transform.position = startingLoc;
 			return false;
@@ -176,7 +385,71 @@ namespace EditorArea {
 			}
 		}
 
+		private void drawPath(){
+			/*GameObject path = Instantiate(pathFab) as GameObject;
+			path.transform.parent = paths.transform;
+			path.name = "path" + count;
+			LineRenderer pathRend = path.GetComponent<LineRenderer>();
+
+			var tempMaterial = new Material(pathRend.sharedMaterial);
+			tempMaterial.color = mModel.color;
+			pathRend.sharedMaterial = tempMaterial;
+
+			//pathRend.material.color = mModel.color;*/
+			//pathRend.SetPosition(0, player.transform.position);
+
+			List<Vector3> pointsList = new List<Vector3>();
+			pointsList.Add(new Vector3(player.transform.position.x, player.transform.position.y, player.transform.position.z));
+			//int numVerts = 1;
+			bool finished = false;
+			while(!finished){
+				finished = mModel.runFrames(5);
+				//numVerts++;
+				pointsList.Add(new Vector3(player.transform.position.x, player.transform.position.y, player.transform.position.z));
+				//pathRend.SetVertexCount(numVerts);
+				//pathRend.SetPosition (numVerts-1, player.transform.position);
+			}
+
+			Vector3[] pointsArray = new Vector3[pointsList.Count];
+			int i = 0;
+			foreach(Vector3 point in pointsList){
+				pointsArray[i] = point;
+				i++;
+			}
+
+			VectorLine line = new VectorLine("path" + count, pointsArray, mModel.color, null, 2.0f, LineType.Continuous);
+			line.Draw3D();
+			line.vectorObject.transform.parent = paths.transform;
+			mModel.aIndex = 0;
+			player.transform.position = startingLoc;
+			mModel.state.reset ();
+		}
 
 
+
+	}
+}
+
+[XmlRoot("Path")]
+public class serializableModel{
+	[XmlArray("Actions")]
+	[XmlArrayItem("action")]
+	public List<string> actions;
+	[XmlArray("Durations")]
+	[XmlArrayItem("durations")]
+	public List<int> durations;
+	
+	public int numFrames;
+	public Vector3 startLoc;
+
+
+	public serializableModel(){
+	}
+
+	public serializableModel(List<string> pActions, List<int> pDurations, int pFrames, Vector3 pSLoc){
+		actions = pActions;
+		durations = pDurations;
+		numFrames = pFrames;
+		startLoc = pSLoc;
 	}
 }
