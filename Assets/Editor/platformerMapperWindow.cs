@@ -460,47 +460,55 @@ namespace EditorArea {
 
 		public bool goalReached = false;
 		public int rrtIters = 10000000;
-		public List<RTNode> rrtTree;
-		public RTNode root;
-		public RTNode goalNode;
+		public List<RTNode>[] rrtTrees;
+		public RTNode[] roots;
+		public RTNode[] goalNodes;
+
 
 		public static float maxDistRTNodes = 5;
 
 		private void RRT(){
 			cleanUp();
-			goalReached = false;
-			startingLoc = GameObject.Find ("startingPosition").transform.position;
-			goalLoc = GameObject.Find("goalPosition").transform.position;
-			Vector3 bl = GameObject.Find ("bottomLeft").transform.position;
-			Vector3 tr = GameObject.Find ("topRight").transform.position;
-			rrtTree = new List<RTNode>();
-			root = new RTNode(startingLoc, 0, new PlayerState());
-			rrtTree.Add (root);
+			rrtTrees = new List<RTNode>[numPlayers];
+			roots = new RTNode[numPlayers];
+			goalNodes = new RTNode[numPlayers];
 
-			for(int i = 0; i < rrtIters; i++){
-				float x = Random.Range (bl.x, tr.x);
-				float y = Random.Range (bl.y, tr.y);
-				tryAddNode(x,y );
-				if(goalReached){
-					break;
+			for(int j = 0; j < numPlayers; j++){
+
+				goalReached = false;
+				startingLoc = GameObject.Find ("startingPosition").transform.position;
+				goalLoc = GameObject.Find("goalPosition").transform.position;
+				Vector3 bl = GameObject.Find ("bottomLeft").transform.position;
+				Vector3 tr = GameObject.Find ("topRight").transform.position;
+				rrtTrees[j] = new List<RTNode>();
+				roots[j] = new RTNode(startingLoc, 0, new PlayerState());
+				rrtTrees[j].Add (roots[j]);
+
+				for(int i = 0; i < rrtIters; i++){
+					float x = Random.Range (bl.x, tr.x);
+					float y = Random.Range (bl.y, tr.y);
+					tryAddNode(x,y, j);
+					if(goalReached){
+						break;
+					}
 				}
-			}
 
-			if(goalReached){
-				Debug.Log ("Success");
-				Debug.Log ("nodes added = " + rrtTree.Count);
-				cleanUp();
-				reCreatePath();
-			}
-			else{
-				Debug.Log ("Failure");
-				/*foreach(RTNode nod in rrtTree){
-					Debug.Log (nod.position);
-				}*/
+				if(goalReached){
+					Debug.Log ("Success");
+					Debug.Log ("nodes added = " + rrtTrees[j].Count);
+					cleanUp();
+					reCreatePath();
+				}
+				else{
+					Debug.Log ("Failure");
+					/*foreach(RTNode nod in rrtTree){
+						Debug.Log (nod.position);
+					}*/
+				}
 			}
 		}
 
-		private void reCreatePath2(){
+		/*private void reCreatePath2(){
 			loopCreate(goalNode);
 		}
 
@@ -542,33 +550,36 @@ namespace EditorArea {
 				nodesToBeAddedCounterThing++;
 			}
 
-		}
+		}*/
 
 		private void reCreatePath(){
-			modelObj = Instantiate(modelFab) as GameObject;
-			modelObj.name = "modelObject" + count;
-			modelObj.transform.parent = models.transform;
-			player = Instantiate(playerFab) as GameObject;
-			player.name = "player" + count;
-			player.transform.parent = players.transform;
-			mModel = modelObj.GetComponent<movementModel>() as movementModel;
-			mModel.player = player;
-			mModel.startState = new PlayerState();
-			mModel.startLocation = startingLoc;
-			mModel.initializev2();
-			mModels.Add (mModel);
+			count = 0;
+			for(int j = 0; j < numPlayers; j++){
+				modelObj = Instantiate(modelFab) as GameObject;
+				modelObj.name = "modelObject" + count;
+				modelObj.transform.parent = models.transform;
+				player = Instantiate(playerFab) as GameObject;
+				player.name = "player" + count;
+				player.transform.parent = players.transform;
+				mModel = modelObj.GetComponent<movementModel>() as movementModel;
+				mModel.player = player;
+				mModel.startState = new PlayerState();
+				mModel.startLocation = startingLoc;
+				mModel.initializev2();
+				mModels.Add (mModel);
 
-			loopAdd(goalNode);
-			totalFrames = mModel.numFrames;
+				loopAdd(goalNodes[j], j);
+				totalFrames = mModel.numFrames;
 
-			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-			
-			var tempMaterial = new Material(player.renderer.sharedMaterial);
-			tempMaterial.color = mModel.color;
-			player.renderer.sharedMaterial = tempMaterial;
+				mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+				
+				var tempMaterial = new Material(player.renderer.sharedMaterial);
+				tempMaterial.color = mModel.color;
+				player.renderer.sharedMaterial = tempMaterial;
 
-			if(drawPaths){
-				mModel.drawPath(paths);
+				if(drawPaths){
+					mModel.drawPath(paths);
+				}
 			}
 
 			//mModel.numFrames += 20;
@@ -578,9 +589,9 @@ namespace EditorArea {
 
 		private int nodesToBeAddedCounterThing;
 
-		private void loopAdd(RTNode node){
-			if(node != root){
-				loopAdd(node.parent);
+		private void loopAdd(RTNode node, int j){
+			if(node != roots[j]){
+				loopAdd(node.parent, j);
 				GameObject nod = Instantiate(nodMarFab, node.position, Quaternion.identity) as GameObject;
 				nod.transform.parent = nodes.transform;
 				nod.name = "node" + nodesToBeAddedCounterThing;
@@ -593,9 +604,9 @@ namespace EditorArea {
 			}
 			else{
 				nodesToBeAddedCounterThing = 0;
-				mModel.actions.AddRange(node.actions);
-				mModel.durations.AddRange(node.durations);
-				mModel.numFrames = node.frame;
+				//mModel.actions.AddRange(node.actions);
+				//mModel.durations.AddRange(node.durations);
+				//mModel.numFrames = node.frame;
 				GameObject nod = Instantiate(nodMarFab, node.position, Quaternion.identity) as GameObject;
 				nod.transform.parent = nodes.transform;
 				nod.name = "node" + nodesToBeAddedCounterThing;
@@ -604,8 +615,8 @@ namespace EditorArea {
 			}
 		}
 
-		private bool tryAddNode(float x, float y){
-			RTNode closest = findClosest(x,y);
+		private bool tryAddNode(float x, float y, int j){
+			RTNode closest = findClosest(x,y, j);
 			if(closest == null){
 				//Debug.Log ("Too far away");
 				return false;
@@ -619,13 +630,13 @@ namespace EditorArea {
 					final.parent = closest;
 					closest.children.Add (final);
 					final.frame = closest.frame + final.frame;
-					rrtTree.Add (final);
+					rrtTrees[j].Add (final);
 					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5){
 						goalReached = true;
-						goalNode = final;
+						goalNodes[j] = final;
 					}
 					else{
-						goalReached = tryAddGoalNode(final);
+						goalReached = tryAddGoalNode(final, j);
 					}
 
 
@@ -640,7 +651,7 @@ namespace EditorArea {
 			}
 		}
 
-		private bool tryAddGoalNode(RTNode node){
+		private bool tryAddGoalNode(RTNode node, int j){
 			if(Vector2.Distance (node.position, new Vector2(goalLoc.x, goalLoc.y)) > maxDistRTNodes){
 				return false;
 			}
@@ -650,8 +661,8 @@ namespace EditorArea {
 					final.parent = node;
 					node.children.Add (final);
 					final.frame = node.frame + final.frame;
-					rrtTree.Add (final);
-					goalNode = final;
+					rrtTrees[j].Add (final);
+					goalNodes[j] = final;
 					return true;
 				}
 				else{
@@ -661,11 +672,11 @@ namespace EditorArea {
 		}
 
 
-		private RTNode findClosest(float x,float y){
+		private RTNode findClosest(float x,float y, int j){
 			float minDist = maxDistRTNodes;
 			float dist;
 			RTNode curNode = null;
-			foreach(RTNode node in rrtTree){
+			foreach(RTNode node in rrtTrees[j]){
 				dist = Vector2.Distance(node.position, new Vector2(x,y));
 				if(dist < minDist){
 					minDist = dist;
