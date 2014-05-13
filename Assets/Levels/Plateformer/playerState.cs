@@ -38,4 +38,9 @@ public class PlayerState {
 		state.adjustmentVelocity = new Vector2(adjustmentVelocity.x, adjustmentVelocity.y);
 		return state;
 	}
+
+	public override string ToString ()
+	{
+		return "isOnGround:" + isOnGround + " -- numJumps:" + numJumps + " -- velocity:" + velocity + " -- adjVelocity" + adjustmentVelocity;
+	}
 }

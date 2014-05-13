@@ -19,6 +19,9 @@ public class movementModel : MonoBehaviour{
 	public bool pathComputed = false;
 	public Vector3[] pointsArray;
 
+	public PlayerState startState;
+	public Vector3 startLocation;
+
 	public movementModel(){
 	}
 
@@ -48,6 +51,55 @@ public class movementModel : MonoBehaviour{
 		actionTypes.Add("Left", pla);
 		actionTypes.Add("Right", pra);
 	}
+
+	public void resetState(){
+		state.adjustmentVelocity.x = startState.adjustmentVelocity.x;
+		state.adjustmentVelocity.y = startState.adjustmentVelocity.y;
+		state.isOnGround = startState.isOnGround;
+		state.velocity.x = startState.velocity.x;
+		state.velocity.y = startState.velocity.y;
+		state.numJumps = startState.numJumps;
+	}
+		
+	public void initializev2(){
+		aIndex = 0;	
+		state = new PlayerState();
+		state.adjustmentVelocity.x = startState.adjustmentVelocity.x;
+		state.adjustmentVelocity.y = startState.adjustmentVelocity.y;
+		state.isOnGround = startState.isOnGround;
+		state.velocity.x = startState.velocity.x;
+		state.velocity.y = startState.velocity.y;
+		state.numJumps = startState.numJumps;
+		
+		
+		
+		
+		
+		dead = false;
+		actionTypes = new Dictionary<string, AbsAction>();
+		actions = new List<string>();
+		durations = new List<int>();
+		//Initial Wait Time
+		//actions.Add ("wait");
+		//durations.Add (30);
+		//Initialize action types
+		pressLeftAction pla = new pressLeftAction(player, state);
+		pressRightAction pra = new pressRightAction(player, state);
+		pressNothingAction pna = new pressNothingAction(player, state);
+		pressUpAction pua = new pressUpAction(player, state);
+		pressUpLeftAction pula = new pressUpLeftAction(player, state);
+		pressUpRightAction pura = new pressUpRightAction(player, state);
+		actionTypes.Add ("jump left", pula);
+		actionTypes.Add ("jump right", pura);
+		actionTypes.Add("jump", pua);
+		actionTypes.Add("wait", pna);
+		actionTypes.Add("Left", pla);
+		actionTypes.Add("Right", pra);
+
+
+		player.transform.position = startLocation;
+	}
+
 
 	public void initialize(){
 		aIndex = 0;	
@@ -102,7 +154,9 @@ public class movementModel : MonoBehaviour{
 			toReturn = false;
 		}
 		else{
-			toReturn = true;
+			//toReturn = true;
+
+			return true;
 			//doAction("wait", 1);
 		}
 

@@ -3,15 +3,21 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class RTNode {
-	public RTNode(Vector2 position, float frame, PlayerState state){
+	public RTNode(Vector2 position, int frame, PlayerState state){
 		this.position = position;
 		this.frame = frame;
 		this.state = state;
+		children = new List<RTNode>();
+		actions = new List<string>();
+		durations = new List<int>();
 	}
 	public RTNode(){
+		children = new List<RTNode>();
+		actions = new List<string>();
+		durations = new List<int>();
 	}
 	public Vector2 position;
-	public float frame;
+	public int frame;
 	public PlayerState state;
 	public RTNode parent;
 	public List<RTNode> children;

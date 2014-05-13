@@ -14,6 +14,7 @@ namespace EditorArea {
 		public GameObject players;
 		public GameObject models;
 		public GameObject posMods;
+		public GameObject nodes;
 		public GameObject paths;
 		public GameObject player;
 		public GameObject modelObj;
@@ -26,8 +27,8 @@ namespace EditorArea {
 		private movementModel mModel;
 		private posMovModel pmModel;
 		public static int numPlayers = 1;
-		public static int numIters = 10;
-		public static int depthIter = 250;
+		public static int numIters = 100;
+		public static int depthIter = 3;
 		public static int totalFrames = 0;
 		public static int curFrame;
 		public static string filename;
@@ -38,7 +39,7 @@ namespace EditorArea {
 
 		public int count = 0;
 
-
+		public GameObject nodMarFab;
 		public GameObject playerFab;
 		public GameObject modelFab;
 		public GameObject posModFab;
@@ -62,11 +63,15 @@ namespace EditorArea {
 			numPlayers = EditorGUILayout.IntSlider ("Number of Players", numPlayers, 1, 100);
 			numIters = EditorGUILayout.IntSlider ("Iterations Per Player", numIters, 1, 100);
 			depthIter = EditorGUILayout.IntSlider ("Max Depth per Iteration", depthIter, 1, 1000);
+			maxDistRTNodes = EditorGUILayout.FloatField ("Max Dist RRT Nodes", maxDistRTNodes);
 
-
+			
+			
+			
 			playerFab = (GameObject)EditorGUILayout.ObjectField ("player prefab", playerFab, typeof(GameObject), true);
 			modelFab = (GameObject)EditorGUILayout.ObjectField ("modelObject prefab", modelFab, typeof(GameObject), true);
 			posModFab = (GameObject)EditorGUILayout.ObjectField ("posMod prefab", posModFab, typeof(GameObject), true);
+			nodMarFab = (GameObject)EditorGUILayout.ObjectField ("node marker prefab", nodMarFab, typeof(GameObject), true);
 
 			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
 			drawPaths = EditorGUILayout.Toggle ("Draw Paths", drawPaths);
@@ -102,6 +107,11 @@ namespace EditorArea {
 				importPos(filename, destCount);
 			}
 
+
+			if (GUILayout.Button ("RRT")) {
+				RRT();
+			}
+
 		}
 
 		public void Update(){
@@ -112,7 +122,7 @@ namespace EditorArea {
 						if(model != null){
 							if(model.updater())
 							{
-								model.doAction("wait", 1);
+								//model.doAction("wait", 1);
 							}
 						}
 					}
@@ -231,8 +241,19 @@ namespace EditorArea {
 				if(model != null){
 					model.aIndex = 0;
 					model.player.transform.position = startingLoc;
+					if(model.startLocation != null){
+						model.player.transform.position = model.startLocation;
+					}
 					model.state.reset ();
+					if(model.startState != null){
+						model.resetState();
+					}
 					model.runFrames(curFrame);
+				}
+			}
+			foreach(posMovModel pModel in pmModels){
+				if(pModel != null){
+					pModel.goToFrame(curFrame);
 				}
 			}
 		}
@@ -251,6 +272,7 @@ namespace EditorArea {
 
 		private void cleanUp(){
 			DestroyImmediate(GameObject.Find ("players"));
+			nodes = new GameObject("nodes");
 			players = new GameObject("players");
 			models = new GameObject("models");
 			paths = new GameObject("paths");
@@ -258,8 +280,19 @@ namespace EditorArea {
 			paths.transform.parent = players.transform;
 			models.transform.parent = players.transform;
 			posMods.transform.parent = players.transform;
+			nodes.transform.parent = players.transform;
 
 		}
+
+		private void resetState(movementModel model, PlayerState state){
+			model.state.adjustmentVelocity.x = state.adjustmentVelocity.x;
+			model.state.adjustmentVelocity.y = state.adjustmentVelocity.y;
+			model.state.isOnGround = state.isOnGround;
+			model.state.velocity.x = state.velocity.x;
+			model.state.velocity.y = state.velocity.y;
+			model.state.numJumps = state.numJumps;
+		}
+
 
 		private RTNode MCTSearch(Vector3 startLoc,Vector3 golLoc, PlayerState state){
 			modelObj = Instantiate(modelFab) as GameObject;
@@ -270,8 +303,11 @@ namespace EditorArea {
 			player.transform.parent = players.transform;
 			mModel = modelObj.GetComponent<movementModel>() as movementModel;
 			mModel.player = player;
-			//mModel.state = state.clone ();
 			mModels.Add (mModel);
+			mModel.startState = state;
+			mModel.startLocation = startLoc;
+
+
 			int i = 0;
 			bool foundAnswer = false;
 			while(i < numIters && !foundAnswer){
@@ -280,16 +316,21 @@ namespace EditorArea {
 			}
 			if(foundAnswer)
 			{
+				//Debug.Log("foundAnswer-" + mModel.state);
 				RTNode toReturn = new RTNode();
 				toReturn.position = player.transform.position;
-				toReturn.state = mModel.state;
+				toReturn.state = mModel.state.clone();
 				toReturn.actions = mModel.actions;
 				toReturn.durations = mModel.durations;
 				toReturn.frame = mModel.numFrames;
 				mModel.aIndex = 0;
 				player.transform.position = startLoc;
-				mModel.state.reset ();
-				//mModel.state = state.clone ();
+				//mModel.state.reset ();
+
+
+				resetState(mModel, state);
+
+
 				if(drawPaths){
 					mModel.drawPath(paths);
 				}
@@ -318,16 +359,29 @@ namespace EditorArea {
 		private bool MCTSearchIteration(Vector3 startLoc,Vector3 golLoc, PlayerState state){
 			//Debug.Log ("--------------------------------------------------------");
 			player.transform.position = startLoc;
-			mModel.initialize();
+			mModel.initializev2();
+
+			//resetState(mModel, state);
+
 			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
 
 			var tempMaterial = new Material(player.renderer.sharedMaterial);
 			tempMaterial.color = mModel.color;
 			player.renderer.sharedMaterial = tempMaterial;
 
+			//
+			bool canJump = true;
+
+
 			int count = 0;
 			while(!mModel.dead && count < depthIter){
-				int action = Random.Range (0, 6);
+				int action;
+				if(canJump){
+					action = Random.Range (0, 6);
+				}
+				else{
+					action = Random.Range (0,3);
+				}
 				int duration = 1;
 				if(action < 3){
 					duration  = Random.Range (5, 30);
@@ -358,15 +412,27 @@ namespace EditorArea {
 					break;
 				}
 				mModel.aIndex = 0;
-				mModel.state.reset();
-				mModel.state.reset();
+				//mModel.state.reset();
+
+				//resetState(mModel, state);
+				mModel.resetState();
+
+
 				player.transform.position = startLoc;
-				Debug.Log (player.transform.position);
-				Debug.Log (mModel.player.transform.position);
+				//Debug.Log (player.transform.position);
+				//Debug.Log (mModel.player.transform.position);
 				int frames = mModel.loopUpdate();
-				Debug.Log ("LOOP UPDATE");
-				Debug.Log (player.transform.position);
-				Debug.Log (mModel.player.transform.position);
+				//Debug.Log ("LOOP UPDATE");
+				//Debug.Log (player.transform.position);
+				//Debug.Log (mModel.player.transform.position);
+
+				if(mModel.state.numJumps < mModel.state.maxJumps){
+					canJump = true;
+				}
+				else{
+					canJump = false;
+				}
+
 				mModel.numFrames = frames;
 				if((player.transform.position - golLoc).magnitude < 0.5){
 					//Debug.Log (player.transform.position);
@@ -375,8 +441,8 @@ namespace EditorArea {
 					return true;
 				}
 				else{
-					Debug.Log (golLoc);
-					Debug.Log ((player.transform.position - golLoc).magnitude);
+				//	Debug.Log (golLoc);
+				//	Debug.Log ((player.transform.position - golLoc).magnitude);
 				}
 				count++;
 			}
@@ -393,13 +459,16 @@ namespace EditorArea {
 		}
 
 		public bool goalReached = false;
-		public int rrtIters = 1000;
+		public int rrtIters = 10000000;
 		public List<RTNode> rrtTree;
 		public RTNode root;
+		public RTNode goalNode;
 
-		public float maxDistRTNodes;
+		public static float maxDistRTNodes = 5;
 
 		private void RRT(){
+			cleanUp();
+			goalReached = false;
 			startingLoc = GameObject.Find ("startingPosition").transform.position;
 			goalLoc = GameObject.Find("goalPosition").transform.position;
 			Vector3 bl = GameObject.Find ("bottomLeft").transform.position;
@@ -409,34 +478,180 @@ namespace EditorArea {
 			rrtTree.Add (root);
 
 			for(int i = 0; i < rrtIters; i++){
-				tryAddNode(Random.Range (bl.x, tr.x), Random.Range (bl.y, tr.y));
+				float x = Random.Range (bl.x, tr.x);
+				float y = Random.Range (bl.y, tr.y);
+				tryAddNode(x,y );
 				if(goalReached){
 					break;
 				}
 			}
+
 			if(goalReached){
 				Debug.Log ("Success");
+				Debug.Log ("nodes added = " + rrtTree.Count);
+				cleanUp();
+				reCreatePath();
 			}
 			else{
 				Debug.Log ("Failure");
+				/*foreach(RTNode nod in rrtTree){
+					Debug.Log (nod.position);
+				}*/
+			}
+		}
+
+		private void reCreatePath2(){
+			loopCreate(goalNode);
+		}
+
+		private void loopCreate(RTNode node){
+			if(node != root){
+				loopCreate(node.parent);
+
+				modelObj = Instantiate(modelFab) as GameObject;
+				modelObj.name = "modelObject" + count;
+				modelObj.transform.parent = models.transform;
+				player = Instantiate(playerFab) as GameObject;
+				player.name = "player" + count;
+				player.transform.parent = players.transform;
+				mModel = modelObj.GetComponent<movementModel>() as movementModel;
+				mModel.player = player;
+				
+				mModel.startLocation = node.parent.position;
+				mModel.startLocation.z = 10;
+				mModel.startState = node.parent.state;
+				mModel.initializev2();
+				mModels.Add (mModel);
+
+				mModel.actions.AddRange (node.actions);
+				mModel.durations.AddRange(node.durations);
+				
+				count++;
+
+
+				GameObject nod = Instantiate(nodMarFab, node.position, Quaternion.identity) as GameObject;
+				nod.name = "node" + nodesToBeAddedCounterThing;
+				nodesToBeAddedCounterThing++;
+				//Debug.Log (node.frame);
+				
+			}
+			else{
+				nodesToBeAddedCounterThing = 0;
+				GameObject nod = Instantiate(nodMarFab, node.position, Quaternion.identity) as GameObject;
+				nod.name = "node" + nodesToBeAddedCounterThing;
+				nodesToBeAddedCounterThing++;
+			}
+
+		}
+
+		private void reCreatePath(){
+			modelObj = Instantiate(modelFab) as GameObject;
+			modelObj.name = "modelObject" + count;
+			modelObj.transform.parent = models.transform;
+			player = Instantiate(playerFab) as GameObject;
+			player.name = "player" + count;
+			player.transform.parent = players.transform;
+			mModel = modelObj.GetComponent<movementModel>() as movementModel;
+			mModel.player = player;
+			mModel.startState = new PlayerState();
+			mModel.startLocation = startingLoc;
+			mModel.initializev2();
+			mModels.Add (mModel);
+
+			loopAdd(goalNode);
+			totalFrames = mModel.numFrames;
+
+			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+			
+			var tempMaterial = new Material(player.renderer.sharedMaterial);
+			tempMaterial.color = mModel.color;
+			player.renderer.sharedMaterial = tempMaterial;
+
+			if(drawPaths){
+				mModel.drawPath(paths);
+			}
+
+			//mModel.numFrames += 20;
+			//Debug.Log (mModel.numFrames);
+			
+		}
+
+		private int nodesToBeAddedCounterThing;
+
+		private void loopAdd(RTNode node){
+			if(node != root){
+				loopAdd(node.parent);
+				GameObject nod = Instantiate(nodMarFab, node.position, Quaternion.identity) as GameObject;
+				nod.transform.parent = nodes.transform;
+				nod.name = "node" + nodesToBeAddedCounterThing;
+				nodesToBeAddedCounterThing++;
+				mModel.actions.AddRange(node.actions);
+				mModel.durations.AddRange(node.durations);
+				mModel.numFrames = node.frame;
+				//Debug.Log (node.frame);
+
+			}
+			else{
+				nodesToBeAddedCounterThing = 0;
+				mModel.actions.AddRange(node.actions);
+				mModel.durations.AddRange(node.durations);
+				mModel.numFrames = node.frame;
+				GameObject nod = Instantiate(nodMarFab, node.position, Quaternion.identity) as GameObject;
+				nod.transform.parent = nodes.transform;
+				nod.name = "node" + nodesToBeAddedCounterThing;
+				nodesToBeAddedCounterThing++;
+				//Debug.Log (node.frame);
 			}
 		}
 
 		private bool tryAddNode(float x, float y){
 			RTNode closest = findClosest(x,y);
 			if(closest == null){
+				//Debug.Log ("Too far away");
 				return false;
 			}
 			else{
+				//Debug.Log (closest.state);
 				RTNode final = MCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state);
+
 				if(final != null){
+					//Debug.Log ("Node Added");
 					final.parent = closest;
 					closest.children.Add (final);
 					final.frame = closest.frame + final.frame;
 					rrtTree.Add (final);
 					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5){
 						goalReached = true;
+						goalNode = final;
 					}
+					else{
+						goalReached = tryAddGoalNode(final);
+					}
+
+
+
+
+					return true;
+				}
+				else{
+					//Debug.Log ("MCTSearch unsuccesful");
+					return false;
+				}
+			}
+		}
+
+		private bool tryAddGoalNode(RTNode node){
+			if(Vector2.Distance (node.position, new Vector2(goalLoc.x, goalLoc.y)) > maxDistRTNodes){
+				return false;
+			}
+			else{
+				RTNode final = MCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state);
+				if(final != null){
+					final.parent = node;
+					node.children.Add (final);
+					final.frame = node.frame + final.frame;
+					rrtTree.Add (final);
+					goalNode = final;
 					return true;
 				}
 				else{
@@ -444,6 +659,7 @@ namespace EditorArea {
 				}
 			}
 		}
+
 
 		private RTNode findClosest(float x,float y){
 			float minDist = maxDistRTNodes;
