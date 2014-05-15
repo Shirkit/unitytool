@@ -143,6 +143,23 @@ public class movementModel : MonoBehaviour{
 		return toReturn;
 	}
 
+	public bool goToFrame(int fr){
+		if(startState != null){
+			resetState();
+		}
+		else{
+			state.reset();
+		}
+		aIndex = 0;
+		if(startLocation != null){
+			player.transform.position = startLocation;
+		}
+		else{
+			player.transform.position = GameObject.Find ("startingPosition").transform.position;
+		}
+		return runFrames(fr);
+	}
+
 	public bool updater(){
 		bool toReturn;
 		if(aIndex < actions.Count){

@@ -30,6 +30,7 @@ namespace EditorArea {
 		public static int numIters = 100;
 		public static int depthIter = 3;
 		public static int totalFrames = 0;
+		public static int realFrame;
 		public static int curFrame;
 		public static string filename;
 		public static string destCount;
@@ -53,6 +54,8 @@ namespace EditorArea {
 
 		void OnGUI () {
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
+				realFrame = 0;
+				curFrame = 0;
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				multiMCTSearch(startingLoc, goalLoc, new PlayerState());
@@ -82,9 +85,9 @@ namespace EditorArea {
 
 			curFrame = EditorGUILayout.IntSlider ("frame", curFrame, 0, totalFrames);
 
-			if (GUILayout.Button ("Go To Frame")) {
+			/*if (GUILayout.Button ("Go To Frame")) {
 				goToFrame(curFrame);
-			}
+			}*/
 
 			if (GUILayout.Button (playing ? "Stop" : "Play")) {
 				playing = !playing;
@@ -109,6 +112,8 @@ namespace EditorArea {
 
 
 			if (GUILayout.Button ("RRT")) {
+				realFrame = 0;
+				curFrame = 0;
 				RRT();
 			}
 
@@ -116,8 +121,15 @@ namespace EditorArea {
 
 		public void Update(){
 			if(playing){
-				if(curFrame <= totalFrames){
+				if(realFrame != curFrame){
+					//Debug.Log (realFrame);
+					//Debug.Log (curFrame);
+					goToFrame(curFrame);
+					realFrame = curFrame;
+				}
+				else if(curFrame <= totalFrames){
 					curFrame++;
+					realFrame = curFrame;
 					foreach(movementModel model in mModels){
 						if(model != null){
 							if(model.updater())
@@ -131,6 +143,15 @@ namespace EditorArea {
 							pModel.goToFrame(curFrame);
 						}
 					}
+				}
+				else{
+					//Debug.Log ("WTF");
+				}
+			}
+			else{
+				if(realFrame != curFrame){
+					goToFrame(curFrame);
+					realFrame = curFrame;
 				}
 			}
 		}
@@ -239,7 +260,7 @@ namespace EditorArea {
 		private void goToFrame(int curFrame){
 			foreach(movementModel model in mModels){
 				if(model != null){
-					model.aIndex = 0;
+					/*model.aIndex = 0;
 					model.player.transform.position = startingLoc;
 					if(model.startLocation != null){
 						model.player.transform.position = model.startLocation;
@@ -248,7 +269,8 @@ namespace EditorArea {
 					if(model.startState != null){
 						model.resetState();
 					}
-					model.runFrames(curFrame);
+					model.runFrames(curFrame);*/
+					model.goToFrame (curFrame);
 				}
 			}
 			foreach(posMovModel pModel in pmModels){
