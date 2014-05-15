@@ -458,7 +458,7 @@ namespace EditorArea {
 			}
 		}
 
-		public bool goalReached = false;
+		public bool[] goalReached;
 		public int rrtIters = 10000000;
 		public List<RTNode>[] rrtTrees;
 		public RTNode[] roots;
@@ -469,13 +469,14 @@ namespace EditorArea {
 
 		private void RRT(){
 			cleanUp();
+			goalReached = new bool[numPlayers];
 			rrtTrees = new List<RTNode>[numPlayers];
 			roots = new RTNode[numPlayers];
 			goalNodes = new RTNode[numPlayers];
 
 			for(int j = 0; j < numPlayers; j++){
 
-				goalReached = false;
+				goalReached[j] = false;
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				Vector3 bl = GameObject.Find ("bottomLeft").transform.position;
@@ -488,24 +489,27 @@ namespace EditorArea {
 					float x = Random.Range (bl.x, tr.x);
 					float y = Random.Range (bl.y, tr.y);
 					tryAddNode(x,y, j);
-					if(goalReached){
+					if(goalReached[j]){
 						break;
 					}
 				}
-
-				if(goalReached){
+			}
+			cleanUp();
+			reCreatePath();
+			/*for(int j = 0; j< numPlayers; j++){
+				if(goalReached[j]){
 					Debug.Log ("Success");
 					Debug.Log ("nodes added = " + rrtTrees[j].Count);
-					cleanUp();
+					//cleanUp();
 					reCreatePath();
 				}
 				else{
 					Debug.Log ("Failure");
-					/*foreach(RTNode nod in rrtTree){
+					foreach(RTNode nod in rrtTree){
 						Debug.Log (nod.position);
-					}*/
+					}
 				}
-			}
+			}*/
 		}
 
 		/*private void reCreatePath2(){
@@ -555,30 +559,37 @@ namespace EditorArea {
 		private void reCreatePath(){
 			count = 0;
 			for(int j = 0; j < numPlayers; j++){
-				modelObj = Instantiate(modelFab) as GameObject;
-				modelObj.name = "modelObject" + count;
-				modelObj.transform.parent = models.transform;
-				player = Instantiate(playerFab) as GameObject;
-				player.name = "player" + count;
-				player.transform.parent = players.transform;
-				mModel = modelObj.GetComponent<movementModel>() as movementModel;
-				mModel.player = player;
-				mModel.startState = new PlayerState();
-				mModel.startLocation = startingLoc;
-				mModel.initializev2();
-				mModels.Add (mModel);
+				if(goalReached[j]){
+					Debug.Log ("Attempt " + j + " successful");
+					modelObj = Instantiate(modelFab) as GameObject;
+					modelObj.name = "modelObject" + count;
+					modelObj.transform.parent = models.transform;
+					player = Instantiate(playerFab) as GameObject;
+					player.name = "player" + count;
+					player.transform.parent = players.transform;
+					mModel = modelObj.GetComponent<movementModel>() as movementModel;
+					mModel.player = player;
+					mModel.startState = new PlayerState();
+					mModel.startLocation = startingLoc;
+					mModel.initializev2();
+					mModels.Add (mModel);
 
-				loopAdd(goalNodes[j], j);
-				totalFrames = mModel.numFrames;
+					loopAdd(goalNodes[j], j);
+					totalFrames = Mathf.Max(mModel.numFrames, totalFrames);
 
-				mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-				
-				var tempMaterial = new Material(player.renderer.sharedMaterial);
-				tempMaterial.color = mModel.color;
-				player.renderer.sharedMaterial = tempMaterial;
+					mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+					
+					var tempMaterial = new Material(player.renderer.sharedMaterial);
+					tempMaterial.color = mModel.color;
+					player.renderer.sharedMaterial = tempMaterial;
 
-				if(drawPaths){
-					mModel.drawPath(paths);
+					if(drawPaths){
+						mModel.drawPath(paths);
+					}
+					count++;
+				}
+				else{
+					Debug.Log ("Attempt " + j + " failed");
 				}
 			}
 
@@ -632,11 +643,11 @@ namespace EditorArea {
 					final.frame = closest.frame + final.frame;
 					rrtTrees[j].Add (final);
 					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5){
-						goalReached = true;
+						goalReached[j] = true;
 						goalNodes[j] = final;
 					}
 					else{
-						goalReached = tryAddGoalNode(final, j);
+						goalReached[j] = tryAddGoalNode(final, j);
 					}
 
 
