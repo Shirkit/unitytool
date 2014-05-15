@@ -40,10 +40,10 @@ namespace EditorArea {
 
 		public int count = 0;
 
-		public GameObject nodMarFab;
-		public GameObject playerFab;
-		public GameObject modelFab;
-		public GameObject posModFab;
+		public GameObject nodMarFab = Resources.Load("nodeMarker") as GameObject;
+		public GameObject playerFab = Resources.Load ("player") as GameObject;
+		public GameObject modelFab = Resources.Load ("modelObject") as GameObject;
+		public GameObject posModFab = Resources.Load ("posMod") as GameObject;
 
 		[MenuItem("Window/RRTMapper")]
 		static void Init () {
@@ -71,10 +71,10 @@ namespace EditorArea {
 			
 			
 			
-			playerFab = (GameObject)EditorGUILayout.ObjectField ("player prefab", playerFab, typeof(GameObject), true);
+			/*playerFab = (GameObject)EditorGUILayout.ObjectField ("player prefab", playerFab, typeof(GameObject), true);
 			modelFab = (GameObject)EditorGUILayout.ObjectField ("modelObject prefab", modelFab, typeof(GameObject), true);
 			posModFab = (GameObject)EditorGUILayout.ObjectField ("posMod prefab", posModFab, typeof(GameObject), true);
-			nodMarFab = (GameObject)EditorGUILayout.ObjectField ("node marker prefab", nodMarFab, typeof(GameObject), true);
+			nodMarFab = (GameObject)EditorGUILayout.ObjectField ("node marker prefab", nodMarFab, typeof(GameObject), true);*/
 
 			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
 			drawPaths = EditorGUILayout.Toggle ("Draw Paths", drawPaths);
