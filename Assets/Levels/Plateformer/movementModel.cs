@@ -233,7 +233,7 @@ public class movementModel : MonoBehaviour{
 		trCorner = new Vector2((player.transform.position.x + 0.5f*player.transform.localScale.x)+0.1f, (player.transform.position.y + 0.5f*player.transform.localScale.y)+0.1f);
 	}
 
-	public void computePath(GameObject paths){
+	public void computePath(){
 		List<Vector3> pointsList = new List<Vector3>();
 		pointsList.Add(new Vector3(player.transform.position.x, player.transform.position.y, player.transform.position.z));
 		bool finished = false;
@@ -248,10 +248,6 @@ public class movementModel : MonoBehaviour{
 			pointsArray[i] = point;
 			i++;
 		}
-		
-		VectorLine line = new VectorLine("path" + gameObject.name.Substring(11), pointsArray, color, null, 2.0f, LineType.Continuous);
-		line.Draw3D();
-		line.vectorObject.transform.parent = paths.transform;
 		aIndex = 0;
 		player.transform.position = GameObject.Find("startingPosition").transform.position;
 		state.reset ();
@@ -259,12 +255,29 @@ public class movementModel : MonoBehaviour{
 	}
 	public void drawPath(GameObject paths){
 		if(!pathComputed){
-			computePath(paths);
+			computePath();
 		}
-		else{
-			VectorLine line = new VectorLine("path" + gameObject.name.Substring(11), pointsArray, color, null, 2.0f, LineType.Continuous);
-			line.Draw3D();
-			line.vectorObject.transform.parent = paths.transform;
+		VectorLine line = new VectorLine("path" + gameObject.name.Substring(11), pointsArray, color, null, 2.0f, LineType.Continuous);
+		line.Draw3D();
+		line.vectorObject.transform.parent = paths.transform;
+	}
+
+	public void markMap(GameObject [,] hmapsqrs,Vector3 hmapbl,Vector3 hmaptr,float hmapinc){
+		if(!pathComputed){
+			computePath();
+		}
+		int x;
+		int y;
+		GameObject cube;
+		Vector3 pt;
+		foreach(Vector3 pnt in pointsArray){
+			pt = pnt - hmapbl;
+			x = Mathf.FloorToInt(pt.x/hmapinc);
+			y = Mathf.FloorToInt (pt.y/hmapinc);
+			cube = hmapsqrs[x,y];
+			var tempMaterial = new Material(cube.renderer.sharedMaterial);
+			tempMaterial.color = Color.black;
+			cube.renderer.sharedMaterial = tempMaterial;
 		}
 	}
 

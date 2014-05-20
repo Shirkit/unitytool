@@ -14,6 +14,7 @@ using KDTreeDLL;
 
 namespace EditorArea {
 	public class PlatformerEditorWindow : EditorWindow  {
+		public GameObject heatmap;
 		public GameObject players;
 		public GameObject models;
 		public GameObject posMods;
@@ -26,6 +27,7 @@ namespace EditorArea {
 		public Vector3 goalLoc;
 		public bool showDeaths;
 		public bool drawPaths;
+		public bool markMap;
 		public bool playing = false;
 		private movementModel mModel;
 		private posMovModel pmModel;
@@ -57,6 +59,7 @@ namespace EditorArea {
 
 		void OnGUI () {
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
+				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
@@ -84,6 +87,7 @@ namespace EditorArea {
 
 			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
 			drawPaths = EditorGUILayout.Toggle ("Draw Paths", drawPaths);
+			markMap = EditorGUILayout.Toggle ("Mark Map", markMap);
 
 			if (GUILayout.Button ("Clear")) {
 				cleanUp();
@@ -118,17 +122,20 @@ namespace EditorArea {
 
 
 			if (GUILayout.Button ("RRT - MCT")) {
+				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
 				RRT(true);
 			}
 			if (GUILayout.Button ("RRT - AS")) {
+				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
 				RRT(false);
 			}
 			
 			if(GUILayout.Button ("AStarSearch")){
+				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
@@ -136,9 +143,15 @@ namespace EditorArea {
 				AStarSearch(startingLoc, goalLoc, new PlayerState());
 			}
 
+			if(GUILayout.Button ("Clean Up Heat Map")){
+				cleanUpHMap();
+			}
+
 		}
 
 		bool prevDrawPaths;
+		bool pathsMarked;
+
 		public void Update(){
 			if(prevDrawPaths != drawPaths){
 				DestroyImmediate(paths);
@@ -154,6 +167,18 @@ namespace EditorArea {
 			}
 			prevDrawPaths = drawPaths;
 
+			if(!pathsMarked && markMap){
+				pathsMarked = true;
+				if(drawPaths){
+					foreach(movementModel model in mModels){
+						if(model != null){
+							model.markMap(hmapsqrs, hmapbl, hmaptr, hmapinc);
+						}
+					}
+				}
+			}
+
+			
 			if(playing){
 				if(realFrame != curFrame){
 					//Debug.Log (realFrame);
@@ -337,7 +362,37 @@ namespace EditorArea {
 			models.transform.parent = players.transform;
 			posMods.transform.parent = players.transform;
 			nodes.transform.parent = players.transform;
+		}
 
+		GameObject[,] hmapsqrs;
+		Vector3 hmapbl;
+		Vector3 hmaptr;
+		float hmapinc;
+		private void cleanUpHMap(){
+			hmapinc = 0.4f;
+			DestroyImmediate(heatmap);
+			heatmap = new GameObject("heatmap");
+			hmapbl = GameObject.Find ("bottomLeft").transform.position;
+			hmaptr = GameObject.Find ("topRight").transform.position;
+			float width = hmaptr.x - hmapbl.x;
+			float height = hmaptr.y - hmapbl.y;
+			int sqrsW = Mathf.CeilToInt(width / 0.4f);
+			int sqrsH = Mathf.CeilToInt(height / 0.4f);
+			hmapsqrs = new GameObject [sqrsW,sqrsH];
+
+			for(int i = 0; i < sqrsW; i++){
+				for(int j = 0; j < sqrsH; j++){
+					GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+					cube.transform.parent = heatmap.transform;
+					cube.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+					cube.transform.position= new Vector3((hmapbl.x + 0.2f + 0.4f*i), (hmapbl.y + 0.2f + 0.4f*j), 15f);
+					var tempMaterial = new Material(cube.renderer.sharedMaterial);
+					tempMaterial.color = Color.white;
+					cube.renderer.sharedMaterial = tempMaterial;
+					hmapsqrs[i,j] = cube;
+				}
+			}
+			Debug.Log (sqrsW * sqrsH);
 		}
 
 		private void resetState(movementModel model, PlayerState state){
