@@ -15,6 +15,10 @@ public class pressRightAction : AbsAction {
 				state.adjustmentVelocity.x = state.movementSpeed/2;
 			}
 			curTime++;
+			if(curTime == duration){
+				curTime = 0;
+				return true;
+			}
 			return false;
 			
 		}

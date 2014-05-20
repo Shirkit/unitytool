@@ -69,6 +69,9 @@ namespace EditorArea {
 			numIters = EditorGUILayout.IntSlider ("Iterations Per Player", numIters, 1, 100);
 			depthIter = EditorGUILayout.IntSlider ("Max Depth per Iteration", depthIter, 1, 1000);
 			maxDistRTNodes = EditorGUILayout.FloatField ("Max Dist RRT Nodes", maxDistRTNodes);
+			minDistRTNodes = EditorGUILayout.FloatField ("Min Dist RRT Nodes", minDistRTNodes);
+			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 10);
+			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 100, 10000);
 
 			
 			
@@ -134,7 +137,22 @@ namespace EditorArea {
 
 		}
 
+		bool prevDrawPaths;
 		public void Update(){
+			if(prevDrawPaths != drawPaths){
+				DestroyImmediate(paths);
+				paths = new GameObject("paths");
+				paths.transform.parent = players.transform;
+				if(drawPaths){
+					foreach(movementModel model in mModels){
+						if(model != null){
+							model.drawPath(paths);
+						}
+					}
+				}
+			}
+			prevDrawPaths = drawPaths;
+
 			if(playing){
 				if(realFrame != curFrame){
 					//Debug.Log (realFrame);
@@ -352,7 +370,7 @@ namespace EditorArea {
 			}
 			if(foundAnswer)
 			{
-				Debug.Log ("Success");
+				//Debug.Log ("Success");
 				//Debug.Log("foundAnswer-" + mModel.state);
 				RTNode toReturn = new RTNode();
 				toReturn.position = player.transform.position;
@@ -374,7 +392,7 @@ namespace EditorArea {
 				return toReturn;
 			}
 			else{
-				Debug.Log ("Failure");
+				//Debug.Log ("Failure");
 				if(!showDeaths){
 					mModels.Remove(mModel);
 					DestroyImmediate(GameObject.Find ("player" + count));
@@ -475,7 +493,7 @@ namespace EditorArea {
 
 				mModel.numFrames += frames;
 				if((player.transform.position - golLoc).magnitude < 0.5){
-					Debug.Log (player.transform.position);
+					//Debug.Log (player.transform.position);
 					//player.transform.position = startingLoc;
 					totalFrames = Mathf.Max(totalFrames, mModel.numFrames);
 					return true;
@@ -491,12 +509,13 @@ namespace EditorArea {
 		}
 
 
-		private static  int maxQueueSize = 1000000;
 		public bool asGoalReached;
-		//public HeapPriorityQueue<RTNode> heap;
 		public PriorityQueue<RTNode, double> heap;
 		public RTNode asRoot;
 		public RTNode asGoalNode;
+
+		public static int framesPerStep = 1;
+		public static int maxDepthAStar = 100;
 
 		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state){
 			cleanUp();
@@ -517,16 +536,31 @@ namespace EditorArea {
 			asRoot = new RTNode(startLoc, 0, state);
 			heap.Enqueue(asRoot, -Vector2.Distance(asRoot.position, golLoc));
 			int k = 0;
-			while(!asGoalReached && heap.Count > 0 && k < 100){
+			while(!asGoalReached && heap.Count > 0 && k < maxDepthAStar){
 				k++;
 
 				RTNode cur = heap.Dequeue().Value;
 				tryDoAction(cur, "Right", golLoc);
+				if(asGoalReached){
+					break;
+				}
 				tryDoAction(cur, "Left", golLoc);
+				if(asGoalReached){
+					break;
+				}
 				tryDoAction(cur, "wait", golLoc);
+				if(asGoalReached){
+					break;
+				}
 				if(cur.state.numJumps < cur.state.maxJumps){
 					tryDoAction(cur, "jump", golLoc);
+					if(asGoalReached){
+						break;
+					}
 					tryDoAction(cur, "jump right", golLoc);
+					if(asGoalReached){
+						break;
+					}
 					tryDoAction(cur, "jump left", golLoc);
 				}
 			}
@@ -535,7 +569,7 @@ namespace EditorArea {
 				mModel.startState = state;
 				mModel.startLocation = startLoc;
 				mModel.initializev2();
-
+				mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
 				return reCreatePathAS();
 			}
 			else{
@@ -569,7 +603,7 @@ namespace EditorArea {
 			}
 		}
 		private void tryDoAction(RTNode cur, string action, Vector3 golLoc){
-			RTNode nex = addAction(cur, action);
+			RTNode nex = addAction(cur, action, golLoc);
 			if(nex != null){
 				float dist = Vector2.Distance(nex.position, golLoc);
 				if(dist < 0.5){
@@ -583,21 +617,116 @@ namespace EditorArea {
 		}
 
 
-		private RTNode addAction(RTNode cur, string action){
+		private RTNode addAction(RTNode cur, string action, Vector3 golLoc){
 			mModel.startState = cur.state;
 			mModel.startLocation = cur.position;
 			mModel.initializev2();
 
+			int frame = framesPerStep;
 			mModel.actions.Add (action);
-			mModel.durations.Add (1);
-			int frames = mModel.loopUpdate() + cur.frame;
+			if(framesPerStep > 1){
+				if(action.Equals("Right") || action.Equals ("Left")){
+					mModel.durations.Add (framesPerStep);
+					int j;
+					for(j = 0; j < framesPerStep; j++){
+
+						mModel.runFrames(1);
+						float dist = Vector2.Distance(mModel.player.transform.position, golLoc);
+						if(dist < 0.5){
+							asGoalReached = true;
+							mModel.durations[mModel.durations.Count-1] = j+1;
+							break;
+						}
+					}
+					if(j == framesPerStep){
+						frame = j;
+					}
+					else{
+						frame = j+1;
+					}
+
+				}
+				else{
+					mModel.durations.Add (1);
+					mModel.actions.Add ("wait");
+					mModel.durations.Add (framesPerStep-1);
+					int j;
+					for(j = 0; j < framesPerStep; j++){
+
+						mModel.runFrames(1);
+						float dist = Vector2.Distance(mModel.player.transform.position, golLoc);
+						if(dist < 0.5){
+
+							//Debug.Log (mModel.actions);
+							//Debug.Log (mModel.durations);
+							asGoalReached = true;
+							if(j+1 > 1){
+								mModel.durations[mModel.durations.Count-1] = j;
+							}
+							else{
+								mModel.actions.RemoveAt(mModel.actions.Count-1);
+								mModel.durations.RemoveAt(mModel.durations.Count-1);
+							}
+							break;
+						}
+					}
+					if(j == framesPerStep){
+						frame = j;
+					}
+					else{
+						frame = j+1;
+					}
+				}
+			}
+			else{
+				//Debug.Log ("ai");
+				mModel.durations.Add (1);
+				frame = mModel.loopUpdate();
+				/*if(frame != 1){
+					Debug.Log ("AIAIAIAIAIA");
+					foreach (string act in mModel.actions){
+						Debug.Log (act);
+					}
+					foreach(int dur in mModel.durations){
+						Debug.Log (dur);
+					}
+				}*/
+
+			}
+
+			int fr = 0;
+			foreach(int dur in mModel.durations){
+				fr += dur;
+			}
+			if(fr != frame){
+				Debug.Log ("SOMETHING IS WRONG" + "-" + fr + "-" + frame);
+			}
+
+
 			if(mModel.dead){
+				asGoalReached = false;
 				return null;
 			}
 			else{
-				RTNode toReturn = new RTNode(player.transform.position, frames, mModel.state);
+				RTNode toReturn = new RTNode(player.transform.position, cur.frame + frame, mModel.state);
+				/*
 				toReturn.actions.Add (action);
-				toReturn.durations.Add (1);
+				if(frame > 1){
+					if(action.Equals("Right") || action.Equals ("Left")){
+						toReturn.durations.Add (frame);
+					}
+					else{
+						toReturn.durations.Add (1);
+						toReturn.actions.Add ("wait");
+						toReturn.durations.Add (frame-1);
+					}
+				}
+				else{
+					toReturn.durations.Add (1);
+				}
+				*/
+				toReturn.actions.AddRange (mModel.actions);
+				toReturn.durations.AddRange(mModel.durations);
 				toReturn.parent = cur;
 				cur.children.Add(toReturn);
 				return toReturn;
@@ -720,6 +849,7 @@ namespace EditorArea {
 
 
 		public static float maxDistRTNodes = 5;
+		public static float minDistRTNodes = 1;
 
 		private void RRT(bool useMCT){
 			cleanUp();
@@ -742,7 +872,9 @@ namespace EditorArea {
 				for(int i = 0; i < rrtIters; i++){
 					float x = Random.Range (bl.x, tr.x);
 					float y = Random.Range (bl.y, tr.y);
-					tryAddNode(x,y, j, useMCT);
+					if(!tryAddNode(x,y, j, useMCT)){
+						i--;
+					}
 					if(goalReached[j]){
 						break;
 					}
@@ -918,7 +1050,7 @@ namespace EditorArea {
 				}
 				else{
 					//Debug.Log ("MCTSearch unsuccesful");
-					return false;
+					return true;
 				}
 			}
 		}
@@ -956,6 +1088,9 @@ namespace EditorArea {
 			RTNode curNode = null;
 			foreach(RTNode node in rrtTrees[j]){
 				dist = Vector2.Distance(node.position, new Vector2(x,y));
+				if(dist < minDistRTNodes){
+					return null;
+				}
 				if(dist < minDist){
 					minDist = dist;
 					curNode = node;

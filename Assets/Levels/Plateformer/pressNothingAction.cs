@@ -13,6 +13,10 @@ public class pressNothingAction : AbsAction {
 			}
 			state.adjustmentVelocity.x = 0;
 			curTime++;
+			if(curTime == duration){
+				curTime = 0;
+				return true;
+			}
 			return false;
 			
 		}
