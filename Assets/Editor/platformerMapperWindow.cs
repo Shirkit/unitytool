@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 //using Priority_Queue;
 using Mischel.Collections;
+using KDTreeDLL;
 
 namespace EditorArea {
 	public class PlatformerEditorWindow : EditorWindow  {
@@ -71,7 +72,7 @@ namespace EditorArea {
 			maxDistRTNodes = EditorGUILayout.FloatField ("Max Dist RRT Nodes", maxDistRTNodes);
 			minDistRTNodes = EditorGUILayout.FloatField ("Min Dist RRT Nodes", minDistRTNodes);
 			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 10);
-			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 100, 10000);
+			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 100, 100000);
 
 			
 			
@@ -573,7 +574,7 @@ namespace EditorArea {
 				return reCreatePathAS();
 			}
 			else{
-				Debug.Log("Failed");
+				//Debug.Log("Failed");
 				return null;
 			}
 		}
@@ -842,8 +843,11 @@ namespace EditorArea {
 		}
 
 		public bool[] goalReached;
-		public int rrtIters = 10000000;
-		public List<RTNode>[] rrtTrees;
+		public static int rrtIters = 10000000;
+
+		//public List<RTNode>[] rrtTrees;
+		public KDTree[] rrtTrees;
+
 		public RTNode[] roots;
 		public RTNode[] goalNodes;
 
@@ -854,7 +858,9 @@ namespace EditorArea {
 		private void RRT(bool useMCT){
 			cleanUp();
 			goalReached = new bool[numPlayers];
-			rrtTrees = new List<RTNode>[numPlayers];
+
+			//rrtTrees = new List<RTNode>[numPlayers];
+			rrtTrees = new KDTree[numPlayers];
 			roots = new RTNode[numPlayers];
 			goalNodes = new RTNode[numPlayers];
 
@@ -865,17 +871,22 @@ namespace EditorArea {
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				Vector3 bl = GameObject.Find ("bottomLeft").transform.position;
 				Vector3 tr = GameObject.Find ("topRight").transform.position;
-				rrtTrees[j] = new List<RTNode>();
+				//rrtTrees[j] = new List<RTNode>();
+				rrtTrees[j] = new KDTree(2);
 				roots[j] = new RTNode(startingLoc, 0, new PlayerState());
-				rrtTrees[j].Add (roots[j]);
-
+				//rrtTrees[j].Add (roots[j]);
+				rrtTrees[j].insert(new double[] {roots[j].position.x, roots[j].position.y} ,roots[j]);
+				int q = 0;
 				for(int i = 0; i < rrtIters; i++){
+					q++;
 					float x = Random.Range (bl.x, tr.x);
 					float y = Random.Range (bl.y, tr.y);
 					if(!tryAddNode(x,y, j, useMCT)){
 						i--;
 					}
 					if(goalReached[j]){
+						Debug.Log (i);
+						Debug.Log (q);
 						break;
 					}
 				}
@@ -1034,7 +1045,8 @@ namespace EditorArea {
 					final.parent = closest;
 					closest.children.Add (final);
 					final.frame = closest.frame + final.frame;
-					rrtTrees[j].Add (final);
+					//rrtTrees[j].Add (final);
+					rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
 					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5){
 						goalReached[j] = true;
 						goalNodes[j] = final;
@@ -1071,7 +1083,8 @@ namespace EditorArea {
 					final.parent = node;
 					node.children.Add (final);
 					final.frame = node.frame + final.frame;
-					rrtTrees[j].Add (final);
+					//rrtTrees[j].Add (final);
+					rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
 					goalNodes[j] = final;
 					return true;
 				}
@@ -1083,6 +1096,7 @@ namespace EditorArea {
 
 
 		private RTNode findClosest(float x,float y, int j){
+			/*
 			float minDist = maxDistRTNodes;
 			float dist;
 			RTNode curNode = null;
@@ -1096,7 +1110,15 @@ namespace EditorArea {
 					curNode = node;
 				}
 			}
-			return curNode;
+			*/
+			RTNode curNode = (RTNode)rrtTrees[j].nearest(new double[] {x, y});
+			float dist = Vector2.Distance(curNode.position, new Vector2(x,y));
+			if(dist < minDistRTNodes || dist > maxDistRTNodes){
+				return null;
+			}
+			else{
+				return curNode;
+			}
 		}
 
 
