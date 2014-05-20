@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class PlayerState {
+public class PlayerState{
 
 	public float movementSpeed;
 	public float jumpPower;
