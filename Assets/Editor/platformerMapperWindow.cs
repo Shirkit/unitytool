@@ -167,7 +167,7 @@ namespace EditorArea {
 			}
 			prevDrawPaths = drawPaths;
 
-			if(!pathsMarked && markMap){
+			/*if(!pathsMarked && markMap){
 				pathsMarked = true;
 				if(drawPaths){
 					foreach(movementModel model in mModels){
@@ -176,7 +176,7 @@ namespace EditorArea {
 						}
 					}
 				}
-			}
+			}*/
 
 			
 			if(playing){
