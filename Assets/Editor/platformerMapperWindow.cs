@@ -50,11 +50,39 @@ namespace EditorArea {
 		public GameObject modelFab = Resources.Load ("modelObject") as GameObject;
 		public GameObject posModFab = Resources.Load ("posMod") as GameObject;
 
+
+
+		//public static GameObject[] hplats;
+		public static HPlatMovement[] hplatmovers;
+		public static bool hplatInitialized = false;
+
 		[MenuItem("Window/RRTMapper")]
 		static void Init () {
 			PlatformerEditorWindow window = (PlatformerEditorWindow)EditorWindow.GetWindow (typeof(PlatformerEditorWindow));
 			window.title = "RRTMapper";
 			window.ShowTab ();
+		}
+
+		static void initPlat(){
+			GameObject hmovplat = GameObject.Find ("HMovingPlatforms");
+			if(hmovplat == null){
+				Debug.Log ("HMOVNULL");
+			}
+			//hplats = new GameObject[hmovplat.transform.childCount];
+			hplatmovers = new HPlatMovement[hmovplat.transform.childCount];
+			if(hplatmovers.Length == 0){
+				Debug.Log ("NO CHILDREN");
+			}
+			int i = 0;
+			foreach(Transform child in hmovplat.transform){
+				hplatmovers[i] = child.gameObject.GetComponent<HPlatMovement>();
+				//hplats[i] = child.gameObject;
+				Debug.Log (child.gameObject.name);
+				Debug.Log ("AT I" + hplatmovers[i]);
+				Debug.Log (hplatmovers[i]);
+				i++;
+			}
+			hplatInitialized = true;
 		}
 
 		void OnGUI () {
@@ -64,7 +92,7 @@ namespace EditorArea {
 				curFrame = 0;
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
 				goalLoc = GameObject.Find("goalPosition").transform.position;
-				multiMCTSearch(startingLoc, goalLoc, new PlayerState());
+				multiMCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
 			}
 			if (GUILayout.Button ("Print Solution")) {
 				printSolution();
@@ -140,13 +168,17 @@ namespace EditorArea {
 				curFrame = 0;
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
 				goalLoc = GameObject.Find("goalPosition").transform.position;
-				AStarSearch(startingLoc, goalLoc, new PlayerState());
+				AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
 			}
 
 			/*if(GUILayout.Button ("Clean Up Heat Map")){
 				cleanUpHMap();
 			}*/
 
+			if(GUILayout.Button ("ReInitialize Moving Platforms")){
+				initPlat();
+			}
+			
 		}
 
 		bool prevDrawPaths;
@@ -202,6 +234,8 @@ namespace EditorArea {
 							pModel.goToFrame(curFrame);
 						}
 					}
+					HPlatgoToFrame(curFrame);
+
 				}
 				else{
 					//Debug.Log ("WTF");
@@ -316,6 +350,17 @@ namespace EditorArea {
 			}
 		}
 
+		private static void HPlatgoToFrame(int curFrame){
+			if(!hplatInitialized){
+				initPlat();
+			}
+			foreach(HPlatMovement mov in hplatmovers){
+				if(mov != null){
+					mov.goToFrame(curFrame);
+				}
+			}
+		}
+
 		private void goToFrame(int curFrame){
 			foreach(movementModel model in mModels){
 				if(model != null){
@@ -337,16 +382,17 @@ namespace EditorArea {
 					pModel.goToFrame(curFrame);
 				}
 			}
+			HPlatgoToFrame(curFrame);
 		}
-
-
-
-		private void multiMCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state){
+		
+		
+		
+		private void multiMCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			cleanUp();
 			count = 0;
 
 			for(int i = 0; i < numPlayers; i++){
-				MCTSearch(startLoc, golLoc, state);
+				MCTSearch(startLoc, golLoc, state, frame);
 				count++;
 			}
 		}
@@ -405,7 +451,7 @@ namespace EditorArea {
 		}
 
 
-		private RTNode MCTSearch(Vector3 startLoc,Vector3 golLoc, PlayerState state){
+		private RTNode MCTSearch(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + count;
 			modelObj.transform.parent = models.transform;
@@ -417,11 +463,13 @@ namespace EditorArea {
 			mModels.Add (mModel);
 			mModel.startState = state;
 			mModel.startLocation = startLoc;
+			mModel.startFrame = frame;
+			mModel.hplatmovers = hplatmovers;
 
 			int i = 0;
 			bool foundAnswer = false;
 			while(i < numIters && !foundAnswer){
-				foundAnswer = MCTSearchIteration(startLoc, golLoc, state);
+				foundAnswer = MCTSearchIteration(startLoc, golLoc, state, frame);
 				i++;
 			}
 			if(foundAnswer)
@@ -467,10 +515,11 @@ namespace EditorArea {
 			}
 		}
 
-		private bool MCTSearchIteration(Vector3 startLoc,Vector3 golLoc, PlayerState state){
+		private bool MCTSearchIteration(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
 			//Debug.Log ("--------------------------------------------------------");
 			player.transform.position = startLoc;
 			mModel.initializev2();
+
 
 			mModel.numFrames = 0;
 			//resetState(mModel, state);
@@ -573,7 +622,7 @@ namespace EditorArea {
 		public static int framesPerStep = 1;
 		public static int maxDepthAStar = 100;
 
-		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state){
+		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			cleanUp();
 
 			modelObj = Instantiate(modelFab) as GameObject;
@@ -583,6 +632,7 @@ namespace EditorArea {
 			player.name = "player" + count;
 			player.transform.parent = players.transform;
 			mModel = modelObj.GetComponent<movementModel>() as movementModel;
+			mModel.hplatmovers = hplatmovers;
 			mModel.player = player;
 			mModels.Add (mModel);
 			count++;
@@ -622,6 +672,7 @@ namespace EditorArea {
 			}
 			if(asGoalReached){
 				count = 0;
+				mModel.startFrame = frame;
 				mModel.startState = state;
 				mModel.startLocation = startLoc;
 				mModel.initializev2();
@@ -675,6 +726,7 @@ namespace EditorArea {
 
 		private RTNode addAction(RTNode cur, string action, Vector3 golLoc){
 			mModel.startState = cur.state;
+			mModel.startFrame = cur.frame;
 			mModel.startLocation = cur.position;
 			mModel.initializev2();
 
@@ -789,7 +841,7 @@ namespace EditorArea {
 			}
 		}
 
-		private RTNode BFSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state){
+		/*private RTNode BFSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state){
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + count;
 			modelObj.transform.parent = models.transform;
@@ -886,7 +938,7 @@ namespace EditorArea {
 			else{
 				return false;
 			}
-		}
+		}*/
 
 
 		private void printSolution(){
@@ -1023,7 +1075,9 @@ namespace EditorArea {
 					player.transform.parent = players.transform;
 					mModel = modelObj.GetComponent<movementModel>() as movementModel;
 					mModel.player = player;
+					mModel.hplatmovers = hplatmovers;
 					mModel.startState = new PlayerState();
+					mModel.startFrame = 0;
 					mModel.startLocation = startingLoc;
 					mModel.initializev2();
 					mModels.Add (mModel);
@@ -1090,10 +1144,10 @@ namespace EditorArea {
 				//Debug.Log (closest.state);
 				RTNode final;
 				if(useMCT){
-					final = MCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state);
+					final = MCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
 				else{
-					final = AStarSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state);
+					final = AStarSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
 				if(final != null){
 					//Debug.Log ("Node Added");
@@ -1129,10 +1183,10 @@ namespace EditorArea {
 			else{
 				RTNode final;
 				if(useMCT){
-					final = MCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state);
+					final = MCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
 				else{
-					final = AStarSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state);
+					final = AStarSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
 				if(final != null){
 					final.parent = node;

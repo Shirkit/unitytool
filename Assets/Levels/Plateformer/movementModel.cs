@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using Vectrosity;
@@ -6,6 +7,7 @@ using Vectrosity;
 public class movementModel : MonoBehaviour{
 	
 	public int aIndex;
+	public int frame;
 	public List<string> actions;
 	public List<int> durations;
 	public Dictionary<string, AbsAction> actionTypes;
@@ -19,8 +21,12 @@ public class movementModel : MonoBehaviour{
 	public bool pathComputed = false;
 	public Vector3[] pointsArray;
 
+
 	public PlayerState startState;
 	public Vector3 startLocation;
+	public int startFrame;
+
+	public HPlatMovement[] hplatmovers;
 
 	public movementModel(){
 	}
@@ -70,7 +76,7 @@ public class movementModel : MonoBehaviour{
 		state.velocity.x = startState.velocity.x;
 		state.velocity.y = startState.velocity.y;
 		state.numJumps = startState.numJumps;
-		
+		frame = startFrame;
 		
 		
 		
@@ -144,6 +150,7 @@ public class movementModel : MonoBehaviour{
 	}
 
 	public bool goToFrame(int fr){
+		frame = startFrame;
 		if(startState != null){
 			resetState();
 		}
@@ -161,6 +168,7 @@ public class movementModel : MonoBehaviour{
 	}
 
 	public bool updater(){
+		frame++;
 		bool toReturn;
 		if(aIndex < actions.Count){
 			//Debug.Log (aIndex);
@@ -209,11 +217,14 @@ public class movementModel : MonoBehaviour{
 
 	private LayerMask floor = 1 << LayerMask.NameToLayer("Floor");
 	private LayerMask walls = 1 << LayerMask.NameToLayer("Walls");
+	private LayerMask hplats  = 1 << LayerMask.NameToLayer("HMovingPlatforms");
 
 	private void doCollisions(){
 		updateCorners();
+		HPlatgoToFrame(frame);
 		Collider2D collF= Physics2D.OverlapArea(blCorner, trCorner, floor);
 		Collider2D collW = Physics2D.OverlapArea(blCorner, trCorner, walls);
+		Collider2D collH = Physics2D.OverlapArea (blCorner, trCorner, hplats);
 		if(collF != null){
 			if(collF.tag.Equals("Floor")){
 				if(!state.isOnGround){
@@ -230,6 +241,30 @@ public class movementModel : MonoBehaviour{
 		else{
 			state.isOnGround = false;
 		}
+		if(collH != null){
+			if(collH.tag.Equals("HMovingPlatforms")){
+				if(!state.isOnGround){
+					
+					if((state.velocity.y < 0.1f) && (collH.gameObject.transform.position.y + collH.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
+						state.isOnGround = true;
+						state.numJumps = 0;
+						player.transform.position = new Vector3(player.transform.position.x, (collH.gameObject.transform.position.y + collH.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
+						state.velocity.y = 0;
+					}
+					/*if(collH.gameObject.GetComponent<HPlatMovement>().isGoingLeft(frame)){
+						player.transform.position = new Vector3(player.transform.position.x - 0.075f, player.transform.position.y, player.transform.position.z);
+
+					}
+					else{
+						player.transform.position = new Vector3(player.transform.position.x - 0.075f, player.transform.position.y, player.transform.position.z);
+					}*/
+				}
+			}
+		}
+		else{
+			state.isOnGround = false;
+		}
+
 		
 		if(collW != null){
 			 if(collW.tag.Equals ("Wall")){
@@ -275,7 +310,17 @@ public class movementModel : MonoBehaviour{
 		line.vectorObject.transform.parent = paths.transform;
 	}
 
-	public void markMap(GameObject [,] hmapsqrs,Vector3 hmapbl,Vector3 hmaptr,float hmapinc){
+
+	private void HPlatgoToFrame(int curFrame){
+		foreach(HPlatMovement mov in hplatmovers){
+			if(mov != null){
+				mov.goToFrame(curFrame);
+			}
+		}
+	}
+	
+	
+	/*public void markMap(GameObject [,] hmapsqrs,Vector3 hmapbl,Vector3 hmaptr,float hmapinc){
 		if(!pathComputed){
 			computePath();
 		}
@@ -292,7 +337,7 @@ public class movementModel : MonoBehaviour{
 			tempMaterial.color = Color.black;
 			cube.renderer.sharedMaterial = tempMaterial;
 		}
-	}
+	}*/
 
 	public posMovModel toPosModel(){
 		List<Vector3> positions = new List<Vector3>();
