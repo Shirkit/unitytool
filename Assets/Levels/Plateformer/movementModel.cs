@@ -207,52 +207,39 @@ public class movementModel : MonoBehaviour{
 		}
 	}
 
+	private LayerMask floor = 1 << LayerMask.NameToLayer("Floor");
+	private LayerMask walls = 1 << LayerMask.NameToLayer("Walls");
+
 	private void doCollisions(){
 		updateCorners();
-		Collider2D coll = Physics2D.OverlapArea(blCorner, trCorner);
-
-		if(coll != null){
-			if(coll.tag.Equals("Floor")){
+		Collider2D collF= Physics2D.OverlapArea(blCorner, trCorner, floor);
+		Collider2D collW = Physics2D.OverlapArea(blCorner, trCorner, walls);
+		if(collF != null){
+			if(collF.tag.Equals("Floor")){
 				if(!state.isOnGround){
 
-					if((state.velocity.y < 0.1f) && (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
+					if((state.velocity.y < 0.1f) && (collF.gameObject.transform.position.y + collF.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
 						state.isOnGround = true;
 						state.numJumps = 0;
-						player.transform.position = new Vector3(player.transform.position.x, (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
+						player.transform.position = new Vector3(player.transform.position.x, (collF.gameObject.transform.position.y + collF.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
 						state.velocity.y = 0;
 					}
 				}
 			}
-			else if(coll.tag.Equals ("Wall")){
+		}
+		else{
+			state.isOnGround = false;
+		}
+		
+		if(collW != null){
+			 if(collW.tag.Equals ("Wall")){
 				player.transform.position = new Vector3((player.transform.position.x - state.velocity.x*1.03f - state.adjustmentVelocity.x*1.03f), player.transform.position.y, player.transform.position.z);
 				state.velocity.x = 0;
 				state.adjustmentVelocity.x = 0;
-
-				/*if(state.velocity.x + state.adjustmentVelocity.x < 0.1f){
-					player.transform.position = new Vector3(player.transform.position.x - state.velocity.x - state.adjustmentVelocity.x + 0.1f, player.transform.position.y, player.transform.position.z);
-					if(state.velocity.x < 0){
-						state.velocity.x = 0;
-					}
-					if(state.adjustmentVelocity.x < 0){
-						state.adjustmentVelocity.x = 0;
-					}
-				}
-				else{
-					player.transform.position = new Vector3(player.transform.position.x - state.velocity.x - state.adjustmentVelocity.x - 0.1f, player.transform.position.y, player.transform.position.z);
-					if(state.velocity.x > 0){
-						state.velocity.x = 0;
-					}
-					if(state.adjustmentVelocity.x > 0){
-						state.adjustmentVelocity.x = 0;
-					}
-				}*/
-			}
-			else{
-				state.isOnGround = false;
 			}
 		}
 	}
-
+	
 	private void updateCorners(){
 
 		blCorner = new Vector2((player.transform.position.x - 0.5f*player.transform.localScale.x)-0.1f, (player.transform.position.y - 0.5f*player.transform.localScale.y)-0.1f);
