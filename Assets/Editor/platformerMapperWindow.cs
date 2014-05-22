@@ -27,7 +27,7 @@ namespace EditorArea {
 		public Vector3 goalLoc;
 		public bool showDeaths;
 		public bool drawPaths;
-		public bool markMap;
+		//public bool markMap;
 		public bool playing = false;
 		private movementModel mModel;
 		private posMovModel pmModel;
@@ -87,7 +87,7 @@ namespace EditorArea {
 
 			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
 			drawPaths = EditorGUILayout.Toggle ("Draw Paths", drawPaths);
-			markMap = EditorGUILayout.Toggle ("Mark Map", markMap);
+			//markMap = EditorGUILayout.Toggle ("Mark Map", markMap);
 
 			if (GUILayout.Button ("Clear")) {
 				cleanUp();
@@ -143,9 +143,9 @@ namespace EditorArea {
 				AStarSearch(startingLoc, goalLoc, new PlayerState());
 			}
 
-			if(GUILayout.Button ("Clean Up Heat Map")){
+			/*if(GUILayout.Button ("Clean Up Heat Map")){
 				cleanUpHMap();
-			}
+			}*/
 
 		}
 

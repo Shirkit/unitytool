@@ -211,19 +211,45 @@ public class movementModel : MonoBehaviour{
 		updateCorners();
 		Collider2D coll = Physics2D.OverlapArea(blCorner, trCorner);
 
-		if(coll != null && coll.gameObject != player){
-			if(!state.isOnGround){
+		if(coll != null){
+			if(coll.tag.Equals("Floor")){
+				if(!state.isOnGround){
 
-				if((state.velocity.y < 0.1f) && (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
-					state.isOnGround = true;
-					state.numJumps = 0;
-					player.transform.position = new Vector3(player.transform.position.x, (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
-					state.velocity.y = 0;
+					if((state.velocity.y < 0.1f) && (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
+						state.isOnGround = true;
+						state.numJumps = 0;
+						player.transform.position = new Vector3(player.transform.position.x, (coll.gameObject.transform.position.y + coll.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
+						state.velocity.y = 0;
+					}
 				}
 			}
-		}
-		else{
-			state.isOnGround = false;
+			else if(coll.tag.Equals ("Wall")){
+				player.transform.position = new Vector3((player.transform.position.x - state.velocity.x*1.03f - state.adjustmentVelocity.x*1.03f), player.transform.position.y, player.transform.position.z);
+				state.velocity.x = 0;
+				state.adjustmentVelocity.x = 0;
+
+				/*if(state.velocity.x + state.adjustmentVelocity.x < 0.1f){
+					player.transform.position = new Vector3(player.transform.position.x - state.velocity.x - state.adjustmentVelocity.x + 0.1f, player.transform.position.y, player.transform.position.z);
+					if(state.velocity.x < 0){
+						state.velocity.x = 0;
+					}
+					if(state.adjustmentVelocity.x < 0){
+						state.adjustmentVelocity.x = 0;
+					}
+				}
+				else{
+					player.transform.position = new Vector3(player.transform.position.x - state.velocity.x - state.adjustmentVelocity.x - 0.1f, player.transform.position.y, player.transform.position.z);
+					if(state.velocity.x > 0){
+						state.velocity.x = 0;
+					}
+					if(state.adjustmentVelocity.x > 0){
+						state.adjustmentVelocity.x = 0;
+					}
+				}*/
+			}
+			else{
+				state.isOnGround = false;
+			}
 		}
 	}
 
