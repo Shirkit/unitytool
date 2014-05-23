@@ -643,9 +643,17 @@ namespace EditorArea {
 		public static int framesPerStep = 1;
 		public static int maxDepthAStar = 100;
 
-		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
-			cleanUp();
+		public GameObject astar;
+		public int statesExplored;
 
+		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
+			statesExplored = 0;
+			bool drawWholeThing = true;
+
+			cleanUp();
+			if(drawWholeThing){
+				astar = new GameObject("ASTAR");
+			}
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + count;
 			modelObj.transform.parent = models.transform;
@@ -662,6 +670,7 @@ namespace EditorArea {
 			heap = new PriorityQueue<RTNode, double>();
 			asRoot = new RTNode(startLoc, 0, state);
 			heap.Enqueue(asRoot, -Vector2.Distance(asRoot.position, golLoc));
+			statesExplored++;
 			int k = 0;
 			while(!asGoalReached && heap.Count > 0 && k < maxDepthAStar){
 				k++;
@@ -698,10 +707,12 @@ namespace EditorArea {
 				mModel.startLocation = startLoc;
 				mModel.initializev2();
 				mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+				Debug.Log ("STATES EXPLORED = " + statesExplored);
 				return reCreatePathAS();
 			}
 			else{
 				//Debug.Log("Failed");
+				Debug.Log ("STATES EXPLORED = " + statesExplored);
 				return null;
 			}
 		}
@@ -731,15 +742,50 @@ namespace EditorArea {
 			}
 		}
 		private void tryDoAction(RTNode cur, string action, Vector3 golLoc){
+			bool drawWholeThing = true;
+
 			RTNode nex = addAction(cur, action, golLoc);
 			if(nex != null){
+				if(drawWholeThing){
+					Color clr;
+					switch(action){
+					case "wait":
+						clr = Color.blue;
+						break;
+					case "Left":
+						clr = Color.green;
+						break;
+					case "Right":
+						clr = Color.magenta;
+						break;
+					case "jump":
+						clr = Color.red;
+						break;
+					case "jump left":
+						clr = Color.yellow;
+						break;
+					case "jump right":
+						clr = Color.white;
+						break;
+					default:
+						clr = Color.cyan;
+						break;
+					}
+
+
+					VectorLine line = new VectorLine("AStar", new Vector3[] {cur.position, nex.position}, clr, null, 2.0f);
+					line.Draw3D();
+					line.vectorObject.transform.parent = astar.transform;
+				}
 				float dist = Vector2.Distance(nex.position, golLoc);
 				if(dist < 0.5){
 					asGoalReached = true;
 					asGoalNode = nex;
+					statesExplored++;
 				}
 				else{
 					heap.Enqueue(nex, -dist);
+					statesExplored++;
 				}
 			}
 		}
