@@ -55,31 +55,26 @@ namespace EditorArea {
 		//public static GameObject[] hplats;
 		public static HPlatMovement[] hplatmovers;
 		public static bool hplatInitialized = false;
+		public static bool clean;
 
 		[MenuItem("Window/RRTMapper")]
 		static void Init () {
 			PlatformerEditorWindow window = (PlatformerEditorWindow)EditorWindow.GetWindow (typeof(PlatformerEditorWindow));
 			window.title = "RRTMapper";
 			window.ShowTab ();
+			clean = false;
 		}
 
 		static void initPlat(){
 			GameObject hmovplat = GameObject.Find ("HMovingPlatforms");
-			if(hmovplat == null){
-				Debug.Log ("HMOVNULL");
-			}
 			//hplats = new GameObject[hmovplat.transform.childCount];
 			hplatmovers = new HPlatMovement[hmovplat.transform.childCount];
-			if(hplatmovers.Length == 0){
-				Debug.Log ("NO CHILDREN");
-			}
+
 			int i = 0;
 			foreach(Transform child in hmovplat.transform){
 				hplatmovers[i] = child.gameObject.GetComponent<HPlatMovement>();
+				hplatmovers[i].initialize();
 				//hplats[i] = child.gameObject;
-				Debug.Log (child.gameObject.name);
-				Debug.Log ("AT I" + hplatmovers[i]);
-				Debug.Log (hplatmovers[i]);
 				i++;
 			}
 			hplatInitialized = true;
@@ -93,6 +88,7 @@ namespace EditorArea {
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				multiMCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				HPlatgoToFrame(0);
 			}
 			if (GUILayout.Button ("Print Solution")) {
 				printSolution();
@@ -130,6 +126,9 @@ namespace EditorArea {
 			if (GUILayout.Button (playing ? "Stop" : "Play")) {
 				playing = !playing;
 			}
+			if(GUILayout.Button ("Go To Start")){
+				goToStart();
+			}
 
 			if (GUILayout.Button ("Export Current Paths")) {
 				exportPaths();
@@ -154,12 +153,14 @@ namespace EditorArea {
 				realFrame = 0;
 				curFrame = 0;
 				RRT(true);
+				HPlatgoToFrame(0);
 			}
 			if (GUILayout.Button ("RRT - AS")) {
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
 				RRT(false);
+				HPlatgoToFrame(0);
 			}
 			
 			if(GUILayout.Button ("AStarSearch")){
@@ -169,6 +170,7 @@ namespace EditorArea {
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				HPlatgoToFrame(0);
 			}
 
 			/*if(GUILayout.Button ("Clean Up Heat Map")){
@@ -178,13 +180,32 @@ namespace EditorArea {
 			if(GUILayout.Button ("ReInitialize Moving Platforms")){
 				initPlat();
 			}
+
 			
 		}
+
+		void goToStart(){
+			goToFrame(0);
+			HPlatgoToFrame(0);
+			goToFrame(0);
+			HPlatgoToFrame(0);
+			goToFrame(0);
+			HPlatgoToFrame(0);
+			goToFrame(0);
+			curFrame = 0;
+			realFrame = 0;
+		}
+
 
 		bool prevDrawPaths;
 		bool pathsMarked;
 
 		public void Update(){
+			if(!clean){
+				cleanUp();
+				clean = true;
+			}
+
 			if(prevDrawPaths != drawPaths){
 				DestroyImmediate(paths);
 				paths = new GameObject("paths");

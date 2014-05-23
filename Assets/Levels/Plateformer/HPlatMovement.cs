@@ -9,7 +9,7 @@ public class HPlatMovement : MonoBehaviour {
 	private bool initialized = false;
 	private int totalFrames;
 
-	private void initialize(){
+	public void initialize(){
 		initialized = true;
 		movementSpeed = 0.075f;
 		lmostX = transform.FindChild("lmost").position.x;
