@@ -15,7 +15,11 @@ public class HPlatMovement : MonoBehaviour {
 		lmostX = transform.FindChild("lmost").position.x;
 		rmostX = transform.FindChild("rmost").position.x;
 		totalFrames = Mathf.CeilToInt((rmostX - lmostX) / movementSpeed) * 2;
+		desPos = new Vector3(transform.position.x, transform.position.y, transform.position.z);
 	}
+
+	private Vector3 desPos;
+	private Vector3 difPos;
 
 	public void goToFrame(int frame){
 		if(!initialized){
@@ -27,11 +31,14 @@ public class HPlatMovement : MonoBehaviour {
 		//Debug.Log (totalFrames/2);
 		if(fr > (totalFrames/2)){
 
-			transform.position = new Vector3((rmostX - (fr - totalFrames/2)*movementSpeed), transform.position.y, transform.position.z);
+			desPos.x = (rmostX - (fr - totalFrames/2)*movementSpeed);
+			difPos = desPos - transform.position;
+			transform.position += difPos;
 		}
 		else{
-
-			transform.position = new Vector3((lmostX + fr*movementSpeed), transform.position.y, transform.position.z);
+			desPos.x = (lmostX + fr*movementSpeed);
+			difPos = desPos - transform.position;
+			transform.position += difPos;
 		}
 	}
 	public bool isGoingLeft(int frame){
