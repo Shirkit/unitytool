@@ -218,6 +218,7 @@ public class movementModel : MonoBehaviour{
 	private LayerMask floor = 1 << LayerMask.NameToLayer("Floor");
 	private LayerMask walls = 1 << LayerMask.NameToLayer("Walls");
 	private LayerMask hplats  = 1 << LayerMask.NameToLayer("HMovingPlatforms");
+	private LayerMask lethals = 1 << LayerMask.NameToLayer ("Lethals");
 
 	private void doCollisions(){
 		updateCorners();
@@ -225,6 +226,15 @@ public class movementModel : MonoBehaviour{
 		Collider2D collF= Physics2D.OverlapArea(blCorner, trCorner, floor);
 		Collider2D collW = Physics2D.OverlapArea(blCorner, trCorner, walls);
 		Collider2D collH = Physics2D.OverlapArea (blCorner, trCorner, hplats);
+		Collider2D collD = Physics2D.OverlapArea (blCorner, trCorner, lethals);
+		if(collD != null){
+			if(collD.tag.Equals("Lethals")){
+				dead = true;
+				return;
+			}
+		}
+
+
 		if(collF != null){
 			if(collF.tag.Equals("Floor")){
 				if(!state.isOnGround){
