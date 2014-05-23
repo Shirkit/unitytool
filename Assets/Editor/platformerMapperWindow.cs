@@ -40,6 +40,8 @@ namespace EditorArea {
 		public static string filename;
 		public static string destCount;
 
+		public static bool drawWholeThing;
+
 		public List<movementModel> mModels;
 		public List<posMovModel> pmModels;
 
@@ -111,6 +113,7 @@ namespace EditorArea {
 
 			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
 			drawPaths = EditorGUILayout.Toggle ("Draw Paths", drawPaths);
+			drawWholeThing = EditorGUILayout.Toggle ("Debug Mode", drawWholeThing);
 			//markMap = EditorGUILayout.Toggle ("Mark Map", markMap);
 
 			if (GUILayout.Button ("Clear")) {
@@ -147,7 +150,7 @@ namespace EditorArea {
 				importPos(filename, destCount);
 			}
 
-
+			rrtIters = EditorGUILayout.IntField("RRT Nodes: ", rrtIters);
 			if (GUILayout.Button ("RRT - MCT")) {
 				pathsMarked = false;
 				realFrame = 0;
@@ -419,6 +422,7 @@ namespace EditorArea {
 		}
 
 		private void cleanUp(){
+			DestroyImmediate(astar);
 			DestroyImmediate(GameObject.Find ("players"));
 			nodes = new GameObject("nodes");
 			players = new GameObject("players");
@@ -648,9 +652,8 @@ namespace EditorArea {
 
 		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			statesExplored = 0;
-			bool drawWholeThing = true;
-
 			cleanUp();
+
 			if(drawWholeThing){
 				astar = new GameObject("ASTAR");
 			}
@@ -742,7 +745,6 @@ namespace EditorArea {
 			}
 		}
 		private void tryDoAction(RTNode cur, string action, Vector3 golLoc){
-			bool drawWholeThing = true;
 
 			RTNode nex = addAction(cur, action, golLoc);
 			if(nex != null){
