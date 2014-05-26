@@ -56,7 +56,8 @@ namespace EditorArea {
 
 		//public static GameObject[] hplats;
 		public static HPlatMovement[] hplatmovers;
-		public static bool hplatInitialized = false;
+		public static VPlatMovement[] vplatmovers;
+		public static bool platsInitialized = false;
 		public static bool clean;
 
 		[MenuItem("Window/RRTMapper")]
@@ -79,7 +80,22 @@ namespace EditorArea {
 				//hplats[i] = child.gameObject;
 				i++;
 			}
-			hplatInitialized = true;
+
+			GameObject vmovplat = GameObject.Find ("VMovingPlatforms");
+			//hplats = new GameObject[hmovplat.transform.childCount];
+			vplatmovers = new VPlatMovement[vmovplat.transform.childCount];
+			
+			i = 0;
+			foreach(Transform child in vmovplat.transform){
+				vplatmovers[i] = child.gameObject.GetComponent<VPlatMovement>();
+				vplatmovers[i].initialize();
+				//hplats[i] = child.gameObject;
+				i++;
+			}
+
+
+
+			platsInitialized = true;
 		}
 
 		void OnGUI () {
@@ -90,7 +106,7 @@ namespace EditorArea {
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				multiMCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
-				HPlatgoToFrame(0);
+				PlatsGoToFrame(0);
 			}
 			if (GUILayout.Button ("Print Solution")) {
 				printSolution();
@@ -156,14 +172,14 @@ namespace EditorArea {
 				realFrame = 0;
 				curFrame = 0;
 				RRT(true);
-				HPlatgoToFrame(0);
+				PlatsGoToFrame(0);
 			}
 			if (GUILayout.Button ("RRT - AS")) {
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
 				RRT(false);
-				HPlatgoToFrame(0);
+				PlatsGoToFrame(0);
 			}
 			
 			if(GUILayout.Button ("AStarSearch")){
@@ -173,7 +189,7 @@ namespace EditorArea {
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
-				HPlatgoToFrame(0);
+				PlatsGoToFrame(0);
 			}
 
 			/*if(GUILayout.Button ("Clean Up Heat Map")){
@@ -189,11 +205,11 @@ namespace EditorArea {
 
 		void goToStart(){
 			goToFrame(0);
-			HPlatgoToFrame(0);
+			PlatsGoToFrame(0);
 			goToFrame(0);
-			HPlatgoToFrame(0);
+			PlatsGoToFrame(0);
 			goToFrame(0);
-			HPlatgoToFrame(0);
+			PlatsGoToFrame(0);
 			goToFrame(0);
 			curFrame = 0;
 			realFrame = 0;
@@ -258,7 +274,7 @@ namespace EditorArea {
 							pModel.goToFrame(curFrame);
 						}
 					}
-					HPlatgoToFrame(curFrame);
+					PlatsGoToFrame(curFrame);
 
 				}
 				else{
@@ -374,11 +390,16 @@ namespace EditorArea {
 			}
 		}
 
-		private static void HPlatgoToFrame(int curFrame){
-			if(!hplatInitialized){
+		private static void PlatsGoToFrame(int curFrame){
+			if(!platsInitialized){
 				initPlat();
 			}
 			foreach(HPlatMovement mov in hplatmovers){
+				if(mov != null){
+					mov.goToFrame(curFrame);
+				}
+			}
+			foreach(VPlatMovement mov in vplatmovers){
 				if(mov != null){
 					mov.goToFrame(curFrame);
 				}
@@ -406,7 +427,7 @@ namespace EditorArea {
 					pModel.goToFrame(curFrame);
 				}
 			}
-			HPlatgoToFrame(curFrame);
+			PlatsGoToFrame(curFrame);
 		}
 		
 		
@@ -418,6 +439,9 @@ namespace EditorArea {
 			for(int i = 0; i < numPlayers; i++){
 				MCTSearch(startLoc, golLoc, state, frame);
 				count++;
+			}
+			if(showDeaths){
+				totalFrames = totalFrames + 1000;
 			}
 		}
 
@@ -490,6 +514,7 @@ namespace EditorArea {
 			mModel.startLocation = startLoc;
 			mModel.startFrame = frame;
 			mModel.hplatmovers = hplatmovers;
+			mModel.vplatmovers = vplatmovers;
 
 			int i = 0;
 			bool foundAnswer = false;
@@ -665,6 +690,7 @@ namespace EditorArea {
 			player.transform.parent = players.transform;
 			mModel = modelObj.GetComponent<movementModel>() as movementModel;
 			mModel.hplatmovers = hplatmovers;
+			mModel.vplatmovers = vplatmovers;
 			mModel.player = player;
 			mModels.Add (mModel);
 			count++;
@@ -710,12 +736,16 @@ namespace EditorArea {
 				mModel.startLocation = startLoc;
 				mModel.initializev2();
 				mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-				Debug.Log ("STATES EXPLORED = " + statesExplored);
+				if(drawWholeThing){
+					Debug.Log ("STATES EXPLORED = " + statesExplored);
+				}
 				return reCreatePathAS();
 			}
 			else{
 				//Debug.Log("Failed");
-				Debug.Log ("STATES EXPLORED = " + statesExplored);
+				if(drawWholeThing){
+					Debug.Log ("STATES EXPLORED = " + statesExplored);
+				}
 				return null;
 			}
 		}
@@ -1019,7 +1049,7 @@ namespace EditorArea {
 		}
 
 		public bool[] goalReached;
-		public static int rrtIters = 10000000;
+		public static int rrtIters = 100;
 
 		//public List<RTNode>[] rrtTrees;
 		public KDTree[] rrtTrees;
@@ -1060,9 +1090,12 @@ namespace EditorArea {
 					if(!tryAddNode(x,y, j, useMCT)){
 						i--;
 					}
+					if(q > rrtIters*10){
+						break;
+					}
 					if(goalReached[j]){
-						Debug.Log (i);
-						Debug.Log (q);
+						//Debug.Log (i);
+						//Debug.Log (q);
 						break;
 					}
 				}
@@ -1145,6 +1178,7 @@ namespace EditorArea {
 					mModel = modelObj.GetComponent<movementModel>() as movementModel;
 					mModel.player = player;
 					mModel.hplatmovers = hplatmovers;
+					mModel.vplatmovers = vplatmovers;
 					mModel.startState = new PlayerState();
 					mModel.startFrame = 0;
 					mModel.startLocation = startingLoc;

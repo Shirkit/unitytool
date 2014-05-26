@@ -27,6 +27,7 @@ public class movementModel : MonoBehaviour{
 	public int startFrame;
 
 	public HPlatMovement[] hplatmovers;
+	public VPlatMovement[] vplatmovers;
 
 	public movementModel(){
 	}
@@ -217,15 +218,17 @@ public class movementModel : MonoBehaviour{
 
 	private LayerMask floor = 1 << LayerMask.NameToLayer("Floor");
 	private LayerMask walls = 1 << LayerMask.NameToLayer("Walls");
-	private LayerMask hplats  = 1 << LayerMask.NameToLayer("HMovingPlatforms");
+	private LayerMask hplats = 1 << LayerMask.NameToLayer("HMovingPlatforms");
+	private LayerMask vplats = 1 << LayerMask.NameToLayer("VMovingPlatforms");
 	private LayerMask lethals = 1 << LayerMask.NameToLayer ("Lethals");
 
 	private void doCollisions(){
 		updateCorners();
-		HPlatgoToFrame(frame);
+		PlatsGoToFrame(frame);
 		Collider2D collF= Physics2D.OverlapArea(blCorner, trCorner, floor);
 		Collider2D collW = Physics2D.OverlapArea(blCorner, trCorner, walls);
 		Collider2D collH = Physics2D.OverlapArea (blCorner, trCorner, hplats);
+		Collider2D collV = Physics2D.OverlapArea(blCorner, trCorner, vplats);
 		Collider2D collD = Physics2D.OverlapArea (blCorner, trCorner, lethals);
 		if(collD != null){
 			if(collD.tag.Equals("Lethals")){
@@ -233,8 +236,6 @@ public class movementModel : MonoBehaviour{
 				return;
 			}
 		}
-
-
 		if(collF != null){
 			if(collF.tag.Equals("Floor")){
 				if(!state.isOnGround){
@@ -263,13 +264,37 @@ public class movementModel : MonoBehaviour{
 					}
 					if(Mathf.Approximately(player.transform.position.y, (collH.gameObject.transform.position.y + collH.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
 						if(collH.gameObject.GetComponent<HPlatMovement>().isGoingLeft(frame)){
-							Debug.Log ("left");
 							player.transform.position = new Vector3(player.transform.position.x - 0.075f, player.transform.position.y, player.transform.position.z);
 
 						}
 						else{
-							Debug.Log ("right");
 							player.transform.position = new Vector3(player.transform.position.x + 0.075f, player.transform.position.y, player.transform.position.z);
+						}
+					}
+				}
+			}
+		}
+		else{
+			state.isOnGround = false;
+		}
+
+		if(collV != null){
+			if(collV.tag.Equals("VMovingPlatforms")){
+				if(!state.isOnGround){
+					
+					if((state.velocity.y < 0.1f) && (collV.gameObject.transform.position.y + collV.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
+						state.isOnGround = true;
+						state.numJumps = 0;
+						player.transform.position = new Vector3(player.transform.position.x, (collV.gameObject.transform.position.y + collV.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
+						state.velocity.y = 0;
+					}
+					if(Mathf.Approximately(player.transform.position.y, (collV.gameObject.transform.position.y + collV.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
+						if(collV.gameObject.GetComponent<VPlatMovement>().isGoingDown(frame)){
+							player.transform.position = new Vector3(player.transform.position.x, player.transform.position.y - 0.075f, player.transform.position.z);
+							
+						}
+						else{
+							player.transform.position = new Vector3(player.transform.position.x, player.transform.position.y + 0.075f, player.transform.position.z);
 						}
 					}
 				}
@@ -290,7 +315,6 @@ public class movementModel : MonoBehaviour{
 	}
 	
 	private void updateCorners(){
-
 		blCorner = new Vector2((player.transform.position.x - 0.5f*player.transform.localScale.x)-0.1f, (player.transform.position.y - 0.5f*player.transform.localScale.y)-0.1f);
 		trCorner = new Vector2((player.transform.position.x + 0.5f*player.transform.localScale.x)+0.1f, (player.transform.position.y + 0.5f*player.transform.localScale.y)+0.1f);
 	}
@@ -325,8 +349,13 @@ public class movementModel : MonoBehaviour{
 	}
 
 
-	private void HPlatgoToFrame(int curFrame){
+	private void PlatsGoToFrame(int curFrame){
 		foreach(HPlatMovement mov in hplatmovers){
+			if(mov != null){
+				mov.goToFrame(curFrame);
+			}
+		}
+		foreach(VPlatMovement mov in vplatmovers){
 			if(mov != null){
 				mov.goToFrame(curFrame);
 			}
