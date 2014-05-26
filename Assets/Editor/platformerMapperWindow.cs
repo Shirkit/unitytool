@@ -1,6 +1,6 @@
 ﻿
 
-
+//using System.Diagnostics;
 using UnityEngine;
 using UnityEditor;
 using Vectrosity;
@@ -41,7 +41,6 @@ namespace EditorArea {
 		public static string destCount;
 
 		public static bool drawWholeThing;
-
 		public List<movementModel> mModels;
 		public List<posMovModel> pmModels;
 
@@ -53,12 +52,16 @@ namespace EditorArea {
 		public GameObject posModFab = Resources.Load ("posMod") as GameObject;
 
 
-
+		
 		//public static GameObject[] hplats;
 		public static HPlatMovement[] hplatmovers;
 		public static VPlatMovement[] vplatmovers;
 		public static bool platsInitialized = false;
 		public static bool clean;
+
+		public static bool batchComputation;
+		public static bool batchComputaitonRRT;
+		public static string batchFilename;
 
 		[MenuItem("Window/RRTMapper")]
 		static void Init () {
@@ -200,6 +203,36 @@ namespace EditorArea {
 				initPlat();
 			}
 
+
+			EditorGUILayout.LabelField ("");
+			EditorGUILayout.LabelField ("");
+			EditorGUILayout.LabelField ("Batch Computations");
+			batchFilename = EditorGUILayout.TextField ("batch Filename", batchFilename);
+
+			EditorGUILayout.LabelField ("A Star Batch");
+			minNumFramesAS = EditorGUILayout.IntField ("min Num Frames", minNumFramesAS);
+			maxNumFramesAS = EditorGUILayout.IntField ("max Num Frames", maxNumFramesAS);
+			incrementFramesAS = EditorGUILayout.IntField ("increment Frames", incrementFramesAS);
+			minDepthAS = EditorGUILayout.IntField ("min Depth", minDepthAS);
+			maxDepthAS = EditorGUILayout.IntField ("max Depth", maxDepthAS);
+			incrementDepthAS = EditorGUILayout.IntField ("increment Depth", incrementDepthAS);
+			iterationsPerDataSetAS = EditorGUILayout.IntField ("Iteration Per DataSet", iterationsPerDataSetAS);
+			if(GUILayout.Button ("A Star Batch")){
+				batchCompute(1);
+			}
+
+			EditorGUILayout.LabelField ("MCT Batch");
+
+			iterationsPerDataSet = EditorGUILayout.IntField("iterations per DataSet", iterationsPerDataSet);
+			minIterations = EditorGUILayout.IntField("min iterations", minIterations);
+			maxIterations = EditorGUILayout.IntField("max iterations", maxIterations);
+			incrementIteration = EditorGUILayout.IntField("increment Iteration", incrementIteration);
+			minDepth = EditorGUILayout.IntField("min Depth", minDepth);
+			maxDepth = EditorGUILayout.IntField("max Depth", maxDepth);
+			incrementDepth = EditorGUILayout.IntField("incrementDepth", incrementDepth);
+			if(GUILayout.Button ("A Star Batch")){
+				batchCompute(2);
+			}
 			
 		}
 
@@ -522,6 +555,21 @@ namespace EditorArea {
 				foundAnswer = MCTSearchIteration(startLoc, golLoc, state, frame);
 				i++;
 			}
+			if(batchComputation){
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
+				{
+					file.WriteLine(("Iterations Used:" + i));
+					
+				}
+				if(foundAnswer){
+					return new RTNode();
+				}
+				else{
+					return null;
+				}
+			}
+
+
 			if(foundAnswer)
 			{
 				//Debug.Log ("Success");
@@ -727,6 +775,19 @@ namespace EditorArea {
 						break;
 					}
 					tryDoAction(cur, "jump left", golLoc);
+				}
+			}
+			if(batchComputation){
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
+				{
+					file.WriteLine(("States Explored:" + statesExplored));
+
+				}
+				if(asGoalReached){
+					return new RTNode();
+				}
+				else{
+					return null;
 				}
 			}
 			if(asGoalReached){
@@ -1332,6 +1393,115 @@ namespace EditorArea {
 				return curNode;
 			}
 		}
+
+		//Batch Computations Code
+
+		//ASTAR
+		public static int iterationsPerDataSetAS;
+		public static int minNumFramesAS;
+		public static int maxNumFramesAS;
+		public static int incrementFramesAS;
+		public static int minDepthAS;
+		public static int maxDepthAS;
+		public static int incrementDepthAS;
+
+		//MCT
+		public static int iterationsPerDataSet;
+		public static int minIterations;
+		public static int maxIterations;
+		public static int incrementIteration;
+		public static int minDepth;
+		public static int maxDepth;
+		public static int incrementDepth;
+
+		void batchCompute(int number){
+			initPlat();
+			batchComputation = true;
+			numPlayers = 1;
+			pathsMarked = false;
+			startingLoc = GameObject.Find ("startingPosition").transform.position;
+			goalLoc = GameObject.Find("goalPosition").transform.position;
+			showDeaths = false;
+			drawPaths = false;
+			
+			if(number == 1){
+				//A Star Batch Computation
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename))
+				{
+					file.WriteLine("A Star Batch Computation Results");
+				}
+				for(framesPerStep = minNumFramesAS; framesPerStep <= maxNumFramesAS; framesPerStep += incrementFramesAS){
+					for(maxDepthAStar = minDepthAS; maxDepthAStar <= maxDepthAS; maxDepthAStar += incrementDepthAS){
+						for(int i = 0; i < iterationsPerDataSetAS; i++){
+							realFrame = 0;
+							curFrame = 0;
+							PlatsGoToFrame(0);
+							string toWrite = framesPerStep + "," + maxDepthAStar + ",";
+							System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+							stopwatch.Start();
+							RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
+							stopwatch.Stop();
+							if(tmp == null){
+								toWrite += "false,";
+							}	
+							else{
+								toWrite += "true,";
+							}
+							toWrite += stopwatch.Elapsed;
+							
+							
+							using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
+							{
+								file.WriteLine(toWrite);
+							}
+						}
+					}
+				}
+				
+			}
+			else if (number == 2){
+				//Monte Carlo Batch Computation
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename))
+				{
+					file.WriteLine("Monte Carlo Batch Computation Results");
+				}
+				
+				
+				for(numIters = minIterations; numIters <= maxIterations; numIters += incrementIteration){
+					for(depthIter = minDepth; depthIter <= maxDepth; depthIter += incrementDepth){
+						for(int i = 0; i < iterationsPerDataSet; i++){
+							realFrame = 0;
+							curFrame = 0;
+							PlatsGoToFrame(0);
+							string toWrite = numIters + "," + depthIter + ",";
+							System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+							cleanUp();
+							stopwatch.Start();
+							RTNode tmp = MCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
+							stopwatch.Stop();
+							if(tmp == null){
+								toWrite += "false,";
+							}	
+							else{
+								toWrite += "true,";
+							}
+							toWrite += stopwatch.Elapsed;
+							
+							
+							using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
+							{
+								file.WriteLine(toWrite);
+							}
+						}
+					}
+				}
+			}
+			else if (number == 3){
+			}
+		}
+
+
+
 
 
 
