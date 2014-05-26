@@ -261,13 +261,17 @@ public class movementModel : MonoBehaviour{
 						player.transform.position = new Vector3(player.transform.position.x, (collH.gameObject.transform.position.y + collH.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
 						state.velocity.y = 0;
 					}
-					/*if(collH.gameObject.GetComponent<HPlatMovement>().isGoingLeft(frame)){
-						player.transform.position = new Vector3(player.transform.position.x - 0.075f, player.transform.position.y, player.transform.position.z);
+					if(Mathf.Approximately(player.transform.position.y, (collH.gameObject.transform.position.y + collH.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
+						if(collH.gameObject.GetComponent<HPlatMovement>().isGoingLeft(frame)){
+							Debug.Log ("left");
+							player.transform.position = new Vector3(player.transform.position.x - 0.075f, player.transform.position.y, player.transform.position.z);
 
+						}
+						else{
+							Debug.Log ("right");
+							player.transform.position = new Vector3(player.transform.position.x + 0.075f, player.transform.position.y, player.transform.position.z);
+						}
 					}
-					else{
-						player.transform.position = new Vector3(player.transform.position.x - 0.075f, player.transform.position.y, player.transform.position.z);
-					}*/
 				}
 			}
 		}
