@@ -232,7 +232,7 @@ namespace EditorArea {
 			minDepth = EditorGUILayout.IntField("min Depth", minDepth);
 			maxDepth = EditorGUILayout.IntField("max Depth", maxDepth);
 			incrementDepth = EditorGUILayout.IntField("incrementDepth", incrementDepth);
-			if(GUILayout.Button ("A Star Batch")){
+			if(GUILayout.Button ("MCT Batch")){
 				batchCompute(2);
 			}
 
