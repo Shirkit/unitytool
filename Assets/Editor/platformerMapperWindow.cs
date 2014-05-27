@@ -51,7 +51,7 @@ namespace EditorArea {
 		public GameObject modelFab = Resources.Load ("modelObject") as GameObject;
 		public GameObject posModFab = Resources.Load ("posMod") as GameObject;
 
-
+		private static Vector2 scrollPos = new Vector2 ();
 		
 		//public static GameObject[] hplats;
 		public static HPlatMovement[] hplatmovers;
@@ -60,7 +60,7 @@ namespace EditorArea {
 		public static bool clean;
 
 		public static bool batchComputation;
-		public static bool batchComputaitonRRT;
+		public static bool batchComputationRRT;
 		public static string batchFilename;
 
 		[MenuItem("Window/RRTMapper")]
@@ -102,6 +102,8 @@ namespace EditorArea {
 		}
 
 		void OnGUI () {
+			scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
+
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
 				pathsMarked = false;
 				realFrame = 0;
@@ -223,7 +225,7 @@ namespace EditorArea {
 
 			EditorGUILayout.LabelField ("MCT Batch");
 
-			iterationsPerDataSet = EditorGUILayout.IntField("iterations per DataSet", iterationsPerDataSet);
+			iterationsPerDataSetMCT = EditorGUILayout.IntField("iterations per DataSet", iterationsPerDataSetMCT);
 			minIterations = EditorGUILayout.IntField("min iterations", minIterations);
 			maxIterations = EditorGUILayout.IntField("max iterations", maxIterations);
 			incrementIteration = EditorGUILayout.IntField("increment Iteration", incrementIteration);
@@ -233,7 +235,32 @@ namespace EditorArea {
 			if(GUILayout.Button ("A Star Batch")){
 				batchCompute(2);
 			}
+
+			EditorGUILayout.LabelField ("RRT Batch");
+
+			iterationsPerDataSet = EditorGUILayout.IntField("iterations per DataSet", iterationsPerDataSet);
+
+			minMinDist = EditorGUILayout.FloatField("min Min Dist", minMinDist);
+			maxMinDist = EditorGUILayout.FloatField("max min Dist", maxMinDist);
+			incMinDist = EditorGUILayout.FloatField("inc Min Dist", incMinDist);
 			
+			minMaxDist = EditorGUILayout.FloatField("min Max Dist", minMaxDist);
+			maxMaxDist = EditorGUILayout.FloatField("max Max Dist", maxMaxDist);
+			incMaxDist = EditorGUILayout.FloatField("inc Max Dist", incMaxDist);
+			
+			minNodes = EditorGUILayout.IntField("min Nodes", minNodes);
+			maxNodes = EditorGUILayout.IntField("max Nodes", maxNodes);
+			incNodes = EditorGUILayout.IntField("inc Nodes", incNodes);
+			
+			MCTIter = EditorGUILayout.IntField("MCT Iter", MCTIter);
+			MCTDepth = EditorGUILayout.IntField("MCT Depth", MCTDepth);
+			
+			ASFrames = EditorGUILayout.IntField("A Star FPS", ASFrames);
+			ASDepth = EditorGUILayout.IntField("A Star Depth", ASDepth);
+			if(GUILayout.Button ("RRT Batch")){
+				batchCompute(3);
+			}
+			EditorGUILayout.EndScrollView ();
 		}
 
 		void goToStart(){
@@ -1122,15 +1149,15 @@ namespace EditorArea {
 		public static float maxDistRTNodes = 5;
 		public static float minDistRTNodes = 1;
 
-		private void RRT(bool useMCT){
+		private bool RRT(bool useMCT){
 			cleanUp();
 			goalReached = new bool[numPlayers];
 
-			//rrtTrees = new List<RTNode>[numPlayers];
 			rrtTrees = new KDTree[numPlayers];
 			roots = new RTNode[numPlayers];
 			goalNodes = new RTNode[numPlayers];
-
+			int i = 0;
+			int q = 0;
 			for(int j = 0; j < numPlayers; j++){
 
 				goalReached[j] = false;
@@ -1143,8 +1170,8 @@ namespace EditorArea {
 				roots[j] = new RTNode(startingLoc, 0, new PlayerState());
 				//rrtTrees[j].Add (roots[j]);
 				rrtTrees[j].insert(new double[] {roots[j].position.x, roots[j].position.y} ,roots[j]);
-				int q = 0;
-				for(int i = 0; i < rrtIters; i++){
+				q = 0;
+				for(i = 0; i < rrtIters; i++){
 					q++;
 					float x = Random.Range (bl.x, tr.x);
 					float y = Random.Range (bl.y, tr.y);
@@ -1161,8 +1188,26 @@ namespace EditorArea {
 					}
 				}
 			}
+			if(batchComputationRRT){
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
+				{
+					file.WriteLine(i + "," + q);
+				}
+				if(goalReached[0]){
+					return true;
+				}
+				else{
+					return false;
+				}
+			}
 			cleanUp();
 			reCreatePath();
+			if(goalReached[0]){
+				return true;
+			}
+			else{
+				return false;
+			}
 			//Debug.Log (rrtTrees[0].Count);
 			/*for(int j = 0; j< numPlayers; j++){
 				if(goalReached[j]){
@@ -1406,7 +1451,7 @@ namespace EditorArea {
 		public static int incrementDepthAS;
 
 		//MCT
-		public static int iterationsPerDataSet;
+		public static int iterationsPerDataSetMCT;
 		public static int minIterations;
 		public static int maxIterations;
 		public static int incrementIteration;
@@ -1414,9 +1459,29 @@ namespace EditorArea {
 		public static int maxDepth;
 		public static int incrementDepth;
 
+
+		//RRT
+		public static int iterationsPerDataSet;
+		public static float minMinDist;
+		public static float maxMinDist;
+		public static float incMinDist;
+		
+		public static float minMaxDist;
+		public static float maxMaxDist;
+		public static float incMaxDist;
+		
+		public static int minNodes;
+		public static int maxNodes;
+		public static int incNodes;
+		
+		public static int MCTIter;
+		public static int MCTDepth;
+		
+		public static int ASFrames;
+		public static int ASDepth;
+
 		void batchCompute(int number){
 			initPlat();
-			batchComputation = true;
 			numPlayers = 1;
 			pathsMarked = false;
 			startingLoc = GameObject.Find ("startingPosition").transform.position;
@@ -1425,6 +1490,8 @@ namespace EditorArea {
 			drawPaths = false;
 			
 			if(number == 1){
+				batchComputation = true;
+
 				//A Star Batch Computation
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename))
 				{
@@ -1460,6 +1527,8 @@ namespace EditorArea {
 				
 			}
 			else if (number == 2){
+				batchComputation = true;
+
 				//Monte Carlo Batch Computation
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename))
 				{
@@ -1469,7 +1538,7 @@ namespace EditorArea {
 				
 				for(numIters = minIterations; numIters <= maxIterations; numIters += incrementIteration){
 					for(depthIter = minDepth; depthIter <= maxDepth; depthIter += incrementDepth){
-						for(int i = 0; i < iterationsPerDataSet; i++){
+						for(int i = 0; i < iterationsPerDataSetMCT; i++){
 							realFrame = 0;
 							curFrame = 0;
 							PlatsGoToFrame(0);
@@ -1497,15 +1566,69 @@ namespace EditorArea {
 				}
 			}
 			else if (number == 3){
+				batchComputationRRT = true;
+				
+				framesPerStep = ASFrames;
+				maxDepthAStar = ASDepth;
+				
+				numIters = MCTIter;
+				depthIter = MCTDepth;
+				
+				for(minDistRTNodes = minMinDist; minDistRTNodes <= maxMinDist; minDistRTNodes += incMinDist){
+					for(maxDistRTNodes = minMaxDist; maxDistRTNodes <= maxMaxDist; maxDistRTNodes += incMaxDist){
+						for(rrtIters = minNodes; rrtIters <= maxNodes; rrtIters += incNodes){
+							for(int i = 0; i <= iterationsPerDataSet; i++){
+								string toWrite = "MCT" + minDistRTNodes + "," + maxDistRTNodes + ",";
+								bool success = false;
+								realFrame = 0;
+								curFrame = 0;
+								PlatsGoToFrame(0);
+
+								System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+								stopwatch.Start ();
+								success = RRT(true);
+								stopwatch.Stop();
+								if(success){
+									toWrite += "true,";
+								}
+								else{
+									toWrite += "false,";
+								}
+								toWrite += stopwatch.Elapsed;
+								using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
+								{
+									file.WriteLine(toWrite);
+								}
+
+								toWrite = "AStar" + minDistRTNodes + "," + maxDistRTNodes + ",";
+								success = false;
+								realFrame = 0;
+								curFrame = 0;
+								PlatsGoToFrame(0);
+								stopwatch = new System.Diagnostics.Stopwatch();
+								stopwatch.Start ();
+								success = RRT(false);
+								stopwatch.Stop();
+								if(success){
+									toWrite += "true,";
+								}
+								else{
+									toWrite += "false,";
+								}
+								toWrite += stopwatch.Elapsed;
+								using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
+								{
+									file.WriteLine(toWrite);
+								}
+							}
+						}
+					}
+				}
 			}
+			batchComputation = false;
+			batchComputationRRT = false;
+			goToFrame(0);
 		}
-
-
-
-
-
-
-
 	}
 }
 
