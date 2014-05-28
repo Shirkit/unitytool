@@ -60,8 +60,6 @@ public class movementModel : MonoBehaviour{
 	}
 
 	public void resetState(){
-		state.adjustmentVelocity.x = startState.adjustmentVelocity.x;
-		state.adjustmentVelocity.y = startState.adjustmentVelocity.y;
 		state.isOnGround = startState.isOnGround;
 		state.velocity.x = startState.velocity.x;
 		state.velocity.y = startState.velocity.y;
@@ -71,8 +69,6 @@ public class movementModel : MonoBehaviour{
 	public void initializev2(){
 		aIndex = 0;	
 		state = new PlayerState();
-		state.adjustmentVelocity.x = startState.adjustmentVelocity.x;
-		state.adjustmentVelocity.y = startState.adjustmentVelocity.y;
 		state.isOnGround = startState.isOnGround;
 		state.velocity.x = startState.velocity.x;
 		state.velocity.y = startState.velocity.y;
@@ -208,7 +204,6 @@ public class movementModel : MonoBehaviour{
 		if(!state.isOnGround){
 			state.velocity += state.gravity;
 			player.transform.position += (Vector3)state.velocity;
-			player.transform.position += (Vector3)state.adjustmentVelocity;
 		}
 		else{
 			state.velocity.y = 0;
@@ -240,7 +235,7 @@ public class movementModel : MonoBehaviour{
 			if(collF.tag.Equals("Floor")){
 				if(!state.isOnGround){
 
-					if((state.velocity.y < 0.1f) && (collF.gameObject.transform.position.y + collF.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
+					if((state.velocity.y < 0.1f) && (collF.gameObject.transform.position.y + collF.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y) < player.transform.position.y + 0.1f){
 						state.isOnGround = true;
 						state.numJumps = 0;
 						player.transform.position = new Vector3(player.transform.position.x, (collF.gameObject.transform.position.y + collF.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
@@ -256,7 +251,7 @@ public class movementModel : MonoBehaviour{
 			if(collH.tag.Equals("HMovingPlatforms")){
 				if(!state.isOnGround){
 					
-					if((state.velocity.y < 0.1f) && (collH.gameObject.transform.position.y + collH.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
+					if((state.velocity.y < 0.1f) && (collH.gameObject.transform.position.y + collH.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y) < player.transform.position.y + 0.1f){
 						state.isOnGround = true;
 						state.numJumps = 0;
 						player.transform.position = new Vector3(player.transform.position.x, (collH.gameObject.transform.position.y + collH.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
@@ -282,7 +277,7 @@ public class movementModel : MonoBehaviour{
 			if(collV.tag.Equals("VMovingPlatforms")){
 				if(!state.isOnGround){
 					
-					if((state.velocity.y < 0.1f) && (collV.gameObject.transform.position.y + collV.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y + state.adjustmentVelocity.y) < player.transform.position.y + 0.1f){
+					if((state.velocity.y < 0.1f) && (collV.gameObject.transform.position.y + collV.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y) < player.transform.position.y + 0.1f){
 						state.isOnGround = true;
 						state.numJumps = 0;
 						player.transform.position = new Vector3(player.transform.position.x, (collV.gameObject.transform.position.y + collV.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
@@ -307,9 +302,8 @@ public class movementModel : MonoBehaviour{
 		
 		if(collW != null){
 			 if(collW.tag.Equals ("Wall")){
-				player.transform.position = new Vector3((player.transform.position.x - state.velocity.x*1.03f - state.adjustmentVelocity.x*1.03f), player.transform.position.y, player.transform.position.z);
+				player.transform.position = new Vector3((player.transform.position.x - state.velocity.x*1.03f), player.transform.position.y, player.transform.position.z);
 				state.velocity.x = 0;
-				state.adjustmentVelocity.x = 0;
 			}
 		}
 	}

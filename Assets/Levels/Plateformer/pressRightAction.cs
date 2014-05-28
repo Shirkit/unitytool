@@ -8,12 +8,7 @@ public class pressRightAction : AbsAction {
 	public override bool execute (int duration)
 	{
 		if(curTime < duration){
-			if(state.isOnGround){
-				state.velocity.x = state.movementSpeed;
-			}
-			else{
-				state.adjustmentVelocity.x = state.movementSpeed/2;
-			}
+			state.velocity.x = state.movementSpeed;
 			curTime++;
 			if(curTime == duration){
 				curTime = 0;

@@ -9,7 +9,6 @@ public class PlayerState{
 	public bool isOnGround;
 	public int numJumps;
 	public Vector2 velocity;
-	public Vector2 adjustmentVelocity;
 	public Vector2 gravity;
 
 	public PlayerState(){
@@ -18,7 +17,6 @@ public class PlayerState{
 		isOnGround = false;
 		numJumps = 0;
 		velocity = new Vector2(0,0);
-		adjustmentVelocity = new Vector2(0,0);
 		gravity = new Vector2(0, -0.025f);
 		jumpPower = 0.5f;
 	}
@@ -27,7 +25,6 @@ public class PlayerState{
 		isOnGround = false;
 		numJumps = 0;
 		velocity = new Vector2(0,0);
-		adjustmentVelocity = new Vector2(0,0);
 	}
 
 	public PlayerState clone(){
@@ -35,12 +32,11 @@ public class PlayerState{
 		state.isOnGround = isOnGround;
 		state.numJumps = numJumps;
 		state.velocity = new Vector2(velocity.x, velocity.y);
-		state.adjustmentVelocity = new Vector2(adjustmentVelocity.x, adjustmentVelocity.y);
 		return state;
 	}
 
 	public override string ToString ()
 	{
-		return "isOnGround:" + isOnGround + " -- numJumps:" + numJumps + " -- velocity:" + velocity + " -- adjVelocity" + adjustmentVelocity;
+		return "isOnGround:" + isOnGround + " -- numJumps:" + numJumps + " -- velocity:" + velocity;
 	}
 }
