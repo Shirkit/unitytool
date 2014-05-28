@@ -1,6 +1,5 @@
 ﻿
 
-//using System.Diagnostics;
 using UnityEngine;
 using UnityEditor;
 using Vectrosity;
@@ -8,7 +7,6 @@ using System.IO;
 using System.Xml.Serialization;
 using System.Collections;
 using System.Collections.Generic;
-//using Priority_Queue;
 using Mischel.Collections;
 using KDTreeDLL;
 
@@ -27,7 +25,6 @@ namespace EditorArea {
 		public Vector3 goalLoc;
 		public bool showDeaths;
 		public bool drawPaths;
-		//public bool markMap;
 		public bool playing = false;
 		private movementModel mModel;
 		private posMovModel pmModel;
@@ -73,26 +70,22 @@ namespace EditorArea {
 
 		static void initPlat(){
 			GameObject hmovplat = GameObject.Find ("HMovingPlatforms");
-			//hplats = new GameObject[hmovplat.transform.childCount];
 			hplatmovers = new HPlatMovement[hmovplat.transform.childCount];
 
 			int i = 0;
 			foreach(Transform child in hmovplat.transform){
 				hplatmovers[i] = child.gameObject.GetComponent<HPlatMovement>();
 				hplatmovers[i].initialize();
-				//hplats[i] = child.gameObject;
 				i++;
 			}
 
 			GameObject vmovplat = GameObject.Find ("VMovingPlatforms");
-			//hplats = new GameObject[hmovplat.transform.childCount];
 			vplatmovers = new VPlatMovement[vmovplat.transform.childCount];
 			
 			i = 0;
 			foreach(Transform child in vmovplat.transform){
 				vplatmovers[i] = child.gameObject.GetComponent<VPlatMovement>();
 				vplatmovers[i].initialize();
-				//hplats[i] = child.gameObject;
 				i++;
 			}
 
@@ -124,18 +117,12 @@ namespace EditorArea {
 			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 10);
 			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 100, 100000);
 
-			
-			
-			
-			/*playerFab = (GameObject)EditorGUILayout.ObjectField ("player prefab", playerFab, typeof(GameObject), true);
-			modelFab = (GameObject)EditorGUILayout.ObjectField ("modelObject prefab", modelFab, typeof(GameObject), true);
-			posModFab = (GameObject)EditorGUILayout.ObjectField ("posMod prefab", posModFab, typeof(GameObject), true);
-			nodMarFab = (GameObject)EditorGUILayout.ObjectField ("node marker prefab", nodMarFab, typeof(GameObject), true);*/
+
 
 			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
 			drawPaths = EditorGUILayout.Toggle ("Draw Paths", drawPaths);
 			drawWholeThing = EditorGUILayout.Toggle ("Debug Mode", drawWholeThing);
-			//markMap = EditorGUILayout.Toggle ("Mark Map", markMap);
+
 
 			if (GUILayout.Button ("Clear")) {
 				cleanUp();
@@ -143,9 +130,6 @@ namespace EditorArea {
 
 			curFrame = EditorGUILayout.IntSlider ("frame", curFrame, 0, totalFrames);
 
-			/*if (GUILayout.Button ("Go To Frame")) {
-				goToFrame(curFrame);
-			}*/
 
 			if (GUILayout.Button (playing ? "Stop" : "Play")) {
 				playing = !playing;
@@ -196,10 +180,6 @@ namespace EditorArea {
 				AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				PlatsGoToFrame(0);
 			}
-
-			/*if(GUILayout.Button ("Clean Up Heat Map")){
-				cleanUpHMap();
-			}*/
 
 			if(GUILayout.Button ("ReInitialize Moving Platforms")){
 				initPlat();
@@ -299,22 +279,11 @@ namespace EditorArea {
 			}
 			prevDrawPaths = drawPaths;
 
-			/*if(!pathsMarked && markMap){
-				pathsMarked = true;
-				if(drawPaths){
-					foreach(movementModel model in mModels){
-						if(model != null){
-							model.markMap(hmapsqrs, hmapbl, hmaptr, hmapinc);
-						}
-					}
-				}
-			}*/
 
 			
 			if(playing){
 				if(realFrame != curFrame){
-					//Debug.Log (realFrame);
-					//Debug.Log (curFrame);
+
 					goToFrame(curFrame);
 					realFrame = curFrame;
 				}
@@ -337,9 +306,7 @@ namespace EditorArea {
 					PlatsGoToFrame(curFrame);
 
 				}
-				else{
-					//Debug.Log ("WTF");
-				}
+
 			}
 			else{
 				if(realFrame != curFrame){
@@ -469,16 +436,6 @@ namespace EditorArea {
 		private void goToFrame(int curFrame){
 			foreach(movementModel model in mModels){
 				if(model != null){
-					/*model.aIndex = 0;
-					model.player.transform.position = startingLoc;
-					if(model.startLocation != null){
-						model.player.transform.position = model.startLocation;
-					}
-					model.state.reset ();
-					if(model.startState != null){
-						model.resetState();
-					}
-					model.runFrames(curFrame);*/
 					model.goToFrame (curFrame);
 				}
 			}
@@ -551,8 +508,6 @@ namespace EditorArea {
 		}
 
 		private void resetState(movementModel model, PlayerState state){
-			model.state.adjustmentVelocity.x = state.adjustmentVelocity.x;
-			model.state.adjustmentVelocity.y = state.adjustmentVelocity.y;
 			model.state.isOnGround = state.isOnGround;
 			model.state.velocity.x = state.velocity.x;
 			model.state.velocity.y = state.velocity.y;
@@ -599,8 +554,6 @@ namespace EditorArea {
 
 			if(foundAnswer)
 			{
-				//Debug.Log ("Success");
-				//Debug.Log("foundAnswer-" + mModel.state);
 				RTNode toReturn = new RTNode();
 				toReturn.position = player.transform.position;
 				toReturn.state = mModel.state.clone();
@@ -609,7 +562,7 @@ namespace EditorArea {
 				toReturn.frame = mModel.numFrames;
 				mModel.aIndex = 0;
 				player.transform.position = startLoc;
-				//mModel.state.reset ();
+
 
 
 				resetState(mModel, state);
@@ -621,7 +574,7 @@ namespace EditorArea {
 				return toReturn;
 			}
 			else{
-				//Debug.Log ("Failure");
+
 				if(!showDeaths){
 					mModels.Remove(mModel);
 					DestroyImmediate(GameObject.Find ("player" + count));
@@ -630,8 +583,7 @@ namespace EditorArea {
 				else{
 					mModel.aIndex = 0;
 					player.transform.position = startingLoc;
-					//mModel.state.reset ();
-					//mModel.state = state.clone ();
+
 					if(drawPaths){
 						mModel.drawPath(paths);
 					}
@@ -641,13 +593,13 @@ namespace EditorArea {
 		}
 
 		private bool MCTSearchIteration(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
-			//Debug.Log ("--------------------------------------------------------");
+
 			player.transform.position = startLoc;
 			mModel.initializev2();
 
 
 			mModel.numFrames = 0;
-			//resetState(mModel, state);
+
 
 			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
 
@@ -698,21 +650,8 @@ namespace EditorArea {
 					break;
 				}
 
-				/*if(mModel.aIndex != 0){
-					mModel.aIndex--;
-				}/*
-				/*mModel.aIndex = 0;
-				mModel.resetState();
-				player.transform.position = startLoc;*/
-
-				
-				
-				//Debug.Log (player.transform.position);
-				//Debug.Log (mModel.player.transform.position);
 				int frames = mModel.loopUpdate();
-				//Debug.Log ("LOOP UPDATE");
-				//Debug.Log (player.transform.position);
-				//Debug.Log (mModel.player.transform.position);
+
 
 				if(mModel.state.numJumps < mModel.state.maxJumps){
 					canJump = true;
