@@ -662,18 +662,11 @@ namespace EditorArea {
 
 				mModel.numFrames += frames;
 				if((player.transform.position - golLoc).magnitude < 0.5){
-					//Debug.Log (player.transform.position);
-					//player.transform.position = startingLoc;
 					totalFrames = Mathf.Max(totalFrames, mModel.numFrames);
 					return true;
 				}
-				else{
-				//	Debug.Log (golLoc);
-				//	Debug.Log ((player.transform.position - golLoc).magnitude);
-				}
 				count++;
 			}
-			//player.transform.position = startingLoc;
 			return false;
 		}
 
@@ -769,7 +762,6 @@ namespace EditorArea {
 				return reCreatePathAS();
 			}
 			else{
-				//Debug.Log("Failed");
 				if(drawWholeThing){
 					Debug.Log ("STATES EXPLORED = " + statesExplored);
 				}
@@ -913,18 +905,9 @@ namespace EditorArea {
 				}
 			}
 			else{
-				//Debug.Log ("ai");
 				mModel.durations.Add (1);
 				frame = mModel.loopUpdate();
-				/*if(frame != 1){
-					Debug.Log ("AIAIAIAIAIA");
-					foreach (string act in mModel.actions){
-						Debug.Log (act);
-					}
-					foreach(int dur in mModel.durations){
-						Debug.Log (dur);
-					}
-				}*/
+
 
 			}
 
@@ -943,22 +926,7 @@ namespace EditorArea {
 			}
 			else{
 				RTNode toReturn = new RTNode(player.transform.position, cur.frame + frame, mModel.state);
-				/*
-				toReturn.actions.Add (action);
-				if(frame > 1){
-					if(action.Equals("Right") || action.Equals ("Left")){
-						toReturn.durations.Add (frame);
-					}
-					else{
-						toReturn.durations.Add (1);
-						toReturn.actions.Add ("wait");
-						toReturn.durations.Add (frame-1);
-					}
-				}
-				else{
-					toReturn.durations.Add (1);
-				}
-				*/
+
 				toReturn.actions.AddRange (mModel.actions);
 				toReturn.durations.AddRange(mModel.durations);
 				toReturn.parent = cur;
@@ -967,104 +935,6 @@ namespace EditorArea {
 			}
 		}
 
-		/*private RTNode BFSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state){
-			modelObj = Instantiate(modelFab) as GameObject;
-			modelObj.name = "modelObject" + count;
-			modelObj.transform.parent = models.transform;
-			player = Instantiate(playerFab) as GameObject;
-			player.name = "player" + count;
-			player.transform.parent = players.transform;
-			mModel = modelObj.GetComponent<movementModel>() as movementModel;
-			mModel.player = player;
-			mModels.Add (mModel);
-			mModel.startState = state;
-			mModel.startLocation = startLoc;
-
-			//--------------------------------------------
-			player.transform.position = startLoc;
-			mModel.initializev2();
-			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-			var tempMaterial = new Material(player.renderer.sharedMaterial);
-			tempMaterial.color = mModel.color;
-			player.renderer.sharedMaterial = tempMaterial;
-
-			bool succeeded = false;
-
-			Queue<List<string>> actionQ = new Queue<List<string>>();
-			List<string> t = new List<string>();
-			t.Add("wait");
-			actionQ.Enqueue(t);
-			while(!succeeded){
-				t = actionQ.Dequeue();
-				if(checkAction(t, golLoc)){
-					succeeded = true;
-				}
-				else{
-					List<string> a = new List<string>();
-					a.AddRange(t);
-					a.Add ("Right");
-					actionQ.Enqueue(a);
-					List<string> b = new List<string>();
-					a.AddRange(t);
-					a.Add ("Left");
-					actionQ.Enqueue(b);
-					List<string> c = new List<string>();
-					a.AddRange(t);
-					a.Add ("jump");
-					actionQ.Enqueue(c);
-					List<string> d = new List<string>();
-					a.AddRange(t);
-					a.Add ("jump right");
-					actionQ.Enqueue(d);
-					List<string> e = new List<string>();
-					a.AddRange(t);
-					a.Add ("jump left");
-					actionQ.Enqueue(e);
-					List<string> f = new List<string>();
-					a.AddRange(t);
-					a.Add ("wait");
-					actionQ.Enqueue(f);
-				}
-			}
-			//--------------------------------------------
-			RTNode toReturn = new RTNode();
-			toReturn.position = player.transform.position;
-			toReturn.state = mModel.state.clone();
-			toReturn.actions = mModel.actions;
-			toReturn.durations = mModel.durations;
-			toReturn.frame = mModel.numFrames;
-			mModel.aIndex = 0;
-			player.transform.position = startLoc;
-			
-			resetState(mModel, state);
-			
-			
-			if(drawPaths){
-				mModel.drawPath(paths);
-			}
-			return toReturn;
-		}
-
-		private bool checkAction(List<string> pActions, Vector3 golLoc){
-			mModel.aIndex = 0;
-			mModel.resetState();
-			player.transform.position = mModel.startLocation;
-			mModel.actions = pActions;
-			mModel.durations = new List<int>();
-			for(int i =0; i < pActions.Count; i++){
-				mModel.durations.Add (1);
-			}
-
-			int frames = mModel.loopUpdate ();
-			mModel.numFrames = frames;
-			if((player.transform.position - golLoc).magnitude < 0.5){
-				totalFrames = Mathf.Max (totalFrames, frames);
-				return true;
-			}
-			else{
-				return false;
-			}
-		}*/
 
 
 		private void printSolution(){
@@ -1078,7 +948,6 @@ namespace EditorArea {
 		public bool[] goalReached;
 		public static int rrtIters = 100;
 
-		//public List<RTNode>[] rrtTrees;
 		public KDTree[] rrtTrees;
 
 		public RTNode[] roots;
@@ -1104,10 +973,8 @@ namespace EditorArea {
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				Vector3 bl = GameObject.Find ("bottomLeft").transform.position;
 				Vector3 tr = GameObject.Find ("topRight").transform.position;
-				//rrtTrees[j] = new List<RTNode>();
 				rrtTrees[j] = new KDTree(2);
 				roots[j] = new RTNode(startingLoc, 0, new PlayerState());
-				//rrtTrees[j].Add (roots[j]);
 				rrtTrees[j].insert(new double[] {roots[j].position.x, roots[j].position.y} ,roots[j]);
 				q = 0;
 				for(i = 0; i < rrtIters; i++){
@@ -1121,8 +988,6 @@ namespace EditorArea {
 						break;
 					}
 					if(goalReached[j]){
-						//Debug.Log (i);
-						//Debug.Log (q);
 						break;
 					}
 				}
@@ -1147,66 +1012,9 @@ namespace EditorArea {
 			else{
 				return false;
 			}
-			//Debug.Log (rrtTrees[0].Count);
-			/*for(int j = 0; j< numPlayers; j++){
-				if(goalReached[j]){
-					Debug.Log ("Success");
-					Debug.Log ("nodes added = " + rrtTrees[j].Count);
-					//cleanUp();
-					reCreatePath();
-				}
-				else{
-					Debug.Log ("Failure");
-					foreach(RTNode nod in rrtTree){
-						Debug.Log (nod.position);
-					}
-				}
-			}*/
+
 		}
 
-		/*private void reCreatePath2(){
-			loopCreate(goalNode);
-		}
-
-		private void loopCreate(RTNode node){
-			if(node != root){
-				loopCreate(node.parent);
-
-				modelObj = Instantiate(modelFab) as GameObject;
-				modelObj.name = "modelObject" + count;
-				modelObj.transform.parent = models.transform;
-				player = Instantiate(playerFab) as GameObject;
-				player.name = "player" + count;
-				player.transform.parent = players.transform;
-				mModel = modelObj.GetComponent<movementModel>() as movementModel;
-				mModel.player = player;
-				
-				mModel.startLocation = node.parent.position;
-				mModel.startLocation.z = 10;
-				mModel.startState = node.parent.state;
-				mModel.initializev2();
-				mModels.Add (mModel);
-
-				mModel.actions.AddRange (node.actions);
-				mModel.durations.AddRange(node.durations);
-				
-				count++;
-
-
-				GameObject nod = Instantiate(nodMarFab, node.position, Quaternion.identity) as GameObject;
-				nod.name = "node" + nodesToBeAddedCounterThing;
-				nodesToBeAddedCounterThing++;
-				//Debug.Log (node.frame);
-				
-			}
-			else{
-				nodesToBeAddedCounterThing = 0;
-				GameObject nod = Instantiate(nodMarFab, node.position, Quaternion.identity) as GameObject;
-				nod.name = "node" + nodesToBeAddedCounterThing;
-				nodesToBeAddedCounterThing++;
-			}
-
-		}*/
 
 
 		private void reCreatePath(){
@@ -1249,8 +1057,7 @@ namespace EditorArea {
 				}
 			}
 
-			//mModel.numFrames += 20;
-			//Debug.Log (mModel.numFrames);
+
 			
 		}
 
@@ -1266,30 +1073,26 @@ namespace EditorArea {
 				mModel.actions.AddRange(node.actions);
 				mModel.durations.AddRange(node.durations);
 				mModel.numFrames = node.frame;
-				//Debug.Log (node.frame);
 
 			}
 			else{
 				nodesToBeAddedCounterThing = 0;
-				//mModel.actions.AddRange(node.actions);
-				//mModel.durations.AddRange(node.durations);
-				//mModel.numFrames = node.frame;
+
 				GameObject nod = Instantiate(nodMarFab, node.position, Quaternion.identity) as GameObject;
 				nod.transform.parent = nodes.transform;
 				nod.name = "node" + nodesToBeAddedCounterThing;
 				nodesToBeAddedCounterThing++;
-				//Debug.Log (node.frame);
 			}
 		}
 
 		private bool tryAddNode(float x, float y, int j, bool useMCT){
 			RTNode closest = findClosest(x,y, j);
 			if(closest == null){
-				//Debug.Log ("Too far away");
+
 				return false;
 			}
 			else{
-				//Debug.Log (closest.state);
+
 				RTNode final;
 				if(useMCT){
 					final = MCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
@@ -1298,11 +1101,9 @@ namespace EditorArea {
 					final = AStarSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
 				if(final != null){
-					//Debug.Log ("Node Added");
 					final.parent = closest;
 					closest.children.Add (final);
 					final.frame = closest.frame + final.frame;
-					//rrtTrees[j].Add (final);
 					rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
 					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5){
 						goalReached[j] = true;
@@ -1318,7 +1119,6 @@ namespace EditorArea {
 					return true;
 				}
 				else{
-					//Debug.Log ("MCTSearch unsuccesful");
 					return true;
 				}
 			}
@@ -1340,7 +1140,6 @@ namespace EditorArea {
 					final.parent = node;
 					node.children.Add (final);
 					final.frame = node.frame + final.frame;
-					//rrtTrees[j].Add (final);
 					rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
 					goalNodes[j] = final;
 					return true;
@@ -1353,21 +1152,7 @@ namespace EditorArea {
 
 
 		private RTNode findClosest(float x,float y, int j){
-			/*
-			float minDist = maxDistRTNodes;
-			float dist;
-			RTNode curNode = null;
-			foreach(RTNode node in rrtTrees[j]){
-				dist = Vector2.Distance(node.position, new Vector2(x,y));
-				if(dist < minDistRTNodes){
-					return null;
-				}
-				if(dist < minDist){
-					minDist = dist;
-					curNode = node;
-				}
-			}
-			*/
+
 			RTNode curNode = (RTNode)rrtTrees[j].nearest(new double[] {x, y});
 			float dist = Vector2.Distance(curNode.position, new Vector2(x,y));
 			if(dist < minDistRTNodes || dist > maxDistRTNodes){
