@@ -261,6 +261,10 @@ public class movementModel : MonoBehaviour{
 						player.transform.position = new Vector3(player.transform.position.x, (collH.gameObject.transform.position.y + collH.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
 						state.velocity.y = 0;
 					}
+					if((state.velocity.y > 0.1f) && ((collF.gameObject.transform.position.y) > (player.transform.position.y - state.velocity.y + 0.1f))){
+						player.transform.position = new Vector3(player.transform.position.x, (collF.gameObject.transform.position.y - collF.gameObject.transform.localScale.y*0.5f - player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
+						state.velocity.y = 0;
+					}
 					if(Mathf.Approximately(player.transform.position.y, (collH.gameObject.transform.position.y + collH.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
 						if(collH.gameObject.GetComponent<HPlatMovement>().isGoingLeft(frame)){
 							player.transform.position = new Vector3(player.transform.position.x - 0.075f, player.transform.position.y, player.transform.position.z);
@@ -285,6 +289,10 @@ public class movementModel : MonoBehaviour{
 						state.isOnGround = true;
 						state.numJumps = 0;
 						player.transform.position = new Vector3(player.transform.position.x, (collV.gameObject.transform.position.y + collV.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
+						state.velocity.y = 0;
+					}
+					if((state.velocity.y > 0.1f) && ((collF.gameObject.transform.position.y) > (player.transform.position.y - state.velocity.y + 0.1f))){
+						player.transform.position = new Vector3(player.transform.position.x, (collF.gameObject.transform.position.y - collF.gameObject.transform.localScale.y*0.5f - player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
 						state.velocity.y = 0;
 					}
 					if(Mathf.Approximately(player.transform.position.y, (collV.gameObject.transform.position.y + collV.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
