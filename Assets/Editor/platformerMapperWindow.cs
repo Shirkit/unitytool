@@ -569,7 +569,7 @@ namespace EditorArea {
 				}
 
 			}
-			DestroyImmediate(mModel2);
+			DestroyImmediate(modelObj2);
 			DestroyImmediate(player2);
 			if(foundAnswer)
 			{
@@ -805,12 +805,12 @@ namespace EditorArea {
 				mModel2.durations.AddRange(toReturn.durations);
 				mModel2.loopUpdate();
 				if((player2.transform.position - golLoc).magnitude > 0.5){
-					DestroyImmediate(mModel2);
+					DestroyImmediate(modelObj2);
 					DestroyImmediate(player2);
 					return null;
 				}
 				else{
-					DestroyImmediate(mModel2);
+					DestroyImmediate(modelObj2);
 					DestroyImmediate(player2);
 					return toReturn;
 				}
@@ -818,7 +818,7 @@ namespace EditorArea {
 				return toReturn;
 			}
 			else{
-				DestroyImmediate(mModel2);
+				DestroyImmediate(modelObj2);
 				DestroyImmediate(player2);
 				if(drawWholeThing){
 					Debug.Log ("STATES EXPLORED = " + statesExplored);
