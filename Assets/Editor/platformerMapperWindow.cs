@@ -98,6 +98,9 @@ namespace EditorArea {
 			scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
 
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
+				if(!platsInitialized){
+					initPlat();
+				}
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
@@ -157,6 +160,9 @@ namespace EditorArea {
 
 			rrtIters = EditorGUILayout.IntField("RRT Nodes: ", rrtIters);
 			if (GUILayout.Button ("RRT - MCT")) {
+				if(!platsInitialized){
+					initPlat();
+				}
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
@@ -164,6 +170,9 @@ namespace EditorArea {
 				PlatsGoToFrame(0);
 			}
 			if (GUILayout.Button ("RRT - AS")) {
+				if(!platsInitialized){
+					initPlat();
+				}
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
@@ -172,6 +181,9 @@ namespace EditorArea {
 			}
 			
 			if(GUILayout.Button ("AStarSearch")){
+				if(!platsInitialized){
+					initPlat();
+				}
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
@@ -200,6 +212,9 @@ namespace EditorArea {
 			incrementDepthAS = EditorGUILayout.IntField ("increment Depth", incrementDepthAS);
 			iterationsPerDataSetAS = EditorGUILayout.IntField ("Iteration Per DataSet", iterationsPerDataSetAS);
 			if(GUILayout.Button ("A Star Batch")){
+				if(!platsInitialized){
+					initPlat();
+				}
 				batchCompute(1);
 			}
 
@@ -213,6 +228,9 @@ namespace EditorArea {
 			maxDepth = EditorGUILayout.IntField("max Depth", maxDepth);
 			incrementDepth = EditorGUILayout.IntField("incrementDepth", incrementDepth);
 			if(GUILayout.Button ("MCT Batch")){
+				if(!platsInitialized){
+					initPlat();
+				}
 				batchCompute(2);
 			}
 
@@ -238,6 +256,9 @@ namespace EditorArea {
 			ASFrames = EditorGUILayout.IntField("A Star FPS", ASFrames);
 			ASDepth = EditorGUILayout.IntField("A Star Depth", ASDepth);
 			if(GUILayout.Button ("RRT Batch")){
+				if(!platsInitialized){
+					initPlat();
+				}
 				batchCompute(3);
 			}
 			EditorGUILayout.EndScrollView ();
