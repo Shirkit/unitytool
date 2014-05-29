@@ -567,10 +567,10 @@ namespace EditorArea {
 				else{
 					foundAnswer = true;
 				}
-				DestroyImmediate(mModel2);
-				DestroyImmediate(player2);
-			}
 
+			}
+			DestroyImmediate(mModel2);
+			DestroyImmediate(player2);
 			if(foundAnswer)
 			{
 
@@ -818,6 +818,8 @@ namespace EditorArea {
 				return toReturn;
 			}
 			else{
+				DestroyImmediate(mModel2);
+				DestroyImmediate(player2);
 				if(drawWholeThing){
 					Debug.Log ("STATES EXPLORED = " + statesExplored);
 				}
