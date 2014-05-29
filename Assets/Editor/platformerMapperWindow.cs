@@ -476,36 +476,7 @@ namespace EditorArea {
 			nodes.transform.parent = players.transform;
 		}
 
-		GameObject[,] hmapsqrs;
-		Vector3 hmapbl;
-		Vector3 hmaptr;
-		float hmapinc;
-		private void cleanUpHMap(){
-			hmapinc = 0.4f;
-			DestroyImmediate(heatmap);
-			heatmap = new GameObject("heatmap");
-			hmapbl = GameObject.Find ("bottomLeft").transform.position;
-			hmaptr = GameObject.Find ("topRight").transform.position;
-			float width = hmaptr.x - hmapbl.x;
-			float height = hmaptr.y - hmapbl.y;
-			int sqrsW = Mathf.CeilToInt(width / 0.4f);
-			int sqrsH = Mathf.CeilToInt(height / 0.4f);
-			hmapsqrs = new GameObject [sqrsW,sqrsH];
 
-			for(int i = 0; i < sqrsW; i++){
-				for(int j = 0; j < sqrsH; j++){
-					GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-					cube.transform.parent = heatmap.transform;
-					cube.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
-					cube.transform.position= new Vector3((hmapbl.x + 0.2f + 0.4f*i), (hmapbl.y + 0.2f + 0.4f*j), 15f);
-					var tempMaterial = new Material(cube.renderer.sharedMaterial);
-					tempMaterial.color = Color.white;
-					cube.renderer.sharedMaterial = tempMaterial;
-					hmapsqrs[i,j] = cube;
-				}
-			}
-			Debug.Log (sqrsW * sqrsH);
-		}
 
 		private void resetState(movementModel model, PlayerState state){
 			model.state.isOnGround = state.isOnGround;
@@ -516,6 +487,18 @@ namespace EditorArea {
 
 
 		private RTNode MCTSearch(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
+			GameObject modelObj2 = Instantiate(modelFab) as GameObject;
+			modelObj2.name = "testmodel";
+			GameObject player2 = Instantiate(playerFab) as GameObject;
+			player2.name = "testplayer";
+			movementModel mModel2 = modelObj2.GetComponent<movementModel>() as movementModel;
+			mModel2.player = player2;
+			mModel2.startState = state;
+			mModel2.startLocation = startLoc;
+			mModel2.startFrame = frame;
+			mModel2.hplatmovers = hplatmovers;
+			mModel2.vplatmovers = vplatmovers;
+
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + count;
 			modelObj.transform.parent = models.transform;
@@ -552,8 +535,23 @@ namespace EditorArea {
 			}
 
 
+			if(foundAnswer){
+				mModel2.initializev2();
+				mModel2.actions.AddRange(mModel.actions);
+				mModel2.durations.AddRange(mModel.durations);
+				mModel2.loopUpdate();
+				if((player2.transform.position - golLoc).magnitude > 0.5){
+					foundAnswer = false;
+				}
+				else{
+					foundAnswer = true;
+				}
+			}
+
 			if(foundAnswer)
 			{
+
+
 				RTNode toReturn = new RTNode();
 				toReturn.position = player.transform.position;
 				toReturn.state = mModel.state.clone();
@@ -689,6 +687,23 @@ namespace EditorArea {
 			if(drawWholeThing){
 				astar = new GameObject("ASTAR");
 			}
+			GameObject modelObj2 = Instantiate(modelFab) as GameObject;
+			modelObj2.name = "testmodel";
+			GameObject player2 = Instantiate(playerFab) as GameObject;
+			player2.name = "testplayer";
+			movementModel mModel2 = modelObj2.GetComponent<movementModel>() as movementModel;
+			mModel2.player = player2;
+			mModel2.startState = state;
+			mModel2.startLocation = startLoc;
+			mModel2.startFrame = frame;
+			mModel2.hplatmovers = hplatmovers;
+			mModel2.vplatmovers = vplatmovers;
+
+
+
+
+
+
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + count;
 			modelObj.transform.parent = models.transform;
@@ -759,7 +774,21 @@ namespace EditorArea {
 				if(drawWholeThing){
 					Debug.Log ("STATES EXPLORED = " + statesExplored);
 				}
-				return reCreatePathAS();
+
+				RTNode toReturn = reCreatePathAS();
+
+				mModel2.initializev2();
+				mModel2.actions.AddRange(toReturn.actions);
+				mModel2.durations.AddRange(toReturn.durations);
+				mModel2.loopUpdate();
+				if((player2.transform.position - golLoc).magnitude > 0.5){
+					return null;
+				}
+				else{
+					return toReturn;
+				}
+
+				return toReturn;
 			}
 			else{
 				if(drawWholeThing){
