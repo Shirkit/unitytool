@@ -27,7 +27,6 @@ namespace EditorArea {
 		public bool drawPaths;
 		public bool playing = false;
 		private movementModel mModel;
-		private posMovModel pmModel;
 		public static int numPlayers = 1;
 		public static int numIters = 100;
 		public static int depthIter = 3;
@@ -42,14 +41,12 @@ namespace EditorArea {
 		public static bool debugMode;
 		public static bool drawWholeThing;
 		public List<movementModel> mModels;
-		public List<posMovModel> pmModels;
 
 		public int count = 0;
 
 		public GameObject nodMarFab = Resources.Load("nodeMarker") as GameObject;
 		public GameObject playerFab = Resources.Load ("player") as GameObject;
 		public GameObject modelFab = Resources.Load ("modelObject") as GameObject;
-		public GameObject posModFab = Resources.Load ("posMod") as GameObject;
 
 		private static Vector2 scrollPos = new Vector2 ();
 		
@@ -158,9 +155,6 @@ namespace EditorArea {
 
 			if (GUILayout.Button ("Import Path")) {
 				importPath(filename, destCount);
-			}
-			if (GUILayout.Button ("Import PosSet")) {
-				importPos(filename, destCount);
 			}
 
 			rrtIters = EditorGUILayout.IntField("RRT Nodes: ", rrtIters);
@@ -328,12 +322,7 @@ namespace EditorArea {
 							}
 						}
 					}
-					foreach(posMovModel pModel in pmModels){
-						if(pModel != null){
-							pModel.goToFrame(curFrame);
-						}
-					}
-					PlatsGoToFrame(curFrame);
+
 
 				}
 
@@ -384,35 +373,7 @@ namespace EditorArea {
 			}
 		}
 
-		private void importPos(string filename, string destCount){
-			posModObj = Instantiate(posModFab) as GameObject;
-			posModObj.name = "posMod" + destCount;
-			posModObj.transform.parent = posMods.transform;
-			player = Instantiate(playerFab) as GameObject;
-			player.name = "player" + destCount;
-			player.transform.parent = players.transform;
-			pmModel = posModObj.GetComponent<posMovModel>() as posMovModel;
-			pmModel.player = player;
-			pmModels.Add (pmModel);
-			pmModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-			var tempMaterial = new Material(player.renderer.sharedMaterial);
-			tempMaterial.color = pmModel.color;
-			player.renderer.sharedMaterial = tempMaterial;
 
-			serializablePosMovModel sModel;
-			XmlSerializer ser = new XmlSerializer (typeof(serializablePosMovModel));
-			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
-				sModel = ser.Deserialize (stream) as serializablePosMovModel;
-				stream.Flush ();
-				stream.Close ();
-			}
-			pmModel.positions = sModel.positions;
-			player.transform.position = sModel.startLoc;
-			totalFrames = Mathf.Max(totalFrames, sModel.numFrames);
-			if(drawPaths){
-				pmModel.drawPath(paths);
-			}
-		}
 
 		private void importPath(string filename, string destCount){
 			modelObj = Instantiate(modelFab) as GameObject;
@@ -468,11 +429,7 @@ namespace EditorArea {
 					model.goToFrame (curFrame);
 				}
 			}
-			foreach(posMovModel pModel in pmModels){
-				if(pModel != null){
-					pModel.goToFrame(curFrame);
-				}
-			}
+
 			PlatsGoToFrame(curFrame);
 		}		
 				
@@ -502,15 +459,10 @@ namespace EditorArea {
 			posMods.transform.parent = players.transform;
 			nodes.transform.parent = players.transform;
 		}
-
-
-
-		private void resetState(movementModel model, PlayerState state){
-			model.state.isOnGround = state.isOnGround;
-			model.state.velocity.x = state.velocity.x;
-			model.state.velocity.y = state.velocity.y;
-			model.state.numJumps = state.numJumps;
+		private void cleanUpRRTDebug(){
+			DestroyImmediate(RRTDebug);
 		}
+
 
 
 		private RTNode MCTSearch(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
@@ -592,8 +544,7 @@ namespace EditorArea {
 
 
 
-				resetState(mModel, state);
-
+				mModel.resetState();
 
 				if(drawPaths){
 					mModel.drawPath(paths);
@@ -621,20 +572,14 @@ namespace EditorArea {
 
 		private bool MCTSearchIteration(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
 
-			player.transform.position = startLoc;
 			mModel.initializev2();
-
-
 			mModel.numFrames = 0;
-
-
 			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-
 			var tempMaterial = new Material(player.renderer.sharedMaterial);
 			tempMaterial.color = mModel.color;
 			player.renderer.sharedMaterial = tempMaterial;
 
-			//
+
 			bool canJump = true;
 
 
