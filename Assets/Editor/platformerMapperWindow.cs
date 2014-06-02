@@ -39,6 +39,7 @@ namespace EditorArea {
 
 		public static bool ignoreFrameLimit;
 
+		public static bool debugMode;
 		public static bool drawWholeThing;
 		public List<movementModel> mModels;
 		public List<posMovModel> pmModels;
@@ -126,7 +127,7 @@ namespace EditorArea {
 
 			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
 			drawPaths = EditorGUILayout.Toggle ("Draw Paths", drawPaths);
-			drawWholeThing = EditorGUILayout.Toggle ("Debug Mode", drawWholeThing);
+			debugMode = EditorGUILayout.Toggle ("Debug Mode", debugMode);
 
 
 			if (GUILayout.Button ("Clear")) {
@@ -185,6 +186,9 @@ namespace EditorArea {
 			}
 			
 			if(GUILayout.Button ("AStarSearch")){
+				if(debugMode){
+					drawWholeThing = true;
+				}
 				if(!platsInitialized){
 					initPlat();
 				}
@@ -195,6 +199,7 @@ namespace EditorArea {
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				PlatsGoToFrame(0);
+				drawWholeThing = false;
 			}
 
 			if(GUILayout.Button ("ReInitialize Moving Platforms")){
@@ -1014,8 +1019,14 @@ namespace EditorArea {
 		public static float maxDistRTNodes = 5;
 		public static float minDistRTNodes = 1;
 
+		public static GameObject RRTDebug;
+
 		private bool RRT(bool useMCT){
 			cleanUp();
+			if(debugMode){
+				RRTDebug = new GameObject("RRT");
+			}
+
 			goalReached = new bool[numPlayers];
 
 			rrtTrees = new KDTree[numPlayers];
@@ -1158,6 +1169,11 @@ namespace EditorArea {
 					final = AStarSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
 				if(final != null){
+					if(debugMode){
+						VectorLine line = new VectorLine("RRT", new Vector3[] {closest.position, final.position}, Color.red, null, 2.0f);
+						line.Draw3D();
+						line.vectorObject.transform.parent = RRTDebug.transform;
+					}
 					final.parent = closest;
 					closest.children.Add (final);
 					final.frame = closest.frame + final.frame;
@@ -1194,6 +1210,11 @@ namespace EditorArea {
 					final = AStarSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
 				if(final != null){
+					if(debugMode){
+						VectorLine line = new VectorLine("RRT", new Vector3[] {node.position, final.position}, Color.red, null, 2.0f);
+						line.Draw3D();
+						line.vectorObject.transform.parent = RRTDebug.transform;
+					}
 					final.parent = node;
 					node.children.Add (final);
 					final.frame = node.frame + final.frame;
