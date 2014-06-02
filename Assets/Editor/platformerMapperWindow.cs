@@ -49,7 +49,9 @@ namespace EditorArea {
 		public GameObject modelFab = Resources.Load ("modelObject") as GameObject;
 
 		private static Vector2 scrollPos = new Vector2 ();
-		
+
+		public static bool playingKeyboard;
+
 		//public static GameObject[] hplats;
 		public static HPlatMovement[] hplatmovers;
 		public static VPlatMovement[] vplatmovers;
@@ -97,6 +99,7 @@ namespace EditorArea {
 		void OnGUI () {
 			scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
 
+			
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
 				if(!platsInitialized){
 					initPlat();
@@ -265,6 +268,7 @@ namespace EditorArea {
 				batchCompute(3);
 			}
 			EditorGUILayout.EndScrollView ();
+
 		}
 
 		void goToStart(){
@@ -314,15 +318,19 @@ namespace EditorArea {
 				else if(curFrame <= totalFrames || ignoreFrameLimit){
 					curFrame++;
 					realFrame = curFrame;
+					bool isOne = false;
 					foreach(movementModel model in mModels){
 						if(model != null){
+							isOne = true;
 							if(model.updater())
 							{
 								//model.doAction("wait", 1);
 							}
 						}
 					}
-
+					if(!isOne){
+						goToFrame(curFrame);
+					}
 
 				}
 
@@ -333,6 +341,11 @@ namespace EditorArea {
 					realFrame = curFrame;
 				}
 			}
+
+
+
+
+
 		}
 
 		private void exportPaths(){
@@ -1376,6 +1389,80 @@ namespace EditorArea {
 			batchComputationRRT = false;
 			goToFrame(0);
 		}
+
+		void initializeKeyboard(){
+			if(!platsInitialized){
+				initPlat();
+			}
+			modelObj = Instantiate(modelFab) as GameObject;
+			modelObj.name = "modelObject" + "P";
+			modelObj.transform.parent = models.transform;
+			player = Instantiate(playerFab) as GameObject;
+			player.name = "player" + "P";
+			player.transform.parent = players.transform;
+			mModel = modelObj.GetComponent<movementModel>() as movementModel;
+			mModel.hplatmovers = hplatmovers;
+			mModel.vplatmovers = vplatmovers;
+			mModel.player = player;
+			mModels.Add (mModel);
+			mModel.startState = new PlayerState();
+			mModel.startLocation = startingLoc;
+			mModel.initializev2();
+		}
+
+
+		string getControlInput(Event e){
+			//Event e = Event.current;
+			if(e == null){
+				return "wait";
+			}
+			else{
+				Debug.Log ("SOMETHOING");
+			}
+			if(e.keyCode == KeyCode.A){
+				return "Left";
+			}
+			else if(e.keyCode == KeyCode.D){
+				return "Right";
+			}
+			else if(e.keyCode == KeyCode.W){
+				return "jump";
+			}
+			else{
+				return "wait";
+			}
+			/*
+			if(Input.GetKey (KeyCode.LeftArrow) || Input.GetKey (KeyCode.A)){
+				if(Input.GetKey (KeyCode.UpArrow) || Input.GetKey (KeyCode.W)){
+					Debug.Log ("jump left");
+					return "jump left";
+				}
+				else{
+					Debug.Log ("left");
+					return "Left";
+				}
+			}
+			else if(Input.GetKey (KeyCode.RightArrow) || Input.GetKey (KeyCode.D)){
+				if(Input.GetKey (KeyCode.UpArrow) || Input.GetKey (KeyCode.W)){
+					Debug.Log ("jump right");
+					return "jump right";
+				}
+				else{
+					Debug.Log ("right");
+					return "Right";
+				}
+			}
+			else if(Input.GetKey (KeyCode.UpArrow) || Input.GetKey (KeyCode.W)){
+				Debug.Log ("jump");
+				return "jump";
+			}
+			else{
+				Debug.Log ("wait");
+				return "wait";
+			}*/
+		}
+	
+	
 	}
 }
 
