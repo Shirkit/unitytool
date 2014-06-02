@@ -37,6 +37,8 @@ namespace EditorArea {
 		public static string filename;
 		public static string destCount;
 
+		public static bool ignoreFrameLimit;
+
 		public static bool drawWholeThing;
 		public List<movementModel> mModels;
 		public List<posMovModel> pmModels;
@@ -137,6 +139,8 @@ namespace EditorArea {
 			if (GUILayout.Button (playing ? "Stop" : "Play")) {
 				playing = !playing;
 			}
+			ignoreFrameLimit = EditorGUILayout.Toggle ("Ignore Frame Limit", ignoreFrameLimit);
+
 			if(GUILayout.Button ("Go To Start")){
 				goToStart();
 			}
@@ -308,7 +312,7 @@ namespace EditorArea {
 					goToFrame(curFrame);
 					realFrame = curFrame;
 				}
-				else if(curFrame <= totalFrames){
+				else if(curFrame <= totalFrames || ignoreFrameLimit){
 					curFrame++;
 					realFrame = curFrame;
 					foreach(movementModel model in mModels){
@@ -374,7 +378,6 @@ namespace EditorArea {
 				stream.Close ();
 			}
 		}
-
 
 		private void importPos(string filename, string destCount){
 			posModObj = Instantiate(posModFab) as GameObject;
@@ -466,10 +469,8 @@ namespace EditorArea {
 				}
 			}
 			PlatsGoToFrame(curFrame);
-		}
-		
-		
-		
+		}		
+				
 		private void multiMCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			cleanUp();
 			count = 0;
@@ -814,8 +815,6 @@ namespace EditorArea {
 					DestroyImmediate(player2);
 					return toReturn;
 				}
-
-				return toReturn;
 			}
 			else{
 				DestroyImmediate(modelObj2);
