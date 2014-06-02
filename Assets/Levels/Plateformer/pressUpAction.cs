@@ -11,6 +11,8 @@ public class pressUpAction : AbsAction {
 			state.velocity.y = state.jumpPower;
 			state.numJumps++;
 			state.isOnGround = false;
+			state.platformVelocity.x = 0;
+			state.platformVelocity.y = 0;
 		}
 		return true;
 	}
