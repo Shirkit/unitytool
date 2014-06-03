@@ -1018,6 +1018,23 @@ namespace EditorArea {
 					q++;
 					float x = Random.Range (bl.x, tr.x);
 					float y = Random.Range (bl.y, tr.y);
+
+					//TODO: 
+					//Try to have the node drop to the closest plate from the y-coordinate 
+					//System. i.e. ray cast dropping down to find the closest patforme
+
+					//Adding blue sphere if debugging
+					if(debugMode)
+					{
+						//Added the sphere for better display
+						GameObject g = GameObject.Find("RRT");
+						GameObject o = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+						o.transform.parent = g.transform; 
+						o.name = "node"+i;
+						o.transform.position = new Vector3(x,y); 
+						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
+					}
+
 					if(!tryAddNode(x,y, j, useMCT)){
 						i--;
 					}
