@@ -120,7 +120,7 @@ namespace EditorArea {
 			depthIter = EditorGUILayout.IntSlider ("Max Depth per Iteration", depthIter, 1, 1000);
 			maxDistRTNodes = EditorGUILayout.FloatField ("Max Dist RRT Nodes", maxDistRTNodes);
 			minDistRTNodes = EditorGUILayout.FloatField ("Min Dist RRT Nodes", minDistRTNodes);
-			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 10);
+			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 30);
 			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 100, 100000);
 
 
@@ -132,6 +132,12 @@ namespace EditorArea {
 
 			if (GUILayout.Button ("Clear")) {
 				cleanUp();
+				//Do not know where to put that as cleanUp gets call from 
+				//multiple places. 
+				//TODO: Clean this up. 
+				DestroyImmediate(GameObject.Find ("RRT"));
+
+
 			}
 
 			curFrame = EditorGUILayout.IntSlider ("frame", curFrame, 0, totalFrames);
@@ -462,6 +468,9 @@ namespace EditorArea {
 		private void cleanUp(){
 			DestroyImmediate(astar);
 			DestroyImmediate(GameObject.Find ("players"));
+			
+			
+			
 			nodes = new GameObject("nodes");
 			players = new GameObject("players");
 			models = new GameObject("models");
@@ -471,9 +480,11 @@ namespace EditorArea {
 			models.transform.parent = players.transform;
 			posMods.transform.parent = players.transform;
 			nodes.transform.parent = players.transform;
+
 		}
 		private void cleanUpRRTDebug(){
 			DestroyImmediate(RRTDebug);
+
 		}
 
 
@@ -661,7 +672,7 @@ namespace EditorArea {
 		public RTNode asRoot;
 		public RTNode asGoalNode;
 
-		public static int framesPerStep = 1;
+		public static int framesPerStep = 10;
 		public static int maxDepthAStar = 100;
 
 		public GameObject astar;
@@ -974,14 +985,19 @@ namespace EditorArea {
 		public RTNode[] goalNodes;
 
 
-		public static float maxDistRTNodes = 5;
+		public static float maxDistRTNodes = 10;
 		public static float minDistRTNodes = 1;
 
 		public static GameObject RRTDebug;
 
 		private bool RRT(bool useMCT){
 			cleanUp();
-			if(debugMode){
+			if(debugMode)
+			{
+				//TODO: Put it in a clean place. The RRT Gameobject is never 
+				//clean up before creating a new one.
+				DestroyImmediate(GameObject.Find ("RRT"));
+
 				RRTDebug = new GameObject("RRT");
 			}
 
@@ -1131,6 +1147,21 @@ namespace EditorArea {
 						VectorLine line = new VectorLine("RRT", new Vector3[] {closest.position, final.position}, Color.red, null, 2.0f);
 						line.Draw3D();
 						line.vectorObject.transform.parent = RRTDebug.transform;
+						
+						//Added the sphere for better display
+						GameObject g = GameObject.Find("RRT");
+						GameObject o = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+						o.transform.parent = g.transform; 
+						o.name = "node";
+						o.transform.position = closest.position; 
+						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
+
+						//end nodes 
+						o = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+						o.transform.parent = g.transform; 
+						o.name = "node";
+						o.transform.position = final	.position; 
+						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
 					}
 					final.parent = closest;
 					closest.children.Add (final);
