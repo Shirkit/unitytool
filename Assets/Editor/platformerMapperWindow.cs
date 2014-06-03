@@ -120,7 +120,7 @@ namespace EditorArea {
 			depthIter = EditorGUILayout.IntSlider ("Max Depth per Iteration", depthIter, 1, 1000);
 			maxDistRTNodes = EditorGUILayout.FloatField ("Max Dist RRT Nodes", maxDistRTNodes);
 			minDistRTNodes = EditorGUILayout.FloatField ("Min Dist RRT Nodes", minDistRTNodes);
-			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 30);
+			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 10);
 			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 100, 100000);
 
 
@@ -132,12 +132,7 @@ namespace EditorArea {
 
 			if (GUILayout.Button ("Clear")) {
 				cleanUp();
-				//Do not know where to put that as cleanUp gets call from 
-				//multiple places. 
-				//TODO: Clean this up. 
-				DestroyImmediate(GameObject.Find ("RRT"));
-
-
+				cleanUpRRTDebug();
 			}
 
 			curFrame = EditorGUILayout.IntSlider ("frame", curFrame, 0, totalFrames);
@@ -992,12 +987,7 @@ namespace EditorArea {
 
 		private bool RRT(bool useMCT){
 			cleanUp();
-			if(debugMode)
-			{
-				//TODO: Put it in a clean place. The RRT Gameobject is never 
-				//clean up before creating a new one.
-				DestroyImmediate(GameObject.Find ("RRT"));
-
+			if(debugMode){
 				RRTDebug = new GameObject("RRT");
 			}
 
