@@ -38,7 +38,7 @@ namespace EditorArea {
 
 		public static bool ignoreFrameLimit;
 
-		public static bool debugMode;
+		public static bool debugMode = true;
 		public static bool drawWholeThing;
 		public List<movementModel> mModels;
 
@@ -1014,18 +1014,61 @@ namespace EditorArea {
 				roots[j] = new RTNode(startingLoc, 0, new PlayerState());
 				rrtTrees[j].insert(new double[] {roots[j].position.x, roots[j].position.y} ,roots[j]);
 				q = 0;
+
+				PriorityQueue<float,double> qleft = new PriorityQueue<float,double>();
+				PriorityQueue<float,double> qright = new PriorityQueue<float,double>();
+				PriorityQueue<float,double> qup = new PriorityQueue<float,double>();
+				PriorityQueue<float,double> qdown = new PriorityQueue<float,double>();
+
+				qleft.Enqueue(startingLoc.x,-startingLoc.x);
+				qleft.Enqueue(20,-20);
+				qleft.Enqueue(-20,20);
+
+				Debug.Log(qleft.First); 
+				Debug.Log("DDD"); 
+				Debug.Log(qleft.First); 
+				
+
+				qright.Enqueue(startingLoc.x,startingLoc.x);
+				qup.Enqueue(startingLoc.y,startingLoc.y);
+				qdown.Enqueue(startingLoc.y,-startingLoc.y);
+
+
+
 				for(i = 0; i < rrtIters; i++){
 					q++;
+
+					//TODO sample from limits reachable 
+					//Use 4 heaps. 
 					float x = Random.Range (bl.x, tr.x);
 					float y = Random.Range (bl.y, tr.y);
 
 					//TODO: 
-					//Try to have the node drop to the closest plate from the y-coordinate 
-					//System. i.e. ray cast dropping down to find the closest patforme
+					//Add a control for that one
+					if(UnityEngine.Random.Range(0,100)>70)
+					{
+						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up,8f);
+
+						if(returnCast.collider != null && returnCast.collider.tag == "Floor")
+						{
+							//VectorLine line = new VectorLine("linecast", new Vector3[] {new Vector3(x,y), 
+							//	returnCast.point}, Color.blue, null, 1.0f);
+							//line.Draw3D();
+							//line.vectorObject.transform.parent = RRTDebug.transform;
+
+
+							//Draw lines
+
+							//Debug.Log(returnCast.collider.name); 
+							y = returnCast.point.y+0.5f; 
+						}
+
+					}
 
 					//Adding blue sphere if debugging
 					if(debugMode)
 					{
+
 						//Added the sphere for better display
 						GameObject g = GameObject.Find("RRT");
 						GameObject o = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -1033,6 +1076,7 @@ namespace EditorArea {
 						o.name = "node"+i;
 						o.transform.position = new Vector3(x,y); 
 						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
+						//Add interpolation between colours to know when it was added. 
 					}
 
 					if(!tryAddNode(x,y, j, useMCT)){
