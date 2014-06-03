@@ -988,7 +988,12 @@ namespace EditorArea {
 		private bool RRT(bool useMCT){
 			cleanUp();
 			if(debugMode){
+
+				//TODO: Put it in a clean place. The RRT Gameobject is never 
+				//clean up before creating a new one.
+				DestroyImmediate(GameObject.Find ("RRT"));
 				RRTDebug = new GameObject("RRT");
+
 			}
 
 			goalReached = new bool[numPlayers];
