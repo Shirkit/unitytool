@@ -132,6 +132,7 @@ namespace EditorArea {
 
 			if (GUILayout.Button ("Clear")) {
 				cleanUp();
+				cleanUpRRTDebug();
 			}
 
 			curFrame = EditorGUILayout.IntSlider ("frame", curFrame, 0, totalFrames);
