@@ -1015,24 +1015,22 @@ namespace EditorArea {
 				rrtTrees[j].insert(new double[] {roots[j].position.x, roots[j].position.y} ,roots[j]);
 				q = 0;
 
-				PriorityQueue<float,double> qleft = new PriorityQueue<float,double>();
-				PriorityQueue<float,double> qright = new PriorityQueue<float,double>();
-				PriorityQueue<float,double> qup = new PriorityQueue<float,double>();
-				PriorityQueue<float,double> qdown = new PriorityQueue<float,double>();
-
-				qleft.Enqueue(startingLoc.x,-startingLoc.x);
-				qleft.Enqueue(20,-20);
-				qleft.Enqueue(-20,20);
-
-				Debug.Log(qleft.First); 
-				Debug.Log("DDD"); 
-				Debug.Log(qleft.First); 
 				
-
-				qright.Enqueue(startingLoc.x,startingLoc.x);
-				qup.Enqueue(startingLoc.y,startingLoc.y);
-				qdown.Enqueue(startingLoc.y,-startingLoc.y);
-
+				float xMin = startingLoc.x - maxDistRTNodes;
+				float xMax = startingLoc.x + maxDistRTNodes;
+				float yMin = startingLoc.y - maxDistRTNodes;
+				float yMax = startingLoc.y + maxDistRTNodes;
+				
+				//Check if the bounds of the level are reached
+				if (xMin < bl.x)
+					xMin = bl.x; 
+				if (xMax > tr.x)
+					xMax = tr.x; 
+				if (yMin < bl.y)
+					yMin = bl.y; 
+				if (yMax < tr.y)
+					yMax = tr.y; 
+				
 
 
 				for(i = 0; i < rrtIters; i++){
@@ -1040,8 +1038,8 @@ namespace EditorArea {
 
 					//TODO sample from limits reachable 
 					//Use 4 heaps. 
-					float x = Random.Range (bl.x, tr.x);
-					float y = Random.Range (bl.y, tr.y);
+					float x = Random.Range (xMin, xMax);
+					float y = Random.Range (yMin, yMax);
 
 					//TODO: 
 					//Add a control for that one
@@ -1066,6 +1064,7 @@ namespace EditorArea {
 					}
 
 					//Adding blue sphere if debugging
+					//Placing it where we tried to place a node
 					if(debugMode)
 					{
 
@@ -1079,13 +1078,44 @@ namespace EditorArea {
 						//Add interpolation between colours to know when it was added. 
 					}
 
-					if(!tryAddNode(x,y, j, useMCT)){
+					if(!tryAddNode(x,y, j, useMCT))
+					{
 						i--;
 					}
-					if(q > rrtIters*10){
+					else
+					{
+						//The node was added. 
+						//Updating the random bounds
+
+						if (x - maxDistRTNodes < xMin)
+							xMin = x - maxDistRTNodes; 							
+						if (x + maxDistRTNodes > xMax)
+							xMax = x + maxDistRTNodes; 							
+						if (y - maxDistRTNodes < yMin)
+							yMin = y - maxDistRTNodes; 
+						if (y + maxDistRTNodes > yMax)
+							yMax = y + maxDistRTNodes; 
+
+						//Check if the bounds of the level are reached
+						if (xMin < bl.x)
+							xMin = bl.x; 
+						if (xMax > tr.x)
+							xMax = tr.x; 
+						if (yMin < bl.y)
+							yMin = bl.y; 
+						if (yMax < tr.y)
+							yMax = tr.y; 
+							
+					}
+
+					
+					if(q > rrtIters*10)
+					{
 						break;
 					}
-					if(goalReached[j]){
+					
+					if(goalReached[j])
+					{
 						break;
 					}
 				}
@@ -1192,14 +1222,19 @@ namespace EditorArea {
 			else{
 
 				RTNode final;
-				if(useMCT){
+				if(useMCT)
+				{
 					final = MCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
-				else{
+				else
+				{
 					final = AStarSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
-				if(final != null){
-					if(debugMode){
+				
+				if(final != null)
+				{
+					if(debugMode)
+					{
 						VectorLine line = new VectorLine("RRT", new Vector3[] {closest.position, final.position}, Color.red, null, 2.0f);
 						line.Draw3D();
 						line.vectorObject.transform.parent = RRTDebug.transform;
@@ -1219,24 +1254,26 @@ namespace EditorArea {
 						o.transform.position = final	.position; 
 						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
 					}
+					
 					final.parent = closest;
 					closest.children.Add (final);
 					final.frame = closest.frame + final.frame;
 					rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
-					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5){
+					
+					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5)
+					{
 						goalReached[j] = true;
 						goalNodes[j] = final;
 					}
-					else{
+					else
+					{
 						goalReached[j] = tryAddGoalNode(final, j, useMCT);
 					}
 
-
-
-
 					return true;
 				}
-				else{
+				else
+				{
 					return true;
 				}
 			}
