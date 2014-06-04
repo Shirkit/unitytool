@@ -39,7 +39,6 @@ public class movementModel : MonoBehaviour{
 	}
 
 	void Awake(){
-		//Debug.Log ("Awake");
 		state = new PlayerState();
 		aIndex = 0;
 		dead = false;
@@ -77,17 +76,13 @@ public class movementModel : MonoBehaviour{
 		state.platformVelocity.y = startState.platformVelocity.y;
 		state.numJumps = startState.numJumps;
 		frame = startFrame;
-		
-		
-		
+
 		
 		dead = false;
 		actionTypes = new Dictionary<string, AbsAction>();
 		actions = new List<string>();
 		durations = new List<int>();
-		//Initial Wait Time
-		//actions.Add ("wait");
-		//durations.Add (30);
+
 		//Initialize action types
 		pressLeftAction pla = new pressLeftAction(player, state);
 		pressRightAction pra = new pressRightAction(player, state);
@@ -170,18 +165,11 @@ public class movementModel : MonoBehaviour{
 		frame++;
 		bool toReturn;
 		if(aIndex < actions.Count){
-			//Debug.Log (aIndex);
-			//Debug.Log (actions.Count);
-			//Debug.Log (durations.Count);
-			//Debug.Log("Performing action: " + actions[aIndex] + " for duration: " + durations[aIndex]);
 			doAction(actions[aIndex], durations[aIndex]);
 			toReturn = false;
 		}
 		else{
-			//toReturn = true;
-
 			return true;
-			//doAction("wait", 1);
 		}
 
 		movePlayer();
@@ -198,8 +186,6 @@ public class movementModel : MonoBehaviour{
 		AbsAction action = actionTypes[aName];
 		if(action.execute(aDuration)){
 			aIndex++;
-			//Debug.Log (aName + "--" + aDuration);
-			//Debug.Log (player.transform.position);
 		}
 	}
 
@@ -245,8 +231,8 @@ public class movementModel : MonoBehaviour{
 						player.transform.position = new Vector3(player.transform.position.x, (collH.gameObject.transform.position.y + collH.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
 						state.velocity.y = 0;
 					}
-					if((state.velocity.y > 0.1f) && ((collF.gameObject.transform.position.y) > (player.transform.position.y - state.velocity.y + 0.1f))){
-						player.transform.position = new Vector3(player.transform.position.x, (collF.gameObject.transform.position.y - collF.gameObject.transform.localScale.y*0.5f - player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
+					if((state.velocity.y > 0.1f) && ((collH.gameObject.transform.position.y) > (player.transform.position.y - state.velocity.y + 0.1f))){
+						player.transform.position = new Vector3(player.transform.position.x, (collH.gameObject.transform.position.y - collH.gameObject.transform.localScale.y*0.5f - player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
 						state.velocity.y = 0;
 					}
 					if(Mathf.Approximately(player.transform.position.y, (collH.gameObject.transform.position.y + collH.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){

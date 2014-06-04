@@ -12,10 +12,8 @@ using KDTreeDLL;
 
 namespace EditorArea {
 	public class PlatformerEditorWindow : EditorWindow  {
-		public GameObject heatmap;
 		public GameObject players;
 		public GameObject models;
-		public GameObject posMods;
 		public GameObject nodes;
 		public GameObject paths;
 		public GameObject player;
@@ -27,7 +25,6 @@ namespace EditorArea {
 		public bool drawPaths;
 		public bool playing = false;
 		private movementModel mModel;
-		private posMovModel pmModel;
 		public static int numPlayers = 1;
 		public static int numIters = 100;
 		public static int depthIter = 3;
@@ -41,18 +38,16 @@ namespace EditorArea {
 
 		public static bool drawWholeThing;
 		public List<movementModel> mModels;
-		public List<posMovModel> pmModels;
 
 		public int count = 0;
 
 		public GameObject nodMarFab = Resources.Load("nodeMarker") as GameObject;
 		public GameObject playerFab = Resources.Load ("player") as GameObject;
 		public GameObject modelFab = Resources.Load ("modelObject") as GameObject;
-		public GameObject posModFab = Resources.Load ("posMod") as GameObject;
 
 		private static Vector2 scrollPos = new Vector2 ();
+		public static bool resourcesLoaded = false;
 		
-		//public static GameObject[] hplats;
 		public static HPlatMovement[] hplatmovers;
 		public static VPlatMovement[] vplatmovers;
 		public static bool platsInitialized = false;
@@ -68,6 +63,13 @@ namespace EditorArea {
 			window.title = "RRTMapper";
 			window.ShowTab ();
 			clean = false;
+		}
+
+		void loadResources(){
+			nodMarFab = Resources.Load("nodeMarker") as GameObject;
+			playerFab = Resources.Load ("player") as GameObject;
+			modelFab = Resources.Load ("modelObject") as GameObject;
+			resourcesLoaded = true;
 		}
 
 		static void initPlat(){
@@ -97,6 +99,10 @@ namespace EditorArea {
 		}
 
 		void OnGUI () {
+			if(!resourcesLoaded){
+				loadResources();
+			}
+			
 			scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
 
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
@@ -157,9 +163,6 @@ namespace EditorArea {
 
 			if (GUILayout.Button ("Import Path")) {
 				importPath(filename, destCount);
-			}
-			if (GUILayout.Button ("Import PosSet")) {
-				importPos(filename, destCount);
 			}
 
 			rrtIters = EditorGUILayout.IntField("RRT Nodes: ", rrtIters);
@@ -285,6 +288,10 @@ namespace EditorArea {
 		bool pathsMarked;
 
 		public void Update(){
+			if(!resourcesLoaded){
+				loadResources();
+			}
+
 			if(!clean){
 				cleanUp();
 				clean = true;
@@ -321,11 +328,6 @@ namespace EditorArea {
 							{
 								//model.doAction("wait", 1);
 							}
-						}
-					}
-					foreach(posMovModel pModel in pmModels){
-						if(pModel != null){
-							pModel.goToFrame(curFrame);
 						}
 					}
 					PlatsGoToFrame(curFrame);
@@ -376,36 +378,6 @@ namespace EditorArea {
 				ser.Serialize (stream, sModel);
 				stream.Flush ();
 				stream.Close ();
-			}
-		}
-
-		private void importPos(string filename, string destCount){
-			posModObj = Instantiate(posModFab) as GameObject;
-			posModObj.name = "posMod" + destCount;
-			posModObj.transform.parent = posMods.transform;
-			player = Instantiate(playerFab) as GameObject;
-			player.name = "player" + destCount;
-			player.transform.parent = players.transform;
-			pmModel = posModObj.GetComponent<posMovModel>() as posMovModel;
-			pmModel.player = player;
-			pmModels.Add (pmModel);
-			pmModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-			var tempMaterial = new Material(player.renderer.sharedMaterial);
-			tempMaterial.color = pmModel.color;
-			player.renderer.sharedMaterial = tempMaterial;
-
-			serializablePosMovModel sModel;
-			XmlSerializer ser = new XmlSerializer (typeof(serializablePosMovModel));
-			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
-				sModel = ser.Deserialize (stream) as serializablePosMovModel;
-				stream.Flush ();
-				stream.Close ();
-			}
-			pmModel.positions = sModel.positions;
-			player.transform.position = sModel.startLoc;
-			totalFrames = Mathf.Max(totalFrames, sModel.numFrames);
-			if(drawPaths){
-				pmModel.drawPath(paths);
 			}
 		}
 
@@ -463,11 +435,6 @@ namespace EditorArea {
 					model.goToFrame (curFrame);
 				}
 			}
-			foreach(posMovModel pModel in pmModels){
-				if(pModel != null){
-					pModel.goToFrame(curFrame);
-				}
-			}
 			PlatsGoToFrame(curFrame);
 		}		
 				
@@ -491,10 +458,8 @@ namespace EditorArea {
 			players = new GameObject("players");
 			models = new GameObject("models");
 			paths = new GameObject("paths");
-			posMods = new GameObject("posMods");
 			paths.transform.parent = players.transform;
 			models.transform.parent = players.transform;
-			posMods.transform.parent = players.transform;
 			nodes.transform.parent = players.transform;
 		}
 
