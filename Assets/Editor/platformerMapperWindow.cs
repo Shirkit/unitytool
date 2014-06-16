@@ -698,7 +698,7 @@ namespace EditorArea {
 		public RTNode asGoalNode;
 
 		public static int framesPerStep = 10;
-		public static int maxDepthAStar = 100;
+		public static int maxDepthAStar = 4000;
 
 		public GameObject astar;
 		public int statesExplored;
@@ -1627,7 +1627,7 @@ namespace EditorArea {
 	//TODO Finish
 	//UCTSEARCH
 
-		public float Cp = 1 / Mathf.Sqrt(2);
+		public double Cp = 1 / Mathf.Sqrt(2);
 		public GameObject uct;
 
 		private RTNode UCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
@@ -1663,14 +1663,27 @@ namespace EditorArea {
 			bool success = false;
 			while(i < budget){
 				i++;
+				if(root == null){
+					Debug.Log ("WRF!!!!!!:");
+				}
 				v = TreePolicy(root, golLoc);
-				double delta = DefaultPolicy(v.rt, golLoc);
-				if(v.dead){
-					delta = -10;
+				if(v == null){
+					break;
+				}
+				double delta = DefaultPolicy(v.rt, golLoc, startLoc);
+
+
+				if(v.dead)
+				{
+					delta = -100000;
 					v.delta = 0;
 				}
+
 				Backup(v, delta);
-				if(delta > 999.5){
+
+
+				if( (v.rt.position - (Vector2)golLoc).magnitude < 0.5f)
+				{
 					Debug.Log ("SUCCESS");
 					success = true;
 					break;
@@ -1693,7 +1706,8 @@ namespace EditorArea {
 		
 		public UCTNode TreePolicy(UCTNode v, Vector3 golLoc){
 			//TODO: instead of while true, should be while !terminal.
-			while(true){
+			while(v != null){
+
 				if(v.unusedActions.Count > 0){
 					return Expand(v, golLoc);
 				}
@@ -1716,12 +1730,23 @@ namespace EditorArea {
 					maxNode = child;
 				}
 			}
+			if(maxNode == null){
+				Debug.Log ("FAILED");
+				foreach(UCTNode child in v.children){
+					double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits);
+					Debug.Log (val);
+				}
+			}
 			return maxNode;
 		}
 
 		//This is maybe, possibly right?
-		public float DefaultPolicy(RTNode s, Vector3 golLoc){
-			return 1000 - ((Vector2)golLoc - s.position).magnitude;
+		public float DefaultPolicy(RTNode s, Vector3 golLoc, Vector3 startLoc){
+			float dist = (golLoc - startLoc).magnitude;
+			float dist2 = ((Vector2)golLoc - s.position).magnitude;
+
+			return (((dist - dist2) / dist) * 50) + 100;
+			//return (1/((Vector2)golLoc - s.position).sqrMagnitude )* 100;
 		}
 		
 		
