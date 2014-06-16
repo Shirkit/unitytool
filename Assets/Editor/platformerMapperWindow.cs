@@ -171,7 +171,7 @@ namespace EditorArea {
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
-				RRT(true);
+				RRT(0);
 				PlatsGoToFrame(0);
 			}
 			if (GUILayout.Button ("RRT - AS")) {
@@ -181,7 +181,17 @@ namespace EditorArea {
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
-				RRT(false);
+				RRT(1);
+				PlatsGoToFrame(0);
+			}
+			if (GUILayout.Button ("RRT - UCT")) {
+				if(!platsInitialized){
+					initPlat();
+				}
+				pathsMarked = false;
+				realFrame = 0;
+				curFrame = 0;
+				RRT(2);
 				PlatsGoToFrame(0);
 			}
 			
@@ -1005,7 +1015,7 @@ namespace EditorArea {
 
 		public static GameObject RRTDebug;
 
-		private bool RRT(bool useMCT){
+		private bool RRT(int useMCT){
 			cleanUp();
 			if(debugMode){
 
@@ -1233,7 +1243,7 @@ namespace EditorArea {
 			}
 		}
 
-		private bool tryAddNode(float x, float y, int j, bool useMCT){
+		private bool tryAddNode(float x, float y, int j, int useMCT){
 			RTNode closest = findClosest(x,y, j);
 			if(closest == null){
 
@@ -1242,15 +1252,17 @@ namespace EditorArea {
 			else{
 
 				RTNode final;
-				if(useMCT)
+				if(useMCT == 0)
 				{
 					final = MCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
-				else
+				else if (useMCT == 1)
 				{
 					final = AStarSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
-				
+				else{
+					final = UCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
+				}
 				if(final != null)
 				{
 					if(debugMode)
@@ -1299,17 +1311,20 @@ namespace EditorArea {
 			}
 		}
 
-		private bool tryAddGoalNode(RTNode node, int j, bool useMCT){
+		private bool tryAddGoalNode(RTNode node, int j, int useMCT){
 			if(Vector2.Distance (node.position, new Vector2(goalLoc.x, goalLoc.y)) > maxDistRTNodes){
 				return false;
 			}
 			else{
 				RTNode final;
-				if(useMCT){
+				if(useMCT == 0){
 					final = MCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
-				else{
+				else if (useMCT == 1){
 					final = AStarSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
+				}
+				else{
+					final = UCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
 				if(final != null){
 					if(debugMode){
@@ -1490,7 +1505,7 @@ namespace EditorArea {
 
 								System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
 								stopwatch.Start ();
-								success = RRT(true);
+								success = RRT(0);
 								stopwatch.Stop();
 								if(success){
 									toWrite += "true,";
@@ -1511,7 +1526,7 @@ namespace EditorArea {
 								PlatsGoToFrame(0);
 								stopwatch = new System.Diagnostics.Stopwatch();
 								stopwatch.Start ();
-								success = RRT(false);
+								success = RRT(1);
 								stopwatch.Stop();
 								if(success){
 									toWrite += "true,";
