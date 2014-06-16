@@ -99,7 +99,9 @@ namespace EditorArea {
 		void OnGUI () {
 			scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
 
-			
+
+
+
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
 				if(!platsInitialized){
 					initPlat();
@@ -196,6 +198,23 @@ namespace EditorArea {
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				PlatsGoToFrame(0);
+				drawWholeThing = false;
+			}
+
+			if(GUILayout.Button ("UCT Search")){
+				if(debugMode){
+					drawWholeThing = true;
+				}
+				if(!platsInitialized){
+					initPlat();
+				}
+				pathsMarked = false;
+				realFrame = 0;
+				curFrame = 0;
+				startingLoc = GameObject.Find ("startingPosition").transform.position;
+				goalLoc = GameObject.Find("goalPosition").transform.position;
+				UCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				PlatsGoToFrame(0);
 				drawWholeThing = false;
 			}
@@ -462,6 +481,7 @@ namespace EditorArea {
 
 		private void cleanUp(){
 			DestroyImmediate(astar);
+			DestroyImmediate(uct);
 			DestroyImmediate(GameObject.Find ("players"));
 			
 			
@@ -1587,6 +1607,284 @@ namespace EditorArea {
 		}
 	
 	
+
+
+	//TODO Finish
+	//UCTSEARCH
+
+		public float Cp = 1 / Mathf.Sqrt(2);
+		public GameObject uct;
+
+		private RTNode UCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
+			cleanUp();
+
+			if(drawWholeThing){
+				uct = new GameObject("UCT");
+			}
+			
+			modelObj = Instantiate(modelFab) as GameObject;
+			modelObj.name = "modelObject" + count;
+			modelObj.transform.parent = models.transform;
+			player = Instantiate(playerFab) as GameObject;
+			player.name = "player" + count;
+			player.transform.parent = players.transform;
+			mModel = modelObj.GetComponent<movementModel>() as movementModel;
+			mModel.hplatmovers = hplatmovers;
+			mModel.vplatmovers = vplatmovers;
+			mModel.player = player;
+			mModels.Add (mModel);
+			count++;
+			
+			
+			
+			UCTNode root = new UCTNode();
+			root.rt.state = state;
+			root.rt.frame = frame;
+			root.rt.position = startLoc;
+			int budget = maxDepthAStar;
+			UCTNode v = null;
+
+			int i = 0;
+			bool success = false;
+			while(i < budget){
+				i++;
+				v = TreePolicy(root, golLoc);
+				double delta = DefaultPolicy(v.rt, golLoc);
+				Backup(v, delta);
+				if(delta > 999.5){
+					Debug.Log ("SUCCESS");
+					success = true;
+					break;
+				}	
+			}
+
+			if(success || showDeaths){
+				mModel.startState = state;
+				mModel.startFrame = frame;
+				mModel.startLocation = startLoc;
+				mModel.initializev2();
+				mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+				
+				return reCreatePathUCT(v, root);
+			}
+			else{
+				return null;
+			}
+		}
+		
+		public UCTNode TreePolicy(UCTNode v, Vector3 golLoc){
+			//TODO: instead of while true, should be while !terminal.
+			while(true){
+				if(v.unusedActions.Count > 0){
+					return Expand(v, golLoc);
+				}
+				else{
+					v = BestChild(v, Cp);
+				}
+			}
+			return v;
+		}
+		
+		
+		//Returns Null if bestChild value is < 0, which should not happen I think?
+		public UCTNode BestChild(UCTNode v,double c){
+			UCTNode maxNode = null;
+			double maxVal = 0;
+			foreach(UCTNode child in v.children){
+				double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits);
+				if(val > maxVal){
+					maxVal = val;
+					maxNode = child;
+				}
+			}
+			return maxNode;
+		}
+
+		//This is maybe, possibly right?
+		public float DefaultPolicy(RTNode s, Vector3 golLoc){
+			return 1000 - ((Vector2)golLoc - s.position).magnitude;
+		}
+		
+		
+		
+		public UCTNode Expand(UCTNode v, Vector3 golLoc){
+			int actInt = Random.Range(0, v.unusedActions.Count);
+			string action = v.unusedActions[actInt];
+			v.unusedActions.RemoveAt(actInt);
+			UCTNode vn = expandWith(v, action, golLoc);
+
+			if(drawWholeThing){
+				Color clr;
+				switch(action){
+				case "wait":
+					clr = Color.blue;
+					break;
+				case "Left":
+					clr = Color.green;
+					break;
+				case "Right":
+					clr = Color.magenta;
+					break;
+				case "jump":
+					clr = Color.red;
+					break;
+				case "jump left":
+					clr = Color.yellow;
+					break;
+				case "jump right":
+					clr = Color.white;
+					break;
+				default:
+					clr = Color.cyan;
+					break;
+				}
+				
+				
+				VectorLine line = new VectorLine("UCT", new Vector3[] {v.rt.position, vn.rt.position}, clr, null, 2.0f);
+				line.Draw3D();
+				line.vectorObject.transform.parent = uct.transform;
+			}
+			
+
+
+			return vn;
+		}
+		
+		
+		public void Backup(UCTNode v, double delta){
+			while(v != null){
+				v.visits++;
+				v.delta += delta;
+				v = v.parent;
+			}
+		}
+
+		private UCTNode expandWith(UCTNode v, string action, Vector3 golLoc){
+			mModel.startState = v.rt.state;
+			mModel.startLocation = v.rt.position;
+			mModel.startFrame = v.rt.frame;
+			mModel.initializev2();
+			int frame = framesPerStep;
+			mModel.actions.Add (action);
+
+			if(framesPerStep > 1){
+				if(action.Equals("Right") || action.Equals ("Left")){
+					mModel.durations.Add (framesPerStep);
+					int j;
+					for(j = 0; j < framesPerStep; j++){
+						
+						mModel.runFrames(1);
+						float dist = Vector2.Distance(mModel.player.transform.position, golLoc);
+						if(dist < 0.5){
+							mModel.durations[mModel.durations.Count-1] = j+1;
+							break;
+						}
+					}
+					if(j == framesPerStep){
+						frame = j;
+					}
+					else{
+						frame = j+1;
+					}
+					
+				}
+				else{
+					mModel.durations.Add (1);
+					mModel.actions.Add ("wait");
+					mModel.durations.Add (framesPerStep-1);
+					int j;
+					for(j = 0; j < framesPerStep; j++){
+						
+						mModel.runFrames(1);
+						float dist = Vector2.Distance(mModel.player.transform.position, golLoc);
+						if(dist < 0.5){
+							if(j+1 > 1){
+								mModel.durations[mModel.durations.Count-1] = j;
+							}
+							else{
+								mModel.actions.RemoveAt(mModel.actions.Count-1);
+								mModel.durations.RemoveAt(mModel.durations.Count-1);
+							}
+							break;
+						}
+					}
+					if(j == framesPerStep){
+						frame = j;
+					}
+					else{
+						frame = j+1;
+					}
+				}
+			}
+			else{
+				mModel.durations.Add (1);
+				frame = mModel.loopUpdate();
+			}			
+			
+			if(mModel.dead){
+				return null;
+			}
+			else{
+				RTNode toReturnRT = new RTNode(player.transform.position, v.rt.frame + frame, mModel.state);
+				
+				toReturnRT.actions.AddRange (mModel.actions);
+				toReturnRT.durations.AddRange(mModel.durations);
+				toReturnRT.parent = v.rt;
+				v.rt.children.Add(toReturnRT);
+
+				UCTNode toReturn  = new UCTNode();
+				toReturn.rt = toReturnRT;
+				toReturn.parent = v;
+				v.children.Add(toReturn);
+
+				return toReturn;
+			};
+		}
+		
+		
+		
+		private RTNode reCreatePathUCT(UCTNode v, UCTNode root){
+
+			loopAddUCT(v.rt, root.rt);
+			totalFrames = Mathf.Max (mModel.numFrames, totalFrames);
+			var tempMaterial = new Material(player.renderer.sharedMaterial);
+			tempMaterial.color = mModel.color;
+			player.renderer.sharedMaterial = tempMaterial;
+			if(drawPaths){
+				mModel.drawPath(paths);
+			}
+			
+			RTNode toReturn = new RTNode(v.rt.position, mModel.numFrames, v.rt.state);
+			toReturn.actions.AddRange (mModel.actions);
+			toReturn.durations.AddRange (mModel.durations);
+			return toReturn;
+		}
+		
+		private void loopAddUCT(RTNode node, RTNode root){
+			if(node != root){
+				loopAddUCT(node.parent, root);
+				mModel.actions.AddRange(node.actions);
+				mModel.durations.AddRange(node.durations);
+				mModel.numFrames = node.frame;
+			}
+		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+
+
+
 	}
 }
 
