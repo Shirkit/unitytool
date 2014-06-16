@@ -1856,7 +1856,7 @@ namespace EditorArea {
 					toReturn.dead = true;
 			}
 			return toReturn;
-			};
+
 		}
 		
 		
