@@ -7,6 +7,7 @@ public class UCTNode{
 	public RTNode rt;
 	public int visits;
 	public double delta;
+	public bool dead;
 
 	public UCTNode parent;
 	public List<UCTNode> children;
@@ -18,6 +19,7 @@ public class UCTNode{
 		children = new List<UCTNode>();
 		visits = 0;
 		delta = 0;
+		dead = false;
 	}
 
 	private void initUAct(){

@@ -1665,6 +1665,10 @@ namespace EditorArea {
 				i++;
 				v = TreePolicy(root, golLoc);
 				double delta = DefaultPolicy(v.rt, golLoc);
+				if(v.dead){
+					delta = -10;
+					v.delta = 0;
+				}
 				Backup(v, delta);
 				if(delta > 999.5){
 					Debug.Log ("SUCCESS");
@@ -1836,23 +1840,22 @@ namespace EditorArea {
 				frame = mModel.loopUpdate();
 			}			
 			
-			if(mModel.dead){
-				return null;
-			}
-			else{
-				RTNode toReturnRT = new RTNode(player.transform.position, v.rt.frame + frame, mModel.state);
+		
+			RTNode toReturnRT = new RTNode(player.transform.position, v.rt.frame + frame, mModel.state);
 				
-				toReturnRT.actions.AddRange (mModel.actions);
-				toReturnRT.durations.AddRange(mModel.durations);
-				toReturnRT.parent = v.rt;
-				v.rt.children.Add(toReturnRT);
+			toReturnRT.actions.AddRange (mModel.actions);
+			toReturnRT.durations.AddRange(mModel.durations);
+			toReturnRT.parent = v.rt;
+			v.rt.children.Add(toReturnRT);
 
-				UCTNode toReturn  = new UCTNode();
-				toReturn.rt = toReturnRT;
-				toReturn.parent = v;
-				v.children.Add(toReturn);
-
-				return toReturn;
+			UCTNode toReturn  = new UCTNode();
+			toReturn.rt = toReturnRT;
+			toReturn.parent = v;
+			v.children.Add(toReturn);
+			if(mModel.dead){
+					toReturn.dead = true;
+			}
+			return toReturn;
 			};
 		}
 		
