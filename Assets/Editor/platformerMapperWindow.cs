@@ -1709,7 +1709,7 @@ namespace EditorArea {
 				v.densityPenalty = ((float)uctDensity[0, xIndex, yIndex] )/ ((float)maxDensity[0]);
 
 				if(maxDensity[0] > 100){
-					if(v.densityPenalty > 0.1f){
+					if(v.densityPenalty > 0.12f){
 						v.dead = true;
 					}
 				}
@@ -1788,8 +1788,8 @@ namespace EditorArea {
 			float dist = (golLoc - startLoc).magnitude;
 			float dist2 = ((Vector2)golLoc - s.position).magnitude;
 
-			return (((dist - dist2) / dist) * 50);
-			//return (1/((Vector2)golLoc - s.position).sqrMagnitude )* 100;
+			//return (((dist - dist2) / dist) * 50);
+			return (1/((Vector2)golLoc - s.position).sqrMagnitude )*100;
 		}
 						
 		public UCTNode Expand(UCTNode v, Vector3 golLoc){
