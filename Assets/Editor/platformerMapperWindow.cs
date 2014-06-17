@@ -1698,12 +1698,7 @@ namespace EditorArea {
 				}
 
 
-				if(v.dead)
-				{
-					delta = -100000;
 
-					v.delta = int.MinValue;
-				}
 				//RRT Density Grid Stuf
 				float x = v.rt.position.x;
 				float y = v.rt.position.y;
@@ -1712,6 +1707,19 @@ namespace EditorArea {
 				uctDensity[0, xIndex, yIndex]++;
 				maxDensity[0] = Mathf.Max(maxDensity[0], uctDensity[0, xIndex, yIndex]);
 				v.densityPenalty = ((float)uctDensity[0, xIndex, yIndex] )/ ((float)maxDensity[0]);
+
+				if(maxDensity[0] > 100){
+					if(v.densityPenalty > 0.1f){
+						v.dead = true;
+					}
+				}
+
+				if(v.dead)
+				{
+					delta = -100000;
+					
+					v.delta = int.MinValue;
+				}
 
 				Backup(v, delta);
 
