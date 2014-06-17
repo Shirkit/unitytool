@@ -697,7 +697,7 @@ namespace EditorArea {
 		public RTNode asGoalNode;
 
 		public static int framesPerStep = 10;
-		public static int maxDepthAStar = 100;
+		public static int maxDepthAStar = 4000;
 
 		public GameObject astar;
 		public int statesExplored;
@@ -1640,7 +1640,7 @@ namespace EditorArea {
 
 	//UCTSEARCH
 
-		public float Cp = 1 / Mathf.Sqrt(2);
+		public double Cp = 1 / Mathf.Sqrt(2);
 		public GameObject uct;
 		public int[, ,] uctDensity;
 		public int[] maxDensity;
@@ -1688,12 +1688,23 @@ namespace EditorArea {
 			bool success = false;
 			while(i < budget){
 				i++;
+
 				v = TreePolicy(root, golLoc, bl, tr);
-				double delta = DefaultPolicy(v.rt, golLoc);
-				if(v.dead){
-					delta = -10;
+				double delta = DefaultPolicy(v.rt, golLoc, startLoc);
+
+
+				if(v == null){
+					break;
+				}
+
+
+				if(v.dead)
+				{
+					delta = -100000;
+
 					v.delta = 0;
 				}
+
 				Backup(v, delta);
 				//RRT Density Grid Stuf
 				float x = v.rt.position.x;
@@ -1703,11 +1714,11 @@ namespace EditorArea {
 				uctDensity[1, xIndex, yIndex]++;
 				maxDensity[1] = Mathf.Max(maxDensity[1], uctDensity[1, xIndex, yIndex]);
 
-				if(delta > 999.5){
+				if(((Vector2)golLoc -v.rt.position).magnitude < 0.5f){
 					Debug.Log ("SUCCESS");
 					success = true;
 					break;
-				}	
+				}
 			}
 
 			if(success || showDeaths){
@@ -1726,7 +1737,8 @@ namespace EditorArea {
 		
 		public UCTNode TreePolicy(UCTNode v, Vector3 golLoc, Vector3 bl, Vector3 tr){
 			//TODO: instead of while true, should be while !terminal.
-			while(true){
+			while(v != null){
+
 				if(v.unusedActions.Count > 0){
 					return Expand(v, golLoc);
 				}
@@ -1752,12 +1764,23 @@ namespace EditorArea {
 					maxNode = child;
 				}
 			}
+			if(maxNode == null){
+				Debug.Log ("FAILED");
+				foreach(UCTNode child in v.children){
+					double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits);
+					Debug.Log (val);
+				}
+			}
 			return maxNode;
 		}
 
 		//This is maybe, possibly right?
-		public float DefaultPolicy(RTNode s, Vector3 golLoc){
-			return 1000 - ((Vector2)golLoc - s.position).magnitude;
+		public float DefaultPolicy(RTNode s, Vector3 golLoc, Vector3 startLoc){
+			float dist = (golLoc - startLoc).magnitude;
+			float dist2 = ((Vector2)golLoc - s.position).magnitude;
+
+			return (((dist - dist2) / dist) * 50) + 100;
+			//return (1/((Vector2)golLoc - s.position).sqrMagnitude )* 100;
 		}
 						
 		public UCTNode Expand(UCTNode v, Vector3 golLoc){
