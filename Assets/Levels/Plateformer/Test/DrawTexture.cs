@@ -39,16 +39,18 @@ public class DrawTexture : MonoBehaviour {
 		texture.Apply(); 
 
 		byte[] bytes = texture.EncodeToPNG();
-		File.WriteAllBytes(Application.dataPath + "/Levels/Plateformer/Graphics/SavedScreen.png", bytes);
+		File.WriteAllBytes(Application.dataPath + 
+			"/Levels/Plateformer/Graphics/SavedScreen.png", bytes);
 
 
 		SpriteRenderer r = gameObject.GetComponent<SpriteRenderer>(); 
 
 
 
-		Sprite s =   AssetDatabase.LoadAssetAtPath(Application.dataPath + "/Levels/Plateformer/Graphics/SavedScreen.png", typeof(Sprite)) as Sprite;
+		Sprite s = AssetDatabase.LoadAssetAtPath(
+			"Assets/Levels/Plateformer/Graphics/SavedScreen.png", typeof(Sprite)) as Sprite;
 
-		Debug.Log(s); 
+		r.sprite = s;  
 
 	}	
 }
