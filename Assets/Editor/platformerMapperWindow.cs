@@ -1650,8 +1650,8 @@ namespace EditorArea {
 		private RTNode UCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			cleanUp();
 
-			uctGridX = 20;
-			uctGridY = 5;
+			uctGridX = 5;
+			uctGridY = 2;
 			//TODO: Replace 1 with numPlayers
 			maxDensity = new int[1];
 			uctDensity = new int[1, uctGridX, uctGridY];
@@ -1702,7 +1702,7 @@ namespace EditorArea {
 				{
 					delta = -100000;
 
-					v.delta = 0;
+					v.delta = int.MinValue;
 				}
 
 				Backup(v, delta);
@@ -1711,8 +1711,8 @@ namespace EditorArea {
 				float y = v.rt.position.y;
 				int xIndex = Mathf.FloorToInt((x - bl.x) / ((tr.x - bl.x) / (float)uctGridX));
 				int yIndex = Mathf.FloorToInt((y - bl.y) / ((tr.y - bl.y) / (float)uctGridY));
-				uctDensity[1, xIndex, yIndex]++;
-				maxDensity[1] = Mathf.Max(maxDensity[1], uctDensity[1, xIndex, yIndex]);
+				uctDensity[0, xIndex, yIndex]++;
+				maxDensity[0] = Mathf.Max(maxDensity[0], uctDensity[0, xIndex, yIndex]);
 
 				if(((Vector2)golLoc -v.rt.position).magnitude < 0.5f){
 					Debug.Log ("SUCCESS");
@@ -1754,14 +1754,14 @@ namespace EditorArea {
 
 
 			UCTNode maxNode = null;
-			double maxVal = 0;
+			double maxVal = double.MinValue;
 			foreach(UCTNode child in v.children){
 				float x = child.rt.position.x;
 				float y = child.rt.position.y;
 				int xIndex = Mathf.FloorToInt((x - bl.x) / ((tr.x - bl.x) / (float)uctGridX));
 				int yIndex = Mathf.FloorToInt((y - bl.y) / ((tr.y - bl.y) / (float)uctGridY));
 
-				double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits) - uctDensity[1, xIndex, yIndex]/maxDensity * 30;
+				double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits) - ((float)uctDensity[0, xIndex, yIndex])/((float)maxDensity[0]) * 90;
 				if(val > maxVal){
 					maxVal = val;
 					maxNode = child;
@@ -1782,7 +1782,7 @@ namespace EditorArea {
 			float dist = (golLoc - startLoc).magnitude;
 			float dist2 = ((Vector2)golLoc - s.position).magnitude;
 
-			return (((dist - dist2) / dist) * 50) + 100;
+			return (((dist - dist2) / dist) * 50);
 			//return (1/((Vector2)golLoc - s.position).sqrMagnitude )* 100;
 		}
 						
