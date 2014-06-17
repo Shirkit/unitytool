@@ -1756,9 +1756,12 @@ namespace EditorArea {
 			UCTNode maxNode = null;
 			double maxVal = 0;
 			foreach(UCTNode child in v.children){
+				float x = child.rt.position.x;
+				float y = child.rt.position.y;
+				int xIndex = Mathf.FloorToInt((x - bl.x) / ((tr.x - bl.x) / (float)uctGridX));
+				int yIndex = Mathf.FloorToInt((y - bl.y) / ((tr.y - bl.y) / (float)uctGridY));
 
-
-				double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits);
+				double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits) - uctDensity[1, xIndex, yIndex]/maxDensity * 30;
 				if(val > maxVal){
 					maxVal = val;
 					maxNode = child;
