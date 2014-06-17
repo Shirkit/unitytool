@@ -12,6 +12,8 @@ using KDTreeDLL;
 
 namespace EditorArea {
 	public class PlatformerEditorWindow : EditorWindow  {
+
+		#region var defs
 		public GameObject heatmap;
 		public GameObject players;
 		public GameObject models;
@@ -61,6 +63,7 @@ namespace EditorArea {
 		public static bool batchComputation;
 		public static bool batchComputationRRT;
 		public static string batchFilename;
+		#endregion var defs
 
 		[MenuItem("Window/RRTMapper")]
 		static void Init () {
@@ -416,8 +419,6 @@ namespace EditorArea {
 			}
 		}
 
-
-
 		private void importPath(string filename, string destCount){
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + destCount;
@@ -507,12 +508,11 @@ namespace EditorArea {
 			nodes.transform.parent = players.transform;
 
 		}
+
 		private void cleanUpRRTDebug(){
 			DestroyImmediate(RRTDebug);
 
 		}
-
-
 
 		private RTNode MCTSearch(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
 			GameObject modelObj2 = Instantiate(modelFab) as GameObject;
@@ -691,7 +691,6 @@ namespace EditorArea {
 			return false;
 		}
 
-
 		public bool asGoalReached;
 		public PriorityQueue<RTNode, double> heap;
 		public RTNode asRoot;
@@ -849,6 +848,7 @@ namespace EditorArea {
 				mModel.numFrames = node.frame;
 			}
 		}
+
 		private void tryDoAction(RTNode cur, string action, Vector3 golLoc){
 
 			RTNode nex = addAction(cur, action, golLoc);
@@ -896,7 +896,6 @@ namespace EditorArea {
 				}
 			}
 		}
-
 
 		private RTNode addAction(RTNode cur, string action, Vector3 golLoc){
 			mModel.startState = cur.state;
@@ -991,8 +990,6 @@ namespace EditorArea {
 			}
 		}
 
-
-
 		private void printSolution(){
 			int i = 0;
 			while(i < mModel.durations.Count){
@@ -1009,7 +1006,6 @@ namespace EditorArea {
 		public RTNode[] roots;
 		public RTNode[] goalNodes;
 
-
 		public static float maxDistRTNodes = 10;
 		public static float minDistRTNodes = 1;
 
@@ -1021,10 +1017,13 @@ namespace EditorArea {
 
 				//TODO: Put it in a clean place. The RRT Gameobject is never 
 				//clean up before creating a new one.
-				DestroyImmediate(GameObject.Find ("RRT"));
+				DestroyImmediate(RRTDebug);
 				RRTDebug = new GameObject("RRT");
 
 			}
+			//TODO: Make this controlled externally
+
+
 
 			goalReached = new bool[numPlayers];
 
@@ -1034,6 +1033,8 @@ namespace EditorArea {
 			int i = 0;
 			int q = 0;
 			for(int j = 0; j < numPlayers; j++){
+
+				maxDensity[j] = 0;
 
 				goalReached[j] = false;
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
@@ -1099,12 +1100,28 @@ namespace EditorArea {
 					{
 
 						//Added the sphere for better display
-						GameObject g = GameObject.Find("RRT");
 						GameObject o = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-						o.transform.parent = g.transform; 
+						o.transform.parent = RRTDebug.transform; 
 						o.name = "node"+i;
 						o.transform.position = new Vector3(x,y); 
 						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
+
+						float t = ((float)i)/((float)rrtIters);
+						if(t <= 0.5f){
+							var tempMaterial = new Material(o.renderer.sharedMaterial);
+							tempMaterial.color = Color.Lerp(Color.green, Color.blue, (t*2f));
+							o.renderer.sharedMaterial = tempMaterial;
+						}
+						else{
+							var tempMaterial = new Material(o.renderer.sharedMaterial);
+							tempMaterial.color = Color.Lerp(Color.blue, Color.red, ((t-0.5f)*2f));
+							o.renderer.sharedMaterial = tempMaterial;
+						}
+
+
+
+
+
 						//Add interpolation between colours to know when it was added. 
 					}
 
@@ -1114,6 +1131,9 @@ namespace EditorArea {
 					}
 					else
 					{
+
+
+
 						//The node was added. 
 						//Updating the random bounds
 
@@ -1172,8 +1192,6 @@ namespace EditorArea {
 			}
 
 		}
-
-
 
 		private void reCreatePath(){
 			count = 0;
@@ -1345,7 +1363,6 @@ namespace EditorArea {
 			}
 		}
 
-
 		private RTNode findClosest(float x,float y, int j){
 
 			RTNode curNode = (RTNode)rrtTrees[j].nearest(new double[] {x, y});
@@ -1360,6 +1377,7 @@ namespace EditorArea {
 
 		//Batch Computations Code
 
+		#region batchCompute vars
 		//ASTAR
 		public static int iterationsPerDataSetAS;
 		public static int minNumFramesAS;
@@ -1398,7 +1416,7 @@ namespace EditorArea {
 		
 		public static int ASFrames;
 		public static int ASDepth;
-
+		#endregion batchCompute vars
 		void batchCompute(int number){
 			initPlat();
 			numPlayers = 1;
@@ -1569,7 +1587,6 @@ namespace EditorArea {
 			mModel.initializev2();
 		}
 
-
 		string getControlInput(Event e){
 			//Event e = Event.current;
 			if(e == null){
@@ -1620,18 +1637,26 @@ namespace EditorArea {
 				return "wait";
 			}*/
 		}
-	
-	
 
-
-	//TODO Finish
 	//UCTSEARCH
 
 		public float Cp = 1 / Mathf.Sqrt(2);
 		public GameObject uct;
+		public int[, ,] uctDensity;
+		public int[] maxDensity;
+		public int uctGridX;
+		public int uctGridY;
 
 		private RTNode UCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			cleanUp();
+
+			uctGridX = 20;
+			uctGridY = 5;
+			//TODO: Replace 1 with numPlayers
+			maxDensity = new int[1];
+			uctDensity = new int[1, uctGridX, uctGridY];
+			Vector3 bl = GameObject.Find ("bottomLeft").transform.position;
+			Vector3 tr = GameObject.Find ("topRight").transform.position;
 
 			if(drawWholeThing){
 				uct = new GameObject("UCT");
@@ -1663,13 +1688,21 @@ namespace EditorArea {
 			bool success = false;
 			while(i < budget){
 				i++;
-				v = TreePolicy(root, golLoc);
+				v = TreePolicy(root, golLoc, bl, tr);
 				double delta = DefaultPolicy(v.rt, golLoc);
 				if(v.dead){
 					delta = -10;
 					v.delta = 0;
 				}
 				Backup(v, delta);
+				//RRT Density Grid Stuf
+				float x = v.rt.position.x;
+				float y = v.rt.position.y;
+				int xIndex = Mathf.FloorToInt((x - bl.x) / ((tr.x - bl.x) / (float)uctGridX));
+				int yIndex = Mathf.FloorToInt((y - bl.y) / ((tr.y - bl.y) / (float)uctGridY));
+				uctDensity[1, xIndex, yIndex]++;
+				maxDensity[1] = Mathf.Max(maxDensity[1], uctDensity[1, xIndex, yIndex]);
+
 				if(delta > 999.5){
 					Debug.Log ("SUCCESS");
 					success = true;
@@ -1691,25 +1724,28 @@ namespace EditorArea {
 			}
 		}
 		
-		public UCTNode TreePolicy(UCTNode v, Vector3 golLoc){
+		public UCTNode TreePolicy(UCTNode v, Vector3 golLoc, Vector3 bl, Vector3 tr){
 			//TODO: instead of while true, should be while !terminal.
 			while(true){
 				if(v.unusedActions.Count > 0){
 					return Expand(v, golLoc);
 				}
 				else{
-					v = BestChild(v, Cp);
+					v = BestChild(v, Cp, bl, tr);
 				}
 			}
 			return v;
 		}
-		
-		
+				
 		//Returns Null if bestChild value is < 0, which should not happen I think?
-		public UCTNode BestChild(UCTNode v,double c){
+		public UCTNode BestChild(UCTNode v,double c, Vector3 bl, Vector3 tr){
+
+
 			UCTNode maxNode = null;
 			double maxVal = 0;
 			foreach(UCTNode child in v.children){
+
+
 				double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits);
 				if(val > maxVal){
 					maxVal = val;
@@ -1723,9 +1759,7 @@ namespace EditorArea {
 		public float DefaultPolicy(RTNode s, Vector3 golLoc){
 			return 1000 - ((Vector2)golLoc - s.position).magnitude;
 		}
-		
-		
-		
+						
 		public UCTNode Expand(UCTNode v, Vector3 golLoc){
 			int actInt = Random.Range(0, v.unusedActions.Count);
 			string action = v.unusedActions[actInt];
@@ -1768,8 +1802,7 @@ namespace EditorArea {
 
 			return vn;
 		}
-		
-		
+				
 		public void Backup(UCTNode v, double delta){
 			while(v != null){
 				v.visits++;
@@ -1858,9 +1891,7 @@ namespace EditorArea {
 			return toReturn;
 
 		}
-		
-		
-		
+						
 		private RTNode reCreatePathUCT(UCTNode v, UCTNode root){
 
 			loopAddUCT(v.rt, root.rt);
