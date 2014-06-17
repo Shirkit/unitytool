@@ -8,12 +8,14 @@ public class UCTNode{
 	public int visits;
 	public double delta;
 	public bool dead;
+	public float densityPenalty;
 
 	public UCTNode parent;
 	public List<UCTNode> children;
 
 
 	public UCTNode(){
+		densityPenalty = 0f;
 		initUAct();
 		rt = new RTNode();
 		children = new List<UCTNode>();

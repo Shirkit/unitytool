@@ -1650,8 +1650,8 @@ namespace EditorArea {
 		private RTNode UCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			cleanUp();
 
-			uctGridX = 5;
-			uctGridY = 2;
+			uctGridX = 25;
+			uctGridY = 10;
 			//TODO: Replace 1 with numPlayers
 			maxDensity = new int[1];
 			uctDensity = new int[1, uctGridX, uctGridY];
@@ -1704,8 +1704,6 @@ namespace EditorArea {
 
 					v.delta = int.MinValue;
 				}
-
-				Backup(v, delta);
 				//RRT Density Grid Stuf
 				float x = v.rt.position.x;
 				float y = v.rt.position.y;
@@ -1713,6 +1711,10 @@ namespace EditorArea {
 				int yIndex = Mathf.FloorToInt((y - bl.y) / ((tr.y - bl.y) / (float)uctGridY));
 				uctDensity[0, xIndex, yIndex]++;
 				maxDensity[0] = Mathf.Max(maxDensity[0], uctDensity[0, xIndex, yIndex]);
+				v.densityPenalty = ((float)uctDensity[0, xIndex, yIndex] )/ ((float)maxDensity[0]);
+
+				Backup(v, delta);
+
 
 				if(((Vector2)golLoc -v.rt.position).magnitude < 0.5f){
 					Debug.Log ("SUCCESS");
@@ -1756,12 +1758,8 @@ namespace EditorArea {
 			UCTNode maxNode = null;
 			double maxVal = double.MinValue;
 			foreach(UCTNode child in v.children){
-				float x = child.rt.position.x;
-				float y = child.rt.position.y;
-				int xIndex = Mathf.FloorToInt((x - bl.x) / ((tr.x - bl.x) / (float)uctGridX));
-				int yIndex = Mathf.FloorToInt((y - bl.y) / ((tr.y - bl.y) / (float)uctGridY));
 
-				double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits) - ((float)uctDensity[0, xIndex, yIndex])/((float)maxDensity[0]) * 90;
+				double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits) - child.densityPenalty * 50;
 				if(val > maxVal){
 					maxVal = val;
 					maxNode = child;
@@ -1833,6 +1831,9 @@ namespace EditorArea {
 			while(v != null){
 				v.visits++;
 				v.delta += delta;
+				if(v.parent != null){
+					v.parent.densityPenalty = Mathf.Max(v.densityPenalty-0.05f, v.parent.densityPenalty);
+				}
 				v = v.parent;
 			}
 		}
