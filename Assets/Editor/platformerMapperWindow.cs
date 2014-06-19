@@ -1646,6 +1646,8 @@ namespace EditorArea {
 		public int[] maxDensity;
 		public int uctGridX;
 		public int uctGridY;
+		public GameObject uctText;
+		public Texture2D uctTex;
 
 		private RTNode UCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			cleanUp();
@@ -1660,6 +1662,13 @@ namespace EditorArea {
 
 			if(drawWholeThing){
 				uct = new GameObject("UCT");
+				uctText = new GameObject("uctTexture");
+				uctText.transform.position = bl + (0.5f * (tr - bl));
+				uctText.transform.position += new Vector3(0,0,15);
+				uctText.transform.localScale = new Vector3((100f*(tr.x - bl.x)/((float)uctGridX)), (100f*(tr.y - bl.y)/((float)uctGridY)), 1);
+				uctText.AddComponent<SpriteRenderer>();
+				uctTex = new Texture2D(uctGridX, uctGridY);
+				uctText.transform.parent = uct.transform;
 			}
 			
 			modelObj = Instantiate(modelFab) as GameObject;
@@ -1729,6 +1738,37 @@ namespace EditorArea {
 					success = true;
 					break;
 				}
+			}
+
+			if(drawWholeThing){
+				for(int k = 0; k < uctGridX; k++){
+					for(int l = 0; l < uctGridY; l++){
+						Color col = Color.Lerp(Color.gray, Color.red, (((float)uctDensity[0, k, l])/((float)maxDensity[0]))); 
+						col.a = 0.7f;
+						uctTex.SetPixel(k, l, col);
+					}
+				}
+				uctTex.Apply();
+
+				byte[] bytes = uctTex.EncodeToPNG();
+				File.WriteAllBytes(Application.dataPath + 
+				                   "/Levels/Plateformer/Graphics/UCTDensity.png", bytes);
+				
+				
+				SpriteRenderer r = uctText.GetComponent<SpriteRenderer>(); 
+				
+				
+				
+				Sprite s = AssetDatabase.LoadAssetAtPath(
+					"Assets/Levels/Plateformer/Graphics/UCTDensity.png", typeof(Sprite)) as Sprite;
+				Debug.Log ("s-" + s);
+				Debug.Log ("r-" + r);
+
+
+				r.sprite = s;  
+				Debug.Log ("rspr-" + r.sprite);
+				Debug.Log (uctText.GetComponent<SpriteRenderer>().sprite);
+
 			}
 
 			if(success || showDeaths){
