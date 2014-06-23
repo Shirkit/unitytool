@@ -1713,10 +1713,17 @@ namespace EditorArea {
 				float y = v.rt.position.y;
 				int xIndex = Mathf.FloorToInt((x - bl.x) / ((tr.x - bl.x) / (float)uctGridX));
 				int yIndex = Mathf.FloorToInt((y - bl.y) / ((tr.y - bl.y) / (float)uctGridY));
-				uctDensity[0, xIndex, yIndex]++;
-				maxDensity[0] = Mathf.Max(maxDensity[0], uctDensity[0, xIndex, yIndex]);
-				v.densityPenalty = ((float)uctDensity[0, xIndex, yIndex] )/ ((float)maxDensity[0]);
-
+				/*if(xIndex >= uctGridX){
+					Debug.Log ("XTOOBIG" + x + "-" + y);
+				}
+				else if(yIndex >= uctGridY){
+					Debug.Log ("YTOOBIG" + x + "-" + y);
+				}
+				else{*/
+					uctDensity[0, xIndex, yIndex]++;
+					maxDensity[0] = Mathf.Max(maxDensity[0], uctDensity[0, xIndex, yIndex]);
+					v.densityPenalty = ((float)uctDensity[0, xIndex, yIndex] )/ ((float)maxDensity[0]);
+				//}
 				if(maxDensity[0] > 100){
 					if(v.densityPenalty > 0.12f){
 						v.dead = true;
@@ -1789,12 +1796,18 @@ namespace EditorArea {
 			//TODO: instead of while true, should be while !terminal.
 			while(v != null){
 
+				if(v.dead){
+					break;
+				}
+
 				if(v.unusedActions.Count > 0){
 					return Expand(v, golLoc);
 				}
 				else{
 					v = BestChild(v, Cp, bl, tr);
 				}
+
+
 			}
 			return v;
 		}
