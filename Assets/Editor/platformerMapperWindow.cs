@@ -1313,10 +1313,11 @@ namespace EditorArea {
 						
 						if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5)
 						{
+							Debug.Log (goalLoc);
 							goalReached[j] = true;
 							goalNodes[j] = final;
 						}
-						else
+						else if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < minDistRTNodes)
 						{
 							goalReached[j] = tryAddGoalNode(final, j, useMCT);
 						}
@@ -1650,6 +1651,8 @@ namespace EditorArea {
 		public GameObject uctText;
 		public Texture2D uctTex;
 
+		public UCTNode cls;
+
 		private RTNode UCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			cleanUp();
 
@@ -1691,8 +1694,9 @@ namespace EditorArea {
 			root.rt.state = state;
 			root.rt.frame = frame;
 			root.rt.position = startLoc;
+			cls = root;
 			int budget = maxDepthAStar;
-			UCTNode v = null;
+			UCTNode v = root;
 
 			int i = 0;
 			bool success = false;
@@ -1700,7 +1704,7 @@ namespace EditorArea {
 				i++;
 
 				v = TreePolicy(root, golLoc, bl, tr);
-				double delta = DefaultPolicy(v.rt, golLoc, startLoc);
+				double delta = DefaultPolicy(v, golLoc, startLoc);
 
 
 				if(v == null){
@@ -1803,7 +1807,7 @@ namespace EditorArea {
 					mModel.startLocation = startLoc;
 					mModel.initializev2();
 					mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-					return reCreatePathUCT(v, root);
+					return reCreatePathUCT(cls, root);
 				}
 			}
 		}
@@ -1853,9 +1857,15 @@ namespace EditorArea {
 		}
 
 		//This is maybe, possibly right?
-		public float DefaultPolicy(RTNode s, Vector3 golLoc, Vector3 startLoc){
+		public float DefaultPolicy(UCTNode u, Vector3 golLoc, Vector3 startLoc){
+			RTNode s = u.rt;
+
 			float dist = (golLoc - startLoc).magnitude;
 			float dist2 = ((Vector2)golLoc - s.position).magnitude;
+
+			if(cls == null || dist2 < ((Vector2)golLoc - cls.rt.position).magnitude){
+				cls = u;
+			}
 
 			//return (((dist - dist2) / dist) * 50);
 			return (1/((Vector2)golLoc - s.position).sqrMagnitude )*100;
