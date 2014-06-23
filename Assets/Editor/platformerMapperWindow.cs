@@ -1304,22 +1304,23 @@ namespace EditorArea {
 						o.transform.position = final	.position; 
 						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
 					}
-					
-					final.parent = closest;
-					closest.children.Add (final);
-					final.frame = closest.frame + final.frame;
-					rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
-					
-					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5)
-					{
-						goalReached[j] = true;
-						goalNodes[j] = final;
-					}
-					else
-					{
-						goalReached[j] = tryAddGoalNode(final, j, useMCT);
-					}
 
+					if(rrtTrees[j].search(new double[] {final.position.x, final.position.y}) == null){
+						final.parent = closest;
+						closest.children.Add (final);
+						final.frame = closest.frame + final.frame;
+						rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
+						
+						if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5)
+						{
+							goalReached[j] = true;
+							goalNodes[j] = final;
+						}
+						else
+						{
+							goalReached[j] = tryAddGoalNode(final, j, useMCT);
+						}
+					}
 					return true;
 				}
 				else
@@ -1720,9 +1721,14 @@ namespace EditorArea {
 					Debug.Log ("YTOOBIG" + x + "-" + y);
 				}
 				else{*/
+				try{
 					uctDensity[0, xIndex, yIndex]++;
 					maxDensity[0] = Mathf.Max(maxDensity[0], uctDensity[0, xIndex, yIndex]);
 					v.densityPenalty = ((float)uctDensity[0, xIndex, yIndex] )/ ((float)maxDensity[0]);
+				}
+				catch{
+				}
+
 				//}
 				if(maxDensity[0] > 25){
 					if(v.densityPenalty > 0.12f){
@@ -1792,6 +1798,11 @@ namespace EditorArea {
 					return null;
 				}
 				else{
+					mModel.startState = state;
+					mModel.startFrame = frame;
+					mModel.startLocation = startLoc;
+					mModel.initializev2();
+					mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
 					return reCreatePathUCT(v, root);
 				}
 			}
