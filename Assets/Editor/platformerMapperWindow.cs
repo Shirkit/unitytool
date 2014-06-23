@@ -1059,7 +1059,7 @@ namespace EditorArea {
 					xMax = tr.x; 
 				if (yMin < bl.y)
 					yMin = bl.y; 
-				if (yMax < tr.y)
+				if (yMax > tr.y)
 					yMax = tr.y; 
 				
 
@@ -1153,7 +1153,7 @@ namespace EditorArea {
 							xMax = tr.x; 
 						if (yMin < bl.y)
 							yMin = bl.y; 
-						if (yMax < tr.y)
+						if (yMax > tr.y)
 							yMax = tr.y; 
 							
 					}
