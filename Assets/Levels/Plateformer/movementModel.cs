@@ -260,20 +260,16 @@ public class movementModel : MonoBehaviour{
 					}
 					if(Mathf.Approximately(player.transform.position.y, (collH.gameObject.transform.position.y + collH.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
 						if(collH.gameObject.GetComponent<HPlatMovement>().isGoingLeft(frame)){
-							state.platformVelocity.x = -0.075f;
+							state.platformVelocity.x = -0.09f;
 						}
 						else{
-							state.platformVelocity.x = 0.075f;
+							state.platformVelocity.x = 0.09f;
 						}
 					}
 				}
 			}
 		}
-		else{
-			state.isOnGround = false;
-			state.platformVelocity.x = 0;
-			state.platformVelocity.y = 0;
-		}
+
 		
 		if(collV != null){
 			if(collV.tag.Equals("VMovingPlatforms")){
@@ -291,20 +287,16 @@ public class movementModel : MonoBehaviour{
 					}
 					if(Mathf.Approximately(player.transform.position.y, (collV.gameObject.transform.position.y + collV.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
 						if(collV.gameObject.GetComponent<VPlatMovement>().isGoingDown(frame)){
-							state.platformVelocity.y = -0.075f;							
+							state.platformVelocity.y = -0.09f;							
 						}
 						else{
-							state.platformVelocity.y = 0.075f;
+							state.platformVelocity.y = 0.09f;
 						}
 					}
 				}
 			}
 		}
-		else{
-			state.isOnGround = false;
-			state.platformVelocity.x = 0;
-			state.platformVelocity.y = 0;
-		}
+
 
 		if(collF != null){
 			if(collF.tag.Equals("Floor")){
@@ -323,11 +315,17 @@ public class movementModel : MonoBehaviour{
 				}
 			}
 		}
-		else{
+
+
+		if(collH == null && collF == null && collV == null){
 			state.isOnGround = false;
 			state.platformVelocity.x = 0;
 			state.platformVelocity.y = 0;
+			if(state.numJumps < 1){
+				state.numJumps = 1;
+			}
 		}
+			
 
 
 		

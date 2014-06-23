@@ -11,6 +11,7 @@ public class userMovement : MonoBehaviour {
 		mov = gameObject.GetComponent<movementModel>();
 		mov.player = gameObject;
 		mov.startLocation = gameObject.transform.position;
+		mov.startState = mov.state;
 	}
 	
 	// Update is called once per frame
@@ -42,6 +43,8 @@ public class userMovement : MonoBehaviour {
 		mov.movePlayer();
 		mov.doCollisions();
 
+		Debug.Log (mov.state.isOnGround);
+
 		if(gameObject.transform.position.y < -1){
 			mov.dead = true;
 		}
@@ -49,7 +52,7 @@ public class userMovement : MonoBehaviour {
 		if(mov.dead){
 			mov.dead = false;
 			gameObject.transform.position =  mov.startLocation;
-			mov.state = new PlayerState();
+			mov.state = mov.startState;
 		}
 
 	}

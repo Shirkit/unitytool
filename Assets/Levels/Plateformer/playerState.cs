@@ -19,8 +19,8 @@ public class PlayerState{
 		numJumps = 0;
 		velocity = new Vector2(0,0);
 		platformVelocity = new Vector2(0,0);
-		gravity = new Vector2(0, -0.0255f);
-		jumpPower = 0.55f;
+		gravity = new Vector2(0, -0.020f);
+		jumpPower = 0.5f;
 	}
 
 	public void reset(){
