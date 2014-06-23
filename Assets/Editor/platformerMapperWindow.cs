@@ -1788,7 +1788,12 @@ namespace EditorArea {
 				return reCreatePathUCT(v, root);
 			}
 			else{
-				return null;
+				if(v.dead){
+					return null;
+				}
+				else{
+					return reCreatePathUCT(v, root);
+				}
 			}
 		}
 		
