@@ -8,7 +8,20 @@ public class VPlatMovement : MonoBehaviour {
 	private float tmostY;
 	private bool initialized = false;
 	private int totalFrames;
+
+	private int curFrame;
+
+
+	public void Awake(){
+		initialize();
+		curFrame = 0;
+	}
 	
+	void Update(){
+		curFrame++;
+		goToFrame(curFrame);
+	}
+
 	public void initialize(){
 		initialized = true;
 		movementSpeed = 0.075f;

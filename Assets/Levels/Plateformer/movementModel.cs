@@ -203,7 +203,7 @@ public class movementModel : MonoBehaviour{
 		}
 	}
 
-	private void movePlayer(){
+	public void movePlayer(){
 		if(!state.isOnGround){
 			state.velocity += state.gravity;
 		}
@@ -214,13 +214,22 @@ public class movementModel : MonoBehaviour{
 		player.transform.position += (Vector3)state.platformVelocity;
 	}
 
-	private LayerMask floor = 1 << LayerMask.NameToLayer("Floor");
-	private LayerMask walls = 1 << LayerMask.NameToLayer("Walls");
-	private LayerMask hplats = 1 << LayerMask.NameToLayer("HMovingPlatforms");
-	private LayerMask vplats = 1 << LayerMask.NameToLayer("VMovingPlatforms");
-	private LayerMask lethals = 1 << LayerMask.NameToLayer ("Lethals");
+	private LayerMask floor;// = 1 << LayerMask.NameToLayer("Floor");
+	private LayerMask walls;// = 1 << LayerMask.NameToLayer("Walls");
+	private LayerMask hplats;// = 1 << LayerMask.NameToLayer("HMovingPlatforms");
+	private LayerMask vplats;// = 1 << LayerMask.NameToLayer("VMovingPlatforms");
+	private LayerMask lethals;// = 1 << LayerMask.NameToLayer ("Lethals");
+	private bool layerMasksLoaded = false;
 
-	private void doCollisions(){
+	public void doCollisions(){
+		if(!layerMasksLoaded){
+			floor = 1 << LayerMask.NameToLayer("Floor");
+			walls = 1 << LayerMask.NameToLayer("Walls");
+			hplats = 1 << LayerMask.NameToLayer("HMovingPlatforms");
+			vplats = 1 << LayerMask.NameToLayer("VMovingPlatforms");
+			lethals = 1 << LayerMask.NameToLayer ("Lethals");
+		}
+
 		updateCorners();
 		PlatsGoToFrame(frame);
 		Collider2D collF= Physics2D.OverlapArea(blCorner, trCorner, floor);
