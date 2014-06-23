@@ -1724,7 +1724,7 @@ namespace EditorArea {
 					maxDensity[0] = Mathf.Max(maxDensity[0], uctDensity[0, xIndex, yIndex]);
 					v.densityPenalty = ((float)uctDensity[0, xIndex, yIndex] )/ ((float)maxDensity[0]);
 				//}
-				if(maxDensity[0] > 100){
+				if(maxDensity[0] > 25){
 					if(v.densityPenalty > 0.12f){
 						v.dead = true;
 					}
