@@ -705,9 +705,14 @@ namespace EditorArea {
 		public GameObject astar;
 		public int statesExplored;
 
+		public KDTree asClosed;
+
 		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			statesExplored = 0;
 			cleanUp();
+
+			asClosed = new KDTree(3);
+
 
 			if(drawWholeThing){
 				astar = new GameObject("ASTAR");
@@ -746,12 +751,14 @@ namespace EditorArea {
 			heap = new PriorityQueue<RTNode, double>();
 			asRoot = new RTNode(startLoc, 0, state);
 			heap.Enqueue(asRoot, -Vector2.Distance(asRoot.position, golLoc) -((float)asRoot.frame)/10f);
+
 			statesExplored++;
 			int k = 0;
 			while(!asGoalReached && heap.Count > 0 && k < maxDepthAStar){
 				k++;
 
 				RTNode cur = heap.Dequeue().Value;
+
 				tryDoAction(cur, "Right", golLoc);
 				if(asGoalReached){
 					break;
@@ -775,6 +782,8 @@ namespace EditorArea {
 					}
 					tryDoAction(cur, "jump left", golLoc);
 				}
+				asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+
 			}
 			if(batchComputation){
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
@@ -888,12 +897,17 @@ namespace EditorArea {
 					line.vectorObject.transform.parent = astar.transform;
 				}
 				float dist = Vector2.Distance(nex.position, golLoc);
+
+
 				if(dist < 0.5){
 					asGoalReached = true;
 					asGoalNode = nex;
 					statesExplored++;
 				}
 				else{
+					RTNode closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y, nex.frame});
+
+
 					heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
 					statesExplored++;
 				}
