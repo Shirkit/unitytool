@@ -1032,6 +1032,9 @@ namespace EditorArea {
 			goalNodes = new RTNode[numPlayers];
 			int i = 0;
 			int q = 0;
+
+			int counterNode = 0; 
+
 			for(int j = 0; j < numPlayers; j++){
 
 				maxDensity[j] = 0;
@@ -1074,9 +1077,9 @@ namespace EditorArea {
 
 					//TODO: 
 					//Add a control for that one
-					if(UnityEngine.Random.Range(0,100)>70)
+					if(UnityEngine.Random.Range(0,100)>0f)
 					{
-						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up,8f);
+						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up, 15f);
 
 						if(returnCast.collider != null && returnCast.collider.tag == "Floor")
 						{
@@ -1118,10 +1121,6 @@ namespace EditorArea {
 							o.renderer.sharedMaterial = tempMaterial;
 						}
 
-
-
-
-
 						//Add interpolation between colours to know when it was added. 
 					}
 
@@ -1136,6 +1135,7 @@ namespace EditorArea {
 
 						//The node was added. 
 						//Updating the random bounds
+						counterNode ++; 
 
 						if (x - maxDistRTNodes < xMin)
 							xMin = x - maxDistRTNodes; 							
@@ -1170,6 +1170,8 @@ namespace EditorArea {
 					}
 				}
 			}
+
+
 			if(batchComputationRRT){
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
 				{
@@ -1229,7 +1231,7 @@ namespace EditorArea {
 					count++;
 				}
 				else{
-					Debug.Log ("Attempt " + j + " failed");
+					//Debug.Log ("Attempt " + j + " failed");
 				}
 			}
 
@@ -1263,7 +1265,8 @@ namespace EditorArea {
 
 		private bool tryAddNode(float x, float y, int j, int useMCT){
 			RTNode closest = findClosest(x,y, j);
-			if(closest == null){
+			if(closest == null)
+			{
 
 				return false;
 			}
@@ -1278,11 +1281,17 @@ namespace EditorArea {
 				{
 					final = AStarSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
-				else{
+				else
+				{
 					final = UCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
 				if(final != null)
 				{
+
+					//Check how close it is to the parent. 
+					if( (final.position - closest.position).magnitude < minDistRTNodes)// ||(final.position - closest.position).magnitude > maxDistRTNodes )
+						return true; 
+
 					if(debugMode)
 					{
 						VectorLine line = new VectorLine("RRT", new Vector3[] {closest.position, final.position}, Color.red, null, 2.0f);
@@ -1305,7 +1314,12 @@ namespace EditorArea {
 						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
 					}
 
-					if(rrtTrees[j].search(new double[] {final.position.x, final.position.y}) == null){
+
+
+
+
+					if(rrtTrees[j].search(new double[] {final.position.x, final.position.y}) == null)
+					{
 						final.parent = closest;
 						closest.children.Add (final);
 						final.frame = closest.frame + final.frame;
@@ -1317,7 +1331,7 @@ namespace EditorArea {
 							goalReached[j] = true;
 							goalNodes[j] = final;
 						}
-						else if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < minDistRTNodes)
+						else if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 5f)
 						{
 							goalReached[j] = tryAddGoalNode(final, j, useMCT);
 						}
@@ -1337,7 +1351,8 @@ namespace EditorArea {
 			}
 			else{
 				RTNode final;
-				if(useMCT == 0){
+				if(useMCT == 0)
+				{
 					final = MCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
 				else if (useMCT == 1){
@@ -1751,7 +1766,7 @@ namespace EditorArea {
 
 
 				if(((Vector2)golLoc -v.rt.position).magnitude < 0.5f){
-					Debug.Log ("SUCCESS");
+					//Debug.Log ("SUCCESS");
 					success = true;
 					break;
 				}
