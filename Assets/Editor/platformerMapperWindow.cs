@@ -905,7 +905,7 @@ namespace EditorArea {
 					statesExplored++;
 				}
 				else{
-					RTNode closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y, nex.frame});
+					RTNode closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y, nex.frame}) as RTNode;
 
 
 					heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
