@@ -706,13 +706,15 @@ namespace EditorArea {
 		public int statesExplored;
 
 		public KDTree asClosed;
+		public bool asKDNonEmpty;
 
 		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
+
 			statesExplored = 0;
 			cleanUp();
 
 			asClosed = new KDTree(3);
-
+			asKDNonEmpty = false;
 
 			if(drawWholeThing){
 				astar = new GameObject("ASTAR");
@@ -759,7 +761,18 @@ namespace EditorArea {
 
 				RTNode cur = heap.Dequeue().Value;
 
+
+				try{					
+				asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+				asKDNonEmpty = true;
+				}
+				catch (KeyDuplicateException e){
+					continue;
+				}
+
+				
 				tryDoAction(cur, "Right", golLoc);
+
 				if(asGoalReached){
 					break;
 				}
@@ -782,7 +795,6 @@ namespace EditorArea {
 					}
 					tryDoAction(cur, "jump left", golLoc);
 				}
-				asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
 
 			}
 			if(batchComputation){
@@ -905,11 +917,22 @@ namespace EditorArea {
 					statesExplored++;
 				}
 				else{
-					RTNode closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y, nex.frame}) as RTNode;
+					if(asKDNonEmpty){
+						RTNode closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y, nex.frame}) as RTNode;
+						Vector3 pos1 = new Vector3(nex.position.x, nex.position.y, ((float)nex.frame)/10f);
+						Vector3 pos2 = new Vector3(closest.position.x, closest.position.y, ((float)closest.frame)/10f);
 
+						if(Vector3.Distance(pos1, pos2) > 1f)
+						{
+							heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
+							statesExplored++;
+						}
 
-					heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
-					statesExplored++;
+					}
+					else{
+						heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
+						statesExplored++;
+					}
 				}
 			}
 		}
