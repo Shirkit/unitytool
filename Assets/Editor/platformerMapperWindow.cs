@@ -106,6 +106,7 @@ namespace EditorArea {
 
 
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
+				cleanUpRRTDebug();
 				if(!platsInitialized){
 					initPlat();
 				}
@@ -125,8 +126,8 @@ namespace EditorArea {
 			depthIter = EditorGUILayout.IntSlider ("Max Depth per Iteration", depthIter, 1, 1000);
 			maxDistRTNodes = EditorGUILayout.FloatField ("Max Dist RRT Nodes", maxDistRTNodes);
 			minDistRTNodes = EditorGUILayout.FloatField ("Min Dist RRT Nodes", minDistRTNodes);
-			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 10);
-			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 100, 100000);
+			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 15);
+			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 1, 20000);
 
 
 
@@ -199,6 +200,7 @@ namespace EditorArea {
 			}
 			
 			if(GUILayout.Button ("AStarSearch")){
+				cleanUpRRTDebug();
 				if(debugMode){
 					drawWholeThing = true;
 				}
@@ -216,6 +218,7 @@ namespace EditorArea {
 			}
 
 			if(GUILayout.Button ("UCT Search")){
+				cleanUpRRTDebug();
 				if(debugMode){
 					drawWholeThing = true;
 				}
@@ -742,7 +745,7 @@ namespace EditorArea {
 			asGoalReached = false;
 			heap = new PriorityQueue<RTNode, double>();
 			asRoot = new RTNode(startLoc, 0, state);
-			heap.Enqueue(asRoot, -Vector2.Distance(asRoot.position, golLoc));
+			heap.Enqueue(asRoot, -Vector2.Distance(asRoot.position, golLoc) -((float)asRoot.frame)/10f);
 			statesExplored++;
 			int k = 0;
 			while(!asGoalReached && heap.Count > 0 && k < maxDepthAStar){
@@ -891,7 +894,7 @@ namespace EditorArea {
 					statesExplored++;
 				}
 				else{
-					heap.Enqueue(nex, -dist);
+					heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
 					statesExplored++;
 				}
 			}
@@ -1011,6 +1014,10 @@ namespace EditorArea {
 
 		public static GameObject RRTDebug;
 
+		public static bool addedNode = false;
+		public static float addedX;
+		public static float addedY;
+
 		private bool RRT(int useMCT){
 			cleanUp();
 			if(debugMode){
@@ -1021,7 +1028,6 @@ namespace EditorArea {
 				RRTDebug = new GameObject("RRT");
 
 			}
-			//TODO: Make this controlled externally
 
 
 
@@ -1079,7 +1085,7 @@ namespace EditorArea {
 					//Add a control for that one
 					if(UnityEngine.Random.Range(0,100)>0f)
 					{
-						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up, 15f);
+						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up, 20f);
 
 						if(returnCast.collider != null && returnCast.collider.tag == "Floor")
 						{
@@ -1128,23 +1134,22 @@ namespace EditorArea {
 					{
 						i--;
 					}
-					else
+					else if(addedNode)
 					{
-
-
+						addedNode = false;
 
 						//The node was added. 
 						//Updating the random bounds
 						counterNode ++; 
 
-						if (x - maxDistRTNodes < xMin)
-							xMin = x - maxDistRTNodes; 							
-						if (x + maxDistRTNodes > xMax)
-							xMax = x + maxDistRTNodes; 							
-						if (y - maxDistRTNodes < yMin)
-							yMin = y - maxDistRTNodes; 
-						if (y + maxDistRTNodes > yMax)
-							yMax = y + maxDistRTNodes; 
+						if (addedX - maxDistRTNodes < xMin)
+							xMin = addedX - maxDistRTNodes; 							
+						if (addedX + maxDistRTNodes > xMax)
+							xMax = addedX + maxDistRTNodes; 							
+						if (addedY - maxDistRTNodes < yMin)
+							yMin = addedY - maxDistRTNodes; 
+						if (addedY + maxDistRTNodes > yMax)
+							yMax = addedY + maxDistRTNodes; 
 
 						//Check if the bounds of the level are reached
 						if (xMin < bl.x)
@@ -1320,6 +1325,10 @@ namespace EditorArea {
 
 					if(rrtTrees[j].search(new double[] {final.position.x, final.position.y}) == null)
 					{
+						addedNode = true;
+						addedX = final.position.x;
+						addedY = final.position.y;
+
 						final.parent = closest;
 						closest.children.Add (final);
 						final.frame = closest.frame + final.frame;
