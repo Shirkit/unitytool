@@ -762,14 +762,46 @@ namespace EditorArea {
 				RTNode cur = heap.Dequeue().Value;
 
 
+				//Check to expend it or not
+				//TODO: Make a 2d kd-tree . 
+				if(asKDNonEmpty)
+				{
+					RTNode closest = asClosed.nearest(new double[]{cur.position.x, cur.position.y, cur.frame}) as RTNode;
+
+					Vector3 pos1 = new Vector3(cur.position.x, cur.position.y,0);// ((float)nex.frame)/10f);
+					Vector3 pos2 = new Vector3(closest.position.x, closest.position.y,0);// ((float)closest.frame)/10f);
+					
+					if(Vector3.Distance(pos1, pos2) < 1.5f)
+					{
+						continue;
+					}
+					else{
+							asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+							asKDNonEmpty = true;
+					}
+				}
+				else{
+					asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+					asKDNonEmpty = true;
+				}
+
+				if(drawWholeThing)
+				{
+					GameObject g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+					g.transform.parent = astar.transform; 
+					g.transform.position = new Vector3(cur.position.x, cur.position.y,cur.frame); 
+				}
+
+				/*
 				try{					
-				asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
-				asKDNonEmpty = true;
+					asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+					asKDNonEmpty = true;
 				}
 				catch (KeyDuplicateException e){
 					continue;
-				}
+				}*/
 
+				//Have to expend the node
 				
 				tryDoAction(cur, "Right", golLoc);
 
@@ -789,6 +821,7 @@ namespace EditorArea {
 					if(asGoalReached){
 						break;
 					}
+
 					tryDoAction(cur, "jump right", golLoc);
 					if(asGoalReached){
 						break;
@@ -911,18 +944,19 @@ namespace EditorArea {
 				float dist = Vector2.Distance(nex.position, golLoc);
 
 
-				if(dist < 0.5){
+				if(dist < 0.5f){
 					asGoalReached = true;
 					asGoalNode = nex;
 					statesExplored++;
 				}
 				else{
+					//Check if in the close list. 
 					if(asKDNonEmpty){
 						RTNode closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y, nex.frame}) as RTNode;
-						Vector3 pos1 = new Vector3(nex.position.x, nex.position.y, ((float)nex.frame)/10f);
-						Vector3 pos2 = new Vector3(closest.position.x, closest.position.y, ((float)closest.frame)/10f);
+						Vector3 pos1 = new Vector3(nex.position.x, nex.position.y,0);// ((float)nex.frame)/10f);
+						Vector3 pos2 = new Vector3(closest.position.x, closest.position.y,0);// ((float)closest.frame)/10f);
 
-						if(Vector3.Distance(pos1, pos2) > 1f)
+						if(Vector3.Distance(pos1, pos2) > 1.5f)
 						{
 							heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
 							statesExplored++;
