@@ -1820,17 +1820,19 @@ namespace EditorArea {
 					Debug.Log ("YTOOBIG" + x + "-" + y);
 				}
 				else{*/
-				try{
+				try
+				{
 					uctDensity[0, xIndex, yIndex]++;
 					maxDensity[0] = Mathf.Max(maxDensity[0], uctDensity[0, xIndex, yIndex]);
 					v.densityPenalty = ((float)uctDensity[0, xIndex, yIndex] )/ ((float)maxDensity[0]);
 				}
-				catch{
+				catch
+				{
 				}
 
 				//}
 				if(maxDensity[0] > 25){
-					if(v.densityPenalty > 0.12f){
+					if(v.densityPenalty > 0.22f){
 						v.dead = true;
 					}
 				}
