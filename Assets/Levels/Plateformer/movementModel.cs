@@ -369,9 +369,14 @@ public class movementModel : MonoBehaviour{
 			computePath();
 		}
 		VectorLine line = new VectorLine("path" + gameObject.name.Substring(11), pointsArray, color, null, 2.0f, LineType.Continuous);
-		line.depth = 50;
 		line.Draw3D();
 		line.vectorObject.transform.parent = paths.transform;
+		line.vectorObject.transform.position = new Vector3(0f, 0f, -15f);
+
+		VectorLine line2 = new VectorLine("path" + gameObject.name.Substring(11) + "outline", pointsArray, Color.black, null, 3.5f, LineType.Continuous);
+		line2.Draw3D();
+		line2.vectorObject.transform.parent = paths.transform;
+		line2.vectorObject.transform.position = new Vector3(0f, 0f, -12f);
 	}
 
 	private void PlatsGoToFrame(int curFrame){
