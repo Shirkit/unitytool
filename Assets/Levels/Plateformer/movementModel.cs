@@ -369,6 +369,7 @@ public class movementModel : MonoBehaviour{
 			computePath();
 		}
 		VectorLine line = new VectorLine("path" + gameObject.name.Substring(11), pointsArray, color, null, 2.0f, LineType.Continuous);
+		line.depth = 50;
 		line.Draw3D();
 		line.vectorObject.transform.parent = paths.transform;
 	}
