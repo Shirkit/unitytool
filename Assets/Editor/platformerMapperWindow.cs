@@ -198,7 +198,9 @@ namespace EditorArea {
 				RRT(2);
 				PlatsGoToFrame(0);
 			}
-			
+
+			threedee = EditorGUILayout.Toggle ("Astar3d", threedee);
+
 			if(GUILayout.Button ("AStarSearch")){
 				cleanUpRRTDebug();
 				if(debugMode){
@@ -707,13 +709,18 @@ namespace EditorArea {
 
 		public KDTree asClosed;
 		public bool asKDNonEmpty;
+		public bool threedee;
 
 		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 
 			statesExplored = 0;
 			cleanUp();
-
-			asClosed = new KDTree(3);
+			if(threedee){
+				asClosed = new KDTree(3);
+			}
+			else{
+				asClosed = new KDTree(2);
+			}
 			asKDNonEmpty = false;
 
 			if(drawWholeThing){
@@ -766,22 +773,44 @@ namespace EditorArea {
 				//TODO: Make a 2d kd-tree . 
 				if(asKDNonEmpty)
 				{
-					RTNode closest = asClosed.nearest(new double[]{cur.position.x, cur.position.y, cur.frame}) as RTNode;
+					RTNode closest;
+					Vector3 pos1;
+					Vector3 pos2;
 
-					Vector3 pos1 = new Vector3(cur.position.x, cur.position.y,0);// ((float)nex.frame)/10f);
-					Vector3 pos2 = new Vector3(closest.position.x, closest.position.y,0);// ((float)closest.frame)/10f);
+					if(threedee){
+						closest = asClosed.nearest(new double[]{cur.position.x, cur.position.y, cur.frame}) as RTNode;
+
+						pos1 = new Vector3(cur.position.x, cur.position.y,((float)cur.frame)/10f);
+						pos2 = new Vector3(closest.position.x, closest.position.y,((float)closest.frame)/10f);
+					}
+					else{
+						closest = asClosed.nearest(new double[]{cur.position.x, cur.position.y}) as RTNode;
+						
+						pos1 = new Vector3(cur.position.x, cur.position.y,0);
+						pos2 = new Vector3(closest.position.x, closest.position.y,0);
+					}
 					
 					if(Vector3.Distance(pos1, pos2) < 1.5f)
 					{
 						continue;
 					}
 					else{
+						if(threedee){
 							asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
-							asKDNonEmpty = true;
+						}
+						else{
+							asClosed.insert (new double[]{cur.position.x, cur.position.y}, cur);
+						}	          
+						asKDNonEmpty = true;
 					}
 				}
 				else{
-					asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+					if(threedee){
+						asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+					}
+					else{
+						asClosed.insert (new double[]{cur.position.x, cur.position.y}, cur);
+					}	          
 					asKDNonEmpty = true;
 				}
 
@@ -952,10 +981,19 @@ namespace EditorArea {
 				else{
 					//Check if in the close list. 
 					if(asKDNonEmpty){
-						RTNode closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y, nex.frame}) as RTNode;
-						Vector3 pos1 = new Vector3(nex.position.x, nex.position.y,0);// ((float)nex.frame)/10f);
-						Vector3 pos2 = new Vector3(closest.position.x, closest.position.y,0);// ((float)closest.frame)/10f);
-
+						RTNode closest;
+						Vector3 pos1;
+						Vector3 pos2;
+						if(threedee){
+							closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y, nex.frame}) as RTNode;
+							pos1 = new Vector3(nex.position.x, nex.position.y,((float)nex.frame)/10f);
+							pos2 = new Vector3(closest.position.x, closest.position.y,((float)closest.frame)/10f);
+						}
+						else{
+							closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y}) as RTNode;
+							pos1 = new Vector3(nex.position.x, nex.position.y,0);
+							pos2 = new Vector3(closest.position.x, closest.position.y,0);
+						}
 						if(Vector3.Distance(pos1, pos2) > 1.5f)
 						{
 							heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
