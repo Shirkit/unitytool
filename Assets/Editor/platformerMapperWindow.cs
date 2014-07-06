@@ -816,9 +816,9 @@ namespace EditorArea {
 
 				if(drawWholeThing)
 				{
-					GameObject g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-					g.transform.parent = astar.transform; 
-					g.transform.position = new Vector3(cur.position.x, cur.position.y,cur.frame); 
+					//GameObject g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+					//g.transform.parent = astar.transform; 
+					//g.transform.position = new Vector3(cur.position.x, cur.position.y,cur.frame); 
 				}
 
 				/*
