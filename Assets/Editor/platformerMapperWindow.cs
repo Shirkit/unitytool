@@ -2336,6 +2336,7 @@ namespace EditorArea {
 			{
 				file.WriteLine("Type,Iteration,Success,Time,Frames,KeyPresses");
 			}
+			threedee = false;
 			for(int i = 0; i < iters; i++){
 
 				//Astar
@@ -2346,7 +2347,38 @@ namespace EditorArea {
 				realFrame = 0;
 				curFrame = 0;
 				PlatsGoToFrame(0);
-				string toWrite = "AStar," + i + ",";
+				string toWrite = "AStar2," + i + ",";
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start();
+				RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				stopwatch.Stop();
+				if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+					toWrite += "0,";
+				}	
+				else{
+					toWrite += "1,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+			}
+			threedee = true;
+			for(int i = 0; i < iters; i++){
+				
+				//Astar
+				
+				framesPerStep = NumFramesAS;
+				maxDepthAStar = DepthAS;
+				
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				string toWrite = "AStar3," + i + ",";
 				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
 				stopwatch.Start();
 				RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
