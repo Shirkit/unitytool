@@ -1227,7 +1227,7 @@ namespace EditorArea {
 
 					//TODO: 
 					//Add a control for that one
-					if(UnityEngine.Random.Range(0,100)>0f)
+					if(UnityEngine.Random.Range(0,100)>0.5f)
 					{
 						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up, 20f);
 
@@ -1437,8 +1437,10 @@ namespace EditorArea {
 				if(final != null)
 				{
 
+
+					RTNode newClosest = rrtTrees[j].nearest(new double[] {final.position.x, final.position.y}) as RTNode;
 					//Check how close it is to the parent. 
-					if( (final.position - closest.position).magnitude < minDistRTNodes)// ||(final.position - closest.position).magnitude > maxDistRTNodes )
+					if( Vector2.Distance(final.position, newClosest.position) < minDistRTNodes)// ||(final.position - closest.position).magnitude > maxDistRTNodes )
 						return true; 
 
 					if(debugMode)
