@@ -203,7 +203,7 @@ public class movementModel : MonoBehaviour{
 		}
 	}
 
-	private void movePlayer(){
+	public void movePlayer(){
 		if(!state.isOnGround){
 			state.velocity += state.gravity;
 		}
@@ -214,13 +214,22 @@ public class movementModel : MonoBehaviour{
 		player.transform.position += (Vector3)state.platformVelocity;
 	}
 
-	private LayerMask floor = 1 << LayerMask.NameToLayer("Floor");
-	private LayerMask walls = 1 << LayerMask.NameToLayer("Walls");
-	private LayerMask hplats = 1 << LayerMask.NameToLayer("HMovingPlatforms");
-	private LayerMask vplats = 1 << LayerMask.NameToLayer("VMovingPlatforms");
-	private LayerMask lethals = 1 << LayerMask.NameToLayer ("Lethals");
+	private LayerMask floor;// = 1 << LayerMask.NameToLayer("Floor");
+	private LayerMask walls;// = 1 << LayerMask.NameToLayer("Walls");
+	private LayerMask hplats;// = 1 << LayerMask.NameToLayer("HMovingPlatforms");
+	private LayerMask vplats;// = 1 << LayerMask.NameToLayer("VMovingPlatforms");
+	private LayerMask lethals;// = 1 << LayerMask.NameToLayer ("Lethals");
+	private bool layerMasksLoaded = false;
 
-	private void doCollisions(){
+	public void doCollisions(){
+		if(!layerMasksLoaded){
+			floor = 1 << LayerMask.NameToLayer("Floor");
+			walls = 1 << LayerMask.NameToLayer("Walls");
+			hplats = 1 << LayerMask.NameToLayer("HMovingPlatforms");
+			vplats = 1 << LayerMask.NameToLayer("VMovingPlatforms");
+			lethals = 1 << LayerMask.NameToLayer ("Lethals");
+		}
+
 		updateCorners();
 		PlatsGoToFrame(frame);
 		Collider2D collF= Physics2D.OverlapArea(blCorner, trCorner, floor);
@@ -245,26 +254,22 @@ public class movementModel : MonoBehaviour{
 						player.transform.position = new Vector3(player.transform.position.x, (collH.gameObject.transform.position.y + collH.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
 						state.velocity.y = 0;
 					}
-					if((state.velocity.y > 0.1f) && ((collF.gameObject.transform.position.y) > (player.transform.position.y - state.velocity.y + 0.1f))){
-						player.transform.position = new Vector3(player.transform.position.x, (collF.gameObject.transform.position.y - collF.gameObject.transform.localScale.y*0.5f - player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
+					if((state.velocity.y > 0.1f) && ((collH.gameObject.transform.position.y) > (player.transform.position.y - state.velocity.y + 0.1f))){
+						player.transform.position = new Vector3(player.transform.position.x, (collH.gameObject.transform.position.y - collH.gameObject.transform.localScale.y*0.5f - player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
 						state.velocity.y = 0;
 					}
 					if(Mathf.Approximately(player.transform.position.y, (collH.gameObject.transform.position.y + collH.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
 						if(collH.gameObject.GetComponent<HPlatMovement>().isGoingLeft(frame)){
-							state.platformVelocity.x = -0.075f;
+							state.platformVelocity.x = -0.09f;
 						}
 						else{
-							state.platformVelocity.x = 0.075f;
+							state.platformVelocity.x = 0.09f;
 						}
 					}
 				}
 			}
 		}
-		else{
-			state.isOnGround = false;
-			state.platformVelocity.x = 0;
-			state.platformVelocity.y = 0;
-		}
+
 		
 		if(collV != null){
 			if(collV.tag.Equals("VMovingPlatforms")){
@@ -282,20 +287,16 @@ public class movementModel : MonoBehaviour{
 					}
 					if(Mathf.Approximately(player.transform.position.y, (collV.gameObject.transform.position.y + collV.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
 						if(collV.gameObject.GetComponent<VPlatMovement>().isGoingDown(frame)){
-							state.platformVelocity.y = -0.075f;							
+							state.platformVelocity.y = -0.09f;							
 						}
 						else{
-							state.platformVelocity.y = 0.075f;
+							state.platformVelocity.y = 0.09f;
 						}
 					}
 				}
 			}
 		}
-		else{
-			state.isOnGround = false;
-			state.platformVelocity.x = 0;
-			state.platformVelocity.y = 0;
-		}
+
 
 		if(collF != null){
 			if(collF.tag.Equals("Floor")){
@@ -314,11 +315,17 @@ public class movementModel : MonoBehaviour{
 				}
 			}
 		}
-		else{
+
+
+		if(collH == null && collF == null && collV == null){
 			state.isOnGround = false;
 			state.platformVelocity.x = 0;
 			state.platformVelocity.y = 0;
+			if(state.numJumps < 1){
+				state.numJumps = 1;
+			}
 		}
+			
 
 
 		
@@ -364,6 +371,12 @@ public class movementModel : MonoBehaviour{
 		VectorLine line = new VectorLine("path" + gameObject.name.Substring(11), pointsArray, color, null, 2.0f, LineType.Continuous);
 		line.Draw3D();
 		line.vectorObject.transform.parent = paths.transform;
+		line.vectorObject.transform.position = new Vector3(0f, 0f, -15f);
+
+		VectorLine line2 = new VectorLine("path" + gameObject.name.Substring(11) + "outline", pointsArray, Color.black, null, 3.5f, LineType.Continuous);
+		line2.Draw3D();
+		line2.vectorObject.transform.parent = paths.transform;
+		line2.vectorObject.transform.position = new Vector3(0f, 0f, -12f);
 	}
 
 	private void PlatsGoToFrame(int curFrame){

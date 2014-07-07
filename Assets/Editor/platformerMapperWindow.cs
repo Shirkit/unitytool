@@ -12,6 +12,8 @@ using KDTreeDLL;
 
 namespace EditorArea {
 	public class PlatformerEditorWindow : EditorWindow  {
+
+		#region var defs
 		public GameObject heatmap;
 		public GameObject players;
 		public GameObject models;
@@ -27,7 +29,6 @@ namespace EditorArea {
 		public bool drawPaths;
 		public bool playing = false;
 		private movementModel mModel;
-		private posMovModel pmModel;
 		public static int numPlayers = 1;
 		public static int numIters = 100;
 		public static int depthIter = 3;
@@ -39,19 +40,20 @@ namespace EditorArea {
 
 		public static bool ignoreFrameLimit;
 
+		public static bool debugMode = true;
 		public static bool drawWholeThing;
 		public List<movementModel> mModels;
-		public List<posMovModel> pmModels;
 
 		public int count = 0;
 
 		public GameObject nodMarFab = Resources.Load("nodeMarker") as GameObject;
 		public GameObject playerFab = Resources.Load ("player") as GameObject;
 		public GameObject modelFab = Resources.Load ("modelObject") as GameObject;
-		public GameObject posModFab = Resources.Load ("posMod") as GameObject;
 
 		private static Vector2 scrollPos = new Vector2 ();
-		
+
+		public static bool playingKeyboard;
+
 		//public static GameObject[] hplats;
 		public static HPlatMovement[] hplatmovers;
 		public static VPlatMovement[] vplatmovers;
@@ -61,6 +63,9 @@ namespace EditorArea {
 		public static bool batchComputation;
 		public static bool batchComputationRRT;
 		public static string batchFilename;
+		#endregion var defs
+
+		#region Inits
 
 		[MenuItem("Window/RRTMapper")]
 		static void Init () {
@@ -96,10 +101,18 @@ namespace EditorArea {
 			platsInitialized = true;
 		}
 
+		#endregion Inits
+
+		#region Update/Gui
+
 		void OnGUI () {
 			scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
 
+
+
+
 			if (GUILayout.Button ("Monte-Carlo Tree Search")) {
+				cleanUpRRTDebug();
 				if(!platsInitialized){
 					initPlat();
 				}
@@ -119,18 +132,19 @@ namespace EditorArea {
 			depthIter = EditorGUILayout.IntSlider ("Max Depth per Iteration", depthIter, 1, 1000);
 			maxDistRTNodes = EditorGUILayout.FloatField ("Max Dist RRT Nodes", maxDistRTNodes);
 			minDistRTNodes = EditorGUILayout.FloatField ("Min Dist RRT Nodes", minDistRTNodes);
-			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 10);
-			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 100, 100000);
+			framesPerStep = EditorGUILayout.IntSlider ("Frames Per Step A Star", framesPerStep, 1, 15);
+			maxDepthAStar = EditorGUILayout.IntSlider ("Max Depth A Star", maxDepthAStar, 1, 20000);
 
 
 
 			showDeaths = EditorGUILayout.Toggle ("Show Deaths", showDeaths);
 			drawPaths = EditorGUILayout.Toggle ("Draw Paths", drawPaths);
-			drawWholeThing = EditorGUILayout.Toggle ("Debug Mode", drawWholeThing);
+			debugMode = EditorGUILayout.Toggle ("Debug Mode", debugMode);
 
 
 			if (GUILayout.Button ("Clear")) {
 				cleanUp();
+				cleanUpRRTDebug();
 			}
 
 			curFrame = EditorGUILayout.IntSlider ("frame", curFrame, 0, totalFrames);
@@ -158,9 +172,6 @@ namespace EditorArea {
 			if (GUILayout.Button ("Import Path")) {
 				importPath(filename, destCount);
 			}
-			if (GUILayout.Button ("Import PosSet")) {
-				importPos(filename, destCount);
-			}
 
 			rrtIters = EditorGUILayout.IntField("RRT Nodes: ", rrtIters);
 			if (GUILayout.Button ("RRT - MCT")) {
@@ -170,7 +181,7 @@ namespace EditorArea {
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
-				RRT(true);
+				RRT(0);
 				PlatsGoToFrame(0);
 			}
 			if (GUILayout.Button ("RRT - AS")) {
@@ -180,11 +191,28 @@ namespace EditorArea {
 				pathsMarked = false;
 				realFrame = 0;
 				curFrame = 0;
-				RRT(false);
+				RRT(1);
 				PlatsGoToFrame(0);
 			}
-			
+			if (GUILayout.Button ("RRT - UCT")) {
+				if(!platsInitialized){
+					initPlat();
+				}
+				pathsMarked = false;
+				realFrame = 0;
+				curFrame = 0;
+				RRT(2);
+				PlatsGoToFrame(0);
+			}
+
+			threedee = EditorGUILayout.Toggle ("Astar3d", threedee);
+			minDist = EditorGUILayout.FloatField("Min Dist Astar", minDist);
+
 			if(GUILayout.Button ("AStarSearch")){
+				cleanUpRRTDebug();
+				if(debugMode){
+					drawWholeThing = true;
+				}
 				if(!platsInitialized){
 					initPlat();
 				}
@@ -195,11 +223,99 @@ namespace EditorArea {
 				goalLoc = GameObject.Find("goalPosition").transform.position;
 				AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				PlatsGoToFrame(0);
+				drawWholeThing = false;
+			}
+
+			if(GUILayout.Button ("UCT Search")){
+				cleanUpRRTDebug();
+				if(debugMode){
+					drawWholeThing = true;
+				}
+				if(!platsInitialized){
+					initPlat();
+				}
+				pathsMarked = false;
+				realFrame = 0;
+				curFrame = 0;
+				startingLoc = GameObject.Find ("startingPosition").transform.position;
+				goalLoc = GameObject.Find("goalPosition").transform.position;
+				UCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				PlatsGoToFrame(0);
+				drawWholeThing = false;
 			}
 
 			if(GUILayout.Button ("ReInitialize Moving Platforms")){
 				initPlat();
 			}
+
+			#region LevelTest
+			EditorGUILayout.LabelField ("");
+			EditorGUILayout.LabelField ("");
+			EditorGUILayout.LabelField ("Level Test");
+			
+			testFilename = EditorGUILayout.TextField ("Test Filename", testFilename);
+			iters = EditorGUILayout.IntField ("Iteration Per DataSet", iters);
+			
+			EditorGUILayout.LabelField ("A Star Test");
+			NumFramesAS = EditorGUILayout.IntField (" Num Frames", NumFramesAS);
+
+			DepthAS = EditorGUILayout.IntField ("Depth", DepthAS);
+
+			EditorGUILayout.LabelField ("UCT Test");
+			NumFramesUCT = EditorGUILayout.IntField (" Num Frames", NumFramesUCT);
+			
+			DepthUCT = EditorGUILayout.IntField ("Depth", DepthUCT);
+
+			EditorGUILayout.LabelField ("MCT Test");
+			
+			Iterations = EditorGUILayout.IntField("iterations", Iterations);
+			Depth = EditorGUILayout.IntField("min Depth", Depth);
+
+			EditorGUILayout.LabelField ("RRT Test ASTAR");
+			
+			MinDistAS = EditorGUILayout.FloatField("Min Dist", MinDistAS);
+
+			MaxDistAS = EditorGUILayout.FloatField("Max Dist", MaxDistAS);
+
+			NodesAS = EditorGUILayout.IntField("Nodes", NodesAS);
+
+			ASFramesTST = EditorGUILayout.IntField("A Star FPS", ASFramesTST);
+			ASDepthTST = EditorGUILayout.IntField("A Star Depth", ASDepthTST);
+
+
+			EditorGUILayout.LabelField ("RRT Test MCT");
+			
+			MinDistMCT = EditorGUILayout.FloatField("Min Dist", MinDistMCT);
+			
+			MaxDistMCT = EditorGUILayout.FloatField("Max Dist", MaxDistMCT);
+			
+			Nodes = EditorGUILayout.IntField("Nodes", Nodes);
+			
+			MCTIterTST = EditorGUILayout.IntField("MCT Iter", MCTIterTST);
+			MCTDepthTST = EditorGUILayout.IntField("MCT Depth", MCTDepthTST);
+
+			EditorGUILayout.LabelField ("RRT Test UCT");
+			
+			MinDistUCT = EditorGUILayout.FloatField("Min Dist", MinDistUCT);
+			
+			MaxDistUCT = EditorGUILayout.FloatField("Max Dist", MaxDistUCT);
+			
+			NodesUCT = EditorGUILayout.IntField("Nodes", NodesUCT);
+
+			UCTFramesTST = EditorGUILayout.IntField("UCT FPS", UCTFramesTST);
+			UCTDepthTST = EditorGUILayout.IntField("UCT Depth", UCTDepthTST);
+			
+
+			if(GUILayout.Button ("Test Level")){
+				if(!platsInitialized){
+					initPlat();
+				}
+				testLevel();
+			}
+
+			#endregion LevelTest
+
+
 
 
 			EditorGUILayout.LabelField ("");
@@ -266,20 +382,8 @@ namespace EditorArea {
 				batchCompute(3);
 			}
 			EditorGUILayout.EndScrollView ();
-		}
 
-		void goToStart(){
-			goToFrame(0);
-			PlatsGoToFrame(0);
-			goToFrame(0);
-			PlatsGoToFrame(0);
-			goToFrame(0);
-			PlatsGoToFrame(0);
-			goToFrame(0);
-			curFrame = 0;
-			realFrame = 0;
 		}
-
 
 		bool prevDrawPaths;
 		bool pathsMarked;
@@ -315,20 +419,19 @@ namespace EditorArea {
 				else if(curFrame <= totalFrames || ignoreFrameLimit){
 					curFrame++;
 					realFrame = curFrame;
+					bool isOne = false;
 					foreach(movementModel model in mModels){
 						if(model != null){
+							isOne = true;
 							if(model.updater())
 							{
 								//model.doAction("wait", 1);
 							}
 						}
 					}
-					foreach(posMovModel pModel in pmModels){
-						if(pModel != null){
-							pModel.goToFrame(curFrame);
-						}
+					if(!isOne){
+						goToFrame(curFrame);
 					}
-					PlatsGoToFrame(curFrame);
 
 				}
 
@@ -339,7 +442,16 @@ namespace EditorArea {
 					realFrame = curFrame;
 				}
 			}
+
+
+
+
+
 		}
+
+		#endregion Update/Gui
+
+		#region ImportExport
 
 		private void exportPaths(){
 			foreach(movementModel model in mModels){
@@ -379,36 +491,6 @@ namespace EditorArea {
 			}
 		}
 
-		private void importPos(string filename, string destCount){
-			posModObj = Instantiate(posModFab) as GameObject;
-			posModObj.name = "posMod" + destCount;
-			posModObj.transform.parent = posMods.transform;
-			player = Instantiate(playerFab) as GameObject;
-			player.name = "player" + destCount;
-			player.transform.parent = players.transform;
-			pmModel = posModObj.GetComponent<posMovModel>() as posMovModel;
-			pmModel.player = player;
-			pmModels.Add (pmModel);
-			pmModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-			var tempMaterial = new Material(player.renderer.sharedMaterial);
-			tempMaterial.color = pmModel.color;
-			player.renderer.sharedMaterial = tempMaterial;
-
-			serializablePosMovModel sModel;
-			XmlSerializer ser = new XmlSerializer (typeof(serializablePosMovModel));
-			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
-				sModel = ser.Deserialize (stream) as serializablePosMovModel;
-				stream.Flush ();
-				stream.Close ();
-			}
-			pmModel.positions = sModel.positions;
-			player.transform.position = sModel.startLoc;
-			totalFrames = Mathf.Max(totalFrames, sModel.numFrames);
-			if(drawPaths){
-				pmModel.drawPath(paths);
-			}
-		}
-
 		private void importPath(string filename, string destCount){
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + destCount;
@@ -441,6 +523,22 @@ namespace EditorArea {
 			}
 		}
 
+		#endregion ImportExport
+
+		#region UtilityMethods
+
+		void goToStart(){
+			goToFrame(0);
+			PlatsGoToFrame(0);
+			goToFrame(0);
+			PlatsGoToFrame(0);
+			goToFrame(0);
+			PlatsGoToFrame(0);
+			goToFrame(0);
+			curFrame = 0;
+			realFrame = 0;
+		}
+
 		private static void PlatsGoToFrame(int curFrame){
 			if(!platsInitialized){
 				initPlat();
@@ -463,30 +561,17 @@ namespace EditorArea {
 					model.goToFrame (curFrame);
 				}
 			}
-			foreach(posMovModel pModel in pmModels){
-				if(pModel != null){
-					pModel.goToFrame(curFrame);
-				}
-			}
+
 			PlatsGoToFrame(curFrame);
 		}		
-				
-		private void multiMCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
-			cleanUp();
-			count = 0;
-
-			for(int i = 0; i < numPlayers; i++){
-				MCTSearch(startLoc, golLoc, state, frame);
-				count++;
-			}
-			if(showDeaths){
-				totalFrames = totalFrames + 1000;
-			}
-		}
 
 		private void cleanUp(){
 			DestroyImmediate(astar);
+			DestroyImmediate(uct);
 			DestroyImmediate(GameObject.Find ("players"));
+			
+			
+			
 			nodes = new GameObject("nodes");
 			players = new GameObject("players");
 			models = new GameObject("models");
@@ -496,17 +581,30 @@ namespace EditorArea {
 			models.transform.parent = players.transform;
 			posMods.transform.parent = players.transform;
 			nodes.transform.parent = players.transform;
+
 		}
 
+		private void cleanUpRRTDebug(){
+			DestroyImmediate(RRTDebug);
 
-
-		private void resetState(movementModel model, PlayerState state){
-			model.state.isOnGround = state.isOnGround;
-			model.state.velocity.x = state.velocity.x;
-			model.state.velocity.y = state.velocity.y;
-			model.state.numJumps = state.numJumps;
 		}
 
+		#endregion UtilityMethods
+
+		#region MCT
+		
+		private void multiMCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
+			cleanUp();
+			count = 0;
+			
+			for(int i = 0; i < numPlayers; i++){
+				MCTSearch(startLoc, golLoc, state, frame);
+				count++;
+			}
+			if(showDeaths){
+				totalFrames = totalFrames + 1000;
+			}
+		}
 
 		private RTNode MCTSearch(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
 			GameObject modelObj2 = Instantiate(modelFab) as GameObject;
@@ -587,8 +685,7 @@ namespace EditorArea {
 
 
 
-				resetState(mModel, state);
-
+				mModel.resetState();
 
 				if(drawPaths){
 					mModel.drawPath(paths);
@@ -616,20 +713,14 @@ namespace EditorArea {
 
 		private bool MCTSearchIteration(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
 
-			player.transform.position = startLoc;
 			mModel.initializev2();
-
-
 			mModel.numFrames = 0;
-
-
 			mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-
 			var tempMaterial = new Material(player.renderer.sharedMaterial);
 			tempMaterial.color = mModel.color;
 			player.renderer.sharedMaterial = tempMaterial;
 
-			//
+
 			bool canJump = true;
 
 
@@ -692,21 +783,36 @@ namespace EditorArea {
 			return false;
 		}
 
+		#endregion MCT
+
+		#region AStar
 
 		public bool asGoalReached;
 		public PriorityQueue<RTNode, double> heap;
 		public RTNode asRoot;
 		public RTNode asGoalNode;
 
-		public static int framesPerStep = 1;
-		public static int maxDepthAStar = 100;
+		public static int framesPerStep = 10;
+		public static int maxDepthAStar = 4000;
 
 		public GameObject astar;
 		public int statesExplored;
 
+		public KDTree asClosed;
+		public bool asKDNonEmpty;
+		public bool threedee;
+
 		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
+
 			statesExplored = 0;
 			cleanUp();
+			if(threedee){
+				asClosed = new KDTree(3);
+			}
+			else{
+				asClosed = new KDTree(2);
+			}
+			asKDNonEmpty = false;
 
 			if(drawWholeThing){
 				astar = new GameObject("ASTAR");
@@ -744,14 +850,81 @@ namespace EditorArea {
 			asGoalReached = false;
 			heap = new PriorityQueue<RTNode, double>();
 			asRoot = new RTNode(startLoc, 0, state);
-			heap.Enqueue(asRoot, -Vector2.Distance(asRoot.position, golLoc));
+			heap.Enqueue(asRoot, -Vector2.Distance(asRoot.position, golLoc) -((float)asRoot.frame)/10f);
+
 			statesExplored++;
 			int k = 0;
 			while(!asGoalReached && heap.Count > 0 && k < maxDepthAStar){
 				k++;
 
 				RTNode cur = heap.Dequeue().Value;
+
+
+				//Check to expend it or not
+				//TODO: Make a 2d kd-tree . 
+				if(asKDNonEmpty)
+				{
+					RTNode closest;
+					Vector3 pos1;
+					Vector3 pos2;
+
+					if(threedee){
+						closest = asClosed.nearest(new double[]{cur.position.x, cur.position.y, cur.frame}) as RTNode;
+
+						pos1 = new Vector3(cur.position.x, cur.position.y,((float)cur.frame)/10f);
+						pos2 = new Vector3(closest.position.x, closest.position.y,((float)closest.frame)/10f);
+					}
+					else{
+						closest = asClosed.nearest(new double[]{cur.position.x, cur.position.y}) as RTNode;
+						
+						pos1 = new Vector3(cur.position.x, cur.position.y,0);
+						pos2 = new Vector3(closest.position.x, closest.position.y,0);
+					}
+					
+					if(Vector3.Distance(pos1, pos2) < minDist)
+					{
+						continue;
+					}
+					else{
+						if(threedee){
+							asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+						}
+						else{
+							asClosed.insert (new double[]{cur.position.x, cur.position.y}, cur);
+						}	          
+						asKDNonEmpty = true;
+					}
+				}
+				else{
+					if(threedee){
+						asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+					}
+					else{
+						asClosed.insert (new double[]{cur.position.x, cur.position.y}, cur);
+					}	          
+					asKDNonEmpty = true;
+				}
+
+				if(drawWholeThing)
+				{
+					//GameObject g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+					//g.transform.parent = astar.transform; 
+					//g.transform.position = new Vector3(cur.position.x, cur.position.y,cur.frame); 
+				}
+
+				/*
+				try{					
+					asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
+					asKDNonEmpty = true;
+				}
+				catch (KeyDuplicateException e){
+					continue;
+				}*/
+
+				//Have to expend the node
+				
 				tryDoAction(cur, "Right", golLoc);
+
 				if(asGoalReached){
 					break;
 				}
@@ -768,12 +941,14 @@ namespace EditorArea {
 					if(asGoalReached){
 						break;
 					}
+
 					tryDoAction(cur, "jump right", golLoc);
 					if(asGoalReached){
 						break;
 					}
 					tryDoAction(cur, "jump left", golLoc);
 				}
+
 			}
 			if(batchComputation){
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
@@ -850,6 +1025,9 @@ namespace EditorArea {
 				mModel.numFrames = node.frame;
 			}
 		}
+
+		public float minDist = 1.5f;
+
 		private void tryDoAction(RTNode cur, string action, Vector3 golLoc){
 
 			RTNode nex = addAction(cur, action, golLoc);
@@ -886,18 +1064,43 @@ namespace EditorArea {
 					line.vectorObject.transform.parent = astar.transform;
 				}
 				float dist = Vector2.Distance(nex.position, golLoc);
-				if(dist < 0.5){
+
+
+				if(dist < 0.5f){
 					asGoalReached = true;
 					asGoalNode = nex;
 					statesExplored++;
 				}
 				else{
-					heap.Enqueue(nex, -dist);
-					statesExplored++;
+					//Check if in the close list. 
+					if(asKDNonEmpty){
+						RTNode closest;
+						Vector3 pos1;
+						Vector3 pos2;
+						if(threedee){
+							closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y, nex.frame}) as RTNode;
+							pos1 = new Vector3(nex.position.x, nex.position.y,((float)nex.frame)/10f);
+							pos2 = new Vector3(closest.position.x, closest.position.y,((float)closest.frame)/10f);
+						}
+						else{
+							closest = asClosed.nearest(new double[]{nex.position.x, nex.position.y}) as RTNode;
+							pos1 = new Vector3(nex.position.x, nex.position.y,0);
+							pos2 = new Vector3(closest.position.x, closest.position.y,0);
+						}
+						if(Vector3.Distance(pos1, pos2) > minDist)
+						{
+							heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
+							statesExplored++;
+						}
+
+					}
+					else{
+						heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
+						statesExplored++;
+					}
 				}
 			}
 		}
-
 
 		private RTNode addAction(RTNode cur, string action, Vector3 golLoc){
 			mModel.startState = cur.state;
@@ -992,7 +1195,7 @@ namespace EditorArea {
 			}
 		}
 
-
+		#endregion AStar
 
 		private void printSolution(){
 			int i = 0;
@@ -1002,6 +1205,9 @@ namespace EditorArea {
 			}
 		}
 
+
+		#region RRT
+
 		public bool[] goalReached;
 		public static int rrtIters = 100;
 
@@ -1010,12 +1216,28 @@ namespace EditorArea {
 		public RTNode[] roots;
 		public RTNode[] goalNodes;
 
-
-		public static float maxDistRTNodes = 5;
+		public static float maxDistRTNodes = 10;
 		public static float minDistRTNodes = 1;
 
-		private bool RRT(bool useMCT){
+		public static GameObject RRTDebug;
+
+		public static bool addedNode = false;
+		public static float addedX;
+		public static float addedY;
+
+		private bool RRT(int useMCT){
 			cleanUp();
+			if(debugMode){
+
+				//TODO: Put it in a clean place. The RRT Gameobject is never 
+				//clean up before creating a new one.
+				DestroyImmediate(RRTDebug);
+				RRTDebug = new GameObject("RRT");
+
+			}
+
+
+
 			goalReached = new bool[numPlayers];
 
 			rrtTrees = new KDTree[numPlayers];
@@ -1023,7 +1245,12 @@ namespace EditorArea {
 			goalNodes = new RTNode[numPlayers];
 			int i = 0;
 			int q = 0;
+
+			int counterNode = 0; 
+
 			for(int j = 0; j < numPlayers; j++){
+
+				maxDensity[j] = 0;
 
 				goalReached[j] = false;
 				startingLoc = GameObject.Find ("startingPosition").transform.position;
@@ -1032,23 +1259,137 @@ namespace EditorArea {
 				Vector3 tr = GameObject.Find ("topRight").transform.position;
 				rrtTrees[j] = new KDTree(2);
 				roots[j] = new RTNode(startingLoc, 0, new PlayerState());
+				try{
 				rrtTrees[j].insert(new double[] {roots[j].position.x, roots[j].position.y} ,roots[j]);
+				}
+				catch(System.Exception e){
+					Debug.Log ("LOCATION 1");
+					throw e;
+				}
 				q = 0;
+
+				
+				float xMin = startingLoc.x - maxDistRTNodes;
+				float xMax = startingLoc.x + maxDistRTNodes;
+				float yMin = startingLoc.y - maxDistRTNodes;
+				float yMax = startingLoc.y + maxDistRTNodes;
+				
+				//Check if the bounds of the level are reached
+				if (xMin < bl.x)
+					xMin = bl.x; 
+				if (xMax > tr.x)
+					xMax = tr.x; 
+				if (yMin < bl.y)
+					yMin = bl.y; 
+				if (yMax > tr.y)
+					yMax = tr.y; 
+				
+
+
 				for(i = 0; i < rrtIters; i++){
 					q++;
-					float x = Random.Range (bl.x, tr.x);
-					float y = Random.Range (bl.y, tr.y);
-					if(!tryAddNode(x,y, j, useMCT)){
+
+					//TODO sample from limits reachable 
+					//Use 4 heaps. 
+					float x = Random.Range (xMin, xMax);
+					float y = Random.Range (yMin, yMax);
+
+					//TODO: 
+					//Add a control for that one
+					if(UnityEngine.Random.Range(0,100)>0.5f)
+					{
+						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up, 20f);
+
+						if(returnCast.collider != null && returnCast.collider.tag == "Floor")
+						{
+							//VectorLine line = new VectorLine("linecast", new Vector3[] {new Vector3(x,y), 
+							//	returnCast.point}, Color.blue, null, 1.0f);
+							//line.Draw3D();
+							//line.vectorObject.transform.parent = RRTDebug.transform;
+
+
+							//Draw lines
+
+							//Debug.Log(returnCast.collider.name); 
+							y = returnCast.point.y+0.5f; 
+						}
+
+					}
+
+					//Adding blue sphere if debugging
+					//Placing it where we tried to place a node
+					if(debugMode)
+					{
+
+						//Added the sphere for better display
+						GameObject o = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+						o.transform.parent = RRTDebug.transform; 
+						o.name = "node"+i;
+						o.transform.position = new Vector3(x,y); 
+						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
+
+						float t = ((float)i)/((float)rrtIters);
+						if(t <= 0.5f){
+							var tempMaterial = new Material(o.renderer.sharedMaterial);
+							tempMaterial.color = Color.Lerp(Color.green, Color.blue, (t*2f));
+							o.renderer.sharedMaterial = tempMaterial;
+						}
+						else{
+							var tempMaterial = new Material(o.renderer.sharedMaterial);
+							tempMaterial.color = Color.Lerp(Color.blue, Color.red, ((t-0.5f)*2f));
+							o.renderer.sharedMaterial = tempMaterial;
+						}
+
+						//Add interpolation between colours to know when it was added. 
+					}
+
+					if(!tryAddNode(x,y, j, useMCT))
+					{
 						i--;
 					}
-					if(q > rrtIters*10){
+					else if(addedNode)
+					{
+						addedNode = false;
+
+						//The node was added. 
+						//Updating the random bounds
+						counterNode ++; 
+
+						if (addedX - maxDistRTNodes < xMin)
+							xMin = addedX - maxDistRTNodes; 							
+						if (addedX + maxDistRTNodes > xMax)
+							xMax = addedX + maxDistRTNodes; 							
+						if (addedY - maxDistRTNodes < yMin)
+							yMin = addedY - maxDistRTNodes; 
+						if (addedY + maxDistRTNodes > yMax)
+							yMax = addedY + maxDistRTNodes; 
+
+						//Check if the bounds of the level are reached
+						if (xMin < bl.x)
+							xMin = bl.x; 
+						if (xMax > tr.x)
+							xMax = tr.x; 
+						if (yMin < bl.y)
+							yMin = bl.y; 
+						if (yMax > tr.y)
+							yMax = tr.y; 
+							
+					}
+
+					
+					if(q > rrtIters*10)
+					{
 						break;
 					}
-					if(goalReached[j]){
+					
+					if(goalReached[j])
+					{
 						break;
 					}
 				}
 			}
+
+
 			if(batchComputationRRT){
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
 				{
@@ -1071,8 +1412,6 @@ namespace EditorArea {
 			}
 
 		}
-
-
 
 		private void reCreatePath(){
 			count = 0;
@@ -1110,7 +1449,7 @@ namespace EditorArea {
 					count++;
 				}
 				else{
-					Debug.Log ("Attempt " + j + " failed");
+					//Debug.Log ("Attempt " + j + " failed");
 				}
 			}
 
@@ -1142,62 +1481,135 @@ namespace EditorArea {
 			}
 		}
 
-		private bool tryAddNode(float x, float y, int j, bool useMCT){
+		private bool tryAddNode(float x, float y, int j, int useMCT){
 			RTNode closest = findClosest(x,y, j);
-			if(closest == null){
+			if(closest == null)
+			{
 
 				return false;
 			}
 			else{
 
 				RTNode final;
-				if(useMCT){
+				if(useMCT == 0)
+				{
 					final = MCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
-				else{
+				else if (useMCT == 1)
+				{
 					final = AStarSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
 				}
-				if(final != null){
-					final.parent = closest;
-					closest.children.Add (final);
-					final.frame = closest.frame + final.frame;
-					rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
-					if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5){
-						goalReached[j] = true;
-						goalNodes[j] = final;
+				else
+				{
+					final = UCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
+				}
+				if(final != null)
+				{
+
+
+					RTNode newClosest = rrtTrees[j].nearest(new double[] {final.position.x, final.position.y}) as RTNode;
+					//Check how close it is to the parent. 
+					if( Vector2.Distance(final.position, newClosest.position) < minDistRTNodes)// ||(final.position - closest.position).magnitude > maxDistRTNodes )
+						return true; 
+
+					if(debugMode)
+					{
+						VectorLine line = new VectorLine("RRT", new Vector3[] {closest.position, final.position}, Color.red, null, 2.0f);
+						line.Draw3D();
+						line.vectorObject.transform.parent = RRTDebug.transform;
+						
+						//Added the sphere for better display
+						GameObject g = GameObject.Find("RRT");
+						GameObject o = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+						o.transform.parent = g.transform; 
+						o.name = "node";
+						o.transform.position = closest.position; 
+						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
+
+						//end nodes 
+						o = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+						o.transform.parent = g.transform; 
+						o.name = "node";
+						o.transform.position = final	.position; 
+						o.transform.localScale = new Vector3(0.33f,0.33f,0.33f);
 					}
-					else{
-						goalReached[j] = tryAddGoalNode(final, j, useMCT);
+
+
+
+
+
+					if(rrtTrees[j].search(new double[] {final.position.x, final.position.y}) == null)
+					{
+						addedNode = true;
+						addedX = final.position.x;
+						addedY = final.position.y;
+
+						final.parent = closest;
+						closest.children.Add (final);
+						final.frame = closest.frame + final.frame;
+						try{
+						rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
+						}
+						catch(System.Exception e){
+							Debug.Log ("LOCATION 2");
+							throw e;
+						}
+						
+						if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5)
+						{
+							Debug.Log (goalLoc);
+							goalReached[j] = true;
+							goalNodes[j] = final;
+						}
+						else if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 5f)
+						{
+							goalReached[j] = tryAddGoalNode(final, j, useMCT);
+						}
 					}
-
-
-
-
 					return true;
 				}
-				else{
+				else
+				{
 					return true;
 				}
 			}
 		}
 
-		private bool tryAddGoalNode(RTNode node, int j, bool useMCT){
+		private bool tryAddGoalNode(RTNode node, int j, int useMCT){
 			if(Vector2.Distance (node.position, new Vector2(goalLoc.x, goalLoc.y)) > maxDistRTNodes){
 				return false;
 			}
 			else{
 				RTNode final;
-				if(useMCT){
+				if(useMCT == 0)
+				{
 					final = MCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
-				else{
+				else if (useMCT == 1){
 					final = AStarSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
-				if(final != null){
+				else{
+					final = UCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
+				}
+				if(Vector2.Distance (final.position, goalLoc) < 0.5f){
+
+
+
+					if(debugMode){
+						VectorLine line = new VectorLine("RRT", new Vector3[] {node.position, final.position}, Color.red, null, 2.0f);
+						line.Draw3D();
+						line.vectorObject.transform.parent = RRTDebug.transform;
+					}
 					final.parent = node;
 					node.children.Add (final);
 					final.frame = node.frame + final.frame;
+					try{
 					rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
+					}
+					catch(System.Exception e){
+						Debug.Log ("LOCATION 3");
+						throw e;
+					}
 					goalNodes[j] = final;
 					return true;
 				}
@@ -1206,7 +1618,6 @@ namespace EditorArea {
 				}
 			}
 		}
-
 
 		private RTNode findClosest(float x,float y, int j){
 
@@ -1220,8 +1631,13 @@ namespace EditorArea {
 			}
 		}
 
+		#endregion RRT
+
+		#region Batch
+
 		//Batch Computations Code
 
+		#region batchCompute vars
 		//ASTAR
 		public static int iterationsPerDataSetAS;
 		public static int minNumFramesAS;
@@ -1260,7 +1676,7 @@ namespace EditorArea {
 		
 		public static int ASFrames;
 		public static int ASDepth;
-
+		#endregion batchCompute vars
 		void batchCompute(int number){
 			initPlat();
 			numPlayers = 1;
@@ -1367,7 +1783,7 @@ namespace EditorArea {
 
 								System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
 								stopwatch.Start ();
-								success = RRT(true);
+								success = RRT(0);
 								stopwatch.Stop();
 								if(success){
 									toWrite += "true,";
@@ -1388,7 +1804,7 @@ namespace EditorArea {
 								PlatsGoToFrame(0);
 								stopwatch = new System.Diagnostics.Stopwatch();
 								stopwatch.Start ();
-								success = RRT(false);
+								success = RRT(1);
 								stopwatch.Stop();
 								if(success){
 									toWrite += "true,";
@@ -1410,6 +1826,774 @@ namespace EditorArea {
 			batchComputationRRT = false;
 			goToFrame(0);
 		}
+
+		#endregion Batch
+
+		#region failedKeyboardAttempt
+		void initializeKeyboard(){
+			if(!platsInitialized){
+				initPlat();
+			}
+			modelObj = Instantiate(modelFab) as GameObject;
+			modelObj.name = "modelObject" + "P";
+			modelObj.transform.parent = models.transform;
+			player = Instantiate(playerFab) as GameObject;
+			player.name = "player" + "P";
+			player.transform.parent = players.transform;
+			mModel = modelObj.GetComponent<movementModel>() as movementModel;
+			mModel.hplatmovers = hplatmovers;
+			mModel.vplatmovers = vplatmovers;
+			mModel.player = player;
+			mModels.Add (mModel);
+			mModel.startState = new PlayerState();
+			mModel.startLocation = startingLoc;
+			mModel.initializev2();
+		}
+
+		string getControlInput(Event e){
+			//Event e = Event.current;
+			if(e == null){
+				return "wait";
+			}
+			else{
+				Debug.Log ("SOMETHOING");
+			}
+			if(e.keyCode == KeyCode.A){
+				return "Left";
+			}
+			else if(e.keyCode == KeyCode.D){
+				return "Right";
+			}
+			else if(e.keyCode == KeyCode.W){
+				return "jump";
+			}
+			else{
+				return "wait";
+			}
+			/*
+			if(Input.GetKey (KeyCode.LeftArrow) || Input.GetKey (KeyCode.A)){
+				if(Input.GetKey (KeyCode.UpArrow) || Input.GetKey (KeyCode.W)){
+					Debug.Log ("jump left");
+					return "jump left";
+				}
+				else{
+					Debug.Log ("left");
+					return "Left";
+				}
+			}
+			else if(Input.GetKey (KeyCode.RightArrow) || Input.GetKey (KeyCode.D)){
+				if(Input.GetKey (KeyCode.UpArrow) || Input.GetKey (KeyCode.W)){
+					Debug.Log ("jump right");
+					return "jump right";
+				}
+				else{
+					Debug.Log ("right");
+					return "Right";
+				}
+			}
+			else if(Input.GetKey (KeyCode.UpArrow) || Input.GetKey (KeyCode.W)){
+				Debug.Log ("jump");
+				return "jump";
+			}
+			else{
+				Debug.Log ("wait");
+				return "wait";
+			}*/
+		}
+
+		#endregion failedKeyboardAttempt
+
+		#region UCT
+
+	//UCTSEARCH
+
+		public double Cp = 1 / Mathf.Sqrt(2);
+		public GameObject uct;
+		public int[, ,] uctDensity;
+		public int[] maxDensity;
+		public int uctGridX;
+		public int uctGridY;
+		public GameObject uctText;
+		public Texture2D uctTex;
+
+		public UCTNode cls;
+
+		private RTNode UCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
+			cleanUp();
+
+			uctGridX = 25;
+			uctGridY = 10;
+			//TODO: Replace 1 with numPlayers
+			maxDensity = new int[1];
+			uctDensity = new int[1, uctGridX, uctGridY];
+			Vector3 bl = GameObject.Find ("bottomLeft").transform.position;
+			Vector3 tr = GameObject.Find ("topRight").transform.position;
+
+			if(drawWholeThing){
+				uct = new GameObject("UCT");
+				uctText = new GameObject("uctTexture");
+				uctText.transform.position = bl + (0.5f * (tr - bl));
+				uctText.transform.position += new Vector3(0,0,15);
+				uctText.transform.localScale = new Vector3((100f*(tr.x - bl.x)/((float)uctGridX)), (100f*(tr.y - bl.y)/((float)uctGridY)), 1);
+				uctText.AddComponent<SpriteRenderer>();
+				uctTex = new Texture2D(uctGridX, uctGridY);
+				uctText.transform.parent = uct.transform;
+			}
+			
+			modelObj = Instantiate(modelFab) as GameObject;
+			modelObj.name = "modelObject" + count;
+			modelObj.transform.parent = models.transform;
+			player = Instantiate(playerFab) as GameObject;
+			player.name = "player" + count;
+			player.transform.parent = players.transform;
+			mModel = modelObj.GetComponent<movementModel>() as movementModel;
+			mModel.hplatmovers = hplatmovers;
+			mModel.vplatmovers = vplatmovers;
+			mModel.player = player;
+			mModels.Add (mModel);
+			count++;
+			
+			
+			
+			UCTNode root = new UCTNode();
+			root.rt.state = state;
+			root.rt.frame = frame;
+			root.rt.position = startLoc;
+			cls = root;
+			int budget = maxDepthAStar;
+			UCTNode v = root;
+
+			int i = 0;
+			bool success = false;
+			while(i < budget){
+				i++;
+
+				v = TreePolicy(root, golLoc, bl, tr);
+				double delta = DefaultPolicy(v, golLoc, startLoc);
+
+
+				if(v == null){
+					break;
+				}
+
+
+
+				//RRT Density Grid Stuf
+				float x = v.rt.position.x;
+				float y = v.rt.position.y;
+				int xIndex = Mathf.FloorToInt((x - bl.x) / ((tr.x - bl.x) / (float)uctGridX));
+				int yIndex = Mathf.FloorToInt((y - bl.y) / ((tr.y - bl.y) / (float)uctGridY));
+				/*if(xIndex >= uctGridX){
+					Debug.Log ("XTOOBIG" + x + "-" + y);
+				}
+				else if(yIndex >= uctGridY){
+					Debug.Log ("YTOOBIG" + x + "-" + y);
+				}
+				else{*/
+				try
+				{
+					uctDensity[0, xIndex, yIndex]++;
+					maxDensity[0] = Mathf.Max(maxDensity[0], uctDensity[0, xIndex, yIndex]);
+					v.densityPenalty = ((float)uctDensity[0, xIndex, yIndex] )/ ((float)maxDensity[0]);
+				}
+				catch
+				{
+				}
+
+				//}
+				if(maxDensity[0] > 25){
+					if(v.densityPenalty > 0.22f){
+						v.dead = true;
+					}
+				}
+
+				if(v.dead)
+				{
+					delta = -100000;
+					
+					v.delta = int.MinValue;
+				}
+
+				Backup(v, delta);
+
+
+				if(((Vector2)golLoc -v.rt.position).magnitude < 0.5f){
+					//Debug.Log ("SUCCESS");
+					success = true;
+					break;
+				}
+			}
+
+			if(drawWholeThing){
+				for(int k = 0; k < uctGridX; k++){
+					for(int l = 0; l < uctGridY; l++){
+						Color col = Color.Lerp(Color.gray, Color.red, (((float)uctDensity[0, k, l])/((float)maxDensity[0]))); 
+						col.a = 0.7f;
+						uctTex.SetPixel(k, l, col);
+					}
+				}
+				uctTex.Apply();
+
+				byte[] bytes = uctTex.EncodeToPNG();
+				File.WriteAllBytes(Application.dataPath + 
+				                   "/Levels/Plateformer/Graphics/UCTDensity.png", bytes);
+				
+				
+				SpriteRenderer r = uctText.GetComponent<SpriteRenderer>(); 
+				
+				
+				
+				Sprite s = AssetDatabase.LoadAssetAtPath(
+					"Assets/Levels/Plateformer/Graphics/UCTDensity.png", typeof(Sprite)) as Sprite;
+				Debug.Log ("s-" + s);
+				Debug.Log ("r-" + r);
+
+
+				r.sprite = s;  
+				Debug.Log ("rspr-" + r.sprite);
+				Debug.Log (uctText.GetComponent<SpriteRenderer>().sprite);
+
+			}
+
+			if(success || showDeaths){
+				mModel.startState = state;
+				mModel.startFrame = frame;
+				mModel.startLocation = startLoc;
+				mModel.initializev2();
+				mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+				
+				return reCreatePathUCT(v, root);
+			}
+			else{
+				if(v.dead){
+					return null;
+				}
+				else{
+					mModel.startState = state;
+					mModel.startFrame = frame;
+					mModel.startLocation = startLoc;
+					mModel.initializev2();
+					mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
+					return reCreatePathUCT(cls, root);
+				}
+			}
+		}
+		
+		public UCTNode TreePolicy(UCTNode v, Vector3 golLoc, Vector3 bl, Vector3 tr){
+			//TODO: instead of while true, should be while !terminal.
+			while(v != null){
+
+				if(v.dead){
+					break;
+				}
+
+				if(v.unusedActions.Count > 0){
+					return Expand(v, golLoc);
+				}
+				else{
+					v = BestChild(v, Cp, bl, tr);
+				}
+
+
+			}
+			return v;
+		}
+				
+		//Returns Null if bestChild value is < 0, which should not happen I think?
+		public UCTNode BestChild(UCTNode v,double c, Vector3 bl, Vector3 tr){
+
+
+			UCTNode maxNode = null;
+			double maxVal = double.MinValue;
+			foreach(UCTNode child in v.children){
+
+				double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits) - child.densityPenalty * 50;
+				if(val > maxVal){
+					maxVal = val;
+					maxNode = child;
+				}
+			}
+			if(maxNode == null){
+				Debug.Log ("FAILED");
+				foreach(UCTNode child in v.children){
+					double val = (child.delta/child.visits) + c * Mathf.Sqrt(2 * Mathf.Log(v.visits) / child.visits);
+					Debug.Log (val);
+				}
+			}
+			return maxNode;
+		}
+
+		//This is maybe, possibly right?
+		public float DefaultPolicy(UCTNode u, Vector3 golLoc, Vector3 startLoc){
+			RTNode s = u.rt;
+
+			float dist = (golLoc - startLoc).magnitude;
+			float dist2 = ((Vector2)golLoc - s.position).magnitude;
+
+			if(cls == null || dist2 < ((Vector2)golLoc - cls.rt.position).magnitude){
+				cls = u;
+			}
+
+			//return (((dist - dist2) / dist) * 50);
+			return (1/((Vector2)golLoc - s.position).sqrMagnitude )*100;
+		}
+						
+		public UCTNode Expand(UCTNode v, Vector3 golLoc){
+			int actInt = Random.Range(0, v.unusedActions.Count);
+			string action = v.unusedActions[actInt];
+			v.unusedActions.RemoveAt(actInt);
+			UCTNode vn = expandWith(v, action, golLoc);
+
+			if(drawWholeThing){
+				Color clr;
+				switch(action){
+				case "wait":
+					clr = Color.blue;
+					break;
+				case "Left":
+					clr = Color.green;
+					break;
+				case "Right":
+					clr = Color.magenta;
+					break;
+				case "jump":
+					clr = Color.red;
+					break;
+				case "jump left":
+					clr = Color.yellow;
+					break;
+				case "jump right":
+					clr = Color.white;
+					break;
+				default:
+					clr = Color.cyan;
+					break;
+				}
+				
+				
+				VectorLine line = new VectorLine("UCT", new Vector3[] {v.rt.position, vn.rt.position}, clr, null, 2.0f);
+				line.Draw3D();
+				line.vectorObject.transform.parent = uct.transform;
+			}
+			
+
+
+			return vn;
+		}
+				
+		public void Backup(UCTNode v, double delta){
+			while(v != null){
+				v.visits++;
+				v.delta += delta;
+				if(v.parent != null){
+					v.parent.densityPenalty = Mathf.Max(v.densityPenalty-0.05f, v.parent.densityPenalty);
+				}
+				v = v.parent;
+			}
+		}
+
+		private UCTNode expandWith(UCTNode v, string action, Vector3 golLoc){
+			mModel.startState = v.rt.state;
+			mModel.startLocation = v.rt.position;
+			mModel.startFrame = v.rt.frame;
+			mModel.initializev2();
+			int frame = framesPerStep;
+			mModel.actions.Add (action);
+
+			if(framesPerStep > 1){
+				if(action.Equals("Right") || action.Equals ("Left")){
+					mModel.durations.Add (framesPerStep);
+					int j;
+					for(j = 0; j < framesPerStep; j++){
+						
+						mModel.runFrames(1);
+						float dist = Vector2.Distance(mModel.player.transform.position, golLoc);
+						if(dist < 0.5){
+							mModel.durations[mModel.durations.Count-1] = j+1;
+							break;
+						}
+					}
+					if(j == framesPerStep){
+						frame = j;
+					}
+					else{
+						frame = j+1;
+					}
+					
+				}
+				else{
+					mModel.durations.Add (1);
+					mModel.actions.Add ("wait");
+					mModel.durations.Add (framesPerStep-1);
+					int j;
+					for(j = 0; j < framesPerStep; j++){
+						
+						mModel.runFrames(1);
+						float dist = Vector2.Distance(mModel.player.transform.position, golLoc);
+						if(dist < 0.5){
+							if(j+1 > 1){
+								mModel.durations[mModel.durations.Count-1] = j;
+							}
+							else{
+								mModel.actions.RemoveAt(mModel.actions.Count-1);
+								mModel.durations.RemoveAt(mModel.durations.Count-1);
+							}
+							break;
+						}
+					}
+					if(j == framesPerStep){
+						frame = j;
+					}
+					else{
+						frame = j+1;
+					}
+				}
+			}
+			else{
+				mModel.durations.Add (1);
+				frame = mModel.loopUpdate();
+			}			
+			
+		
+			RTNode toReturnRT = new RTNode(player.transform.position, v.rt.frame + frame, mModel.state);
+				
+			toReturnRT.actions.AddRange (mModel.actions);
+			toReturnRT.durations.AddRange(mModel.durations);
+			toReturnRT.parent = v.rt;
+			v.rt.children.Add(toReturnRT);
+
+			UCTNode toReturn  = new UCTNode();
+			toReturn.rt = toReturnRT;
+			toReturn.parent = v;
+			v.children.Add(toReturn);
+			if(mModel.dead){
+					toReturn.dead = true;
+			}
+			return toReturn;
+
+		}
+						
+		private RTNode reCreatePathUCT(UCTNode v, UCTNode root){
+
+			loopAddUCT(v.rt, root.rt);
+			totalFrames = Mathf.Max (mModel.numFrames, totalFrames);
+			var tempMaterial = new Material(player.renderer.sharedMaterial);
+			tempMaterial.color = mModel.color;
+			player.renderer.sharedMaterial = tempMaterial;
+			if(drawPaths){
+				mModel.drawPath(paths);
+			}
+			
+			RTNode toReturn = new RTNode(v.rt.position, mModel.numFrames, v.rt.state);
+			toReturn.actions.AddRange (mModel.actions);
+			toReturn.durations.AddRange (mModel.durations);
+			return toReturn;
+		}
+		
+		private void loopAddUCT(RTNode node, RTNode root){
+			if(node != root){
+				loopAddUCT(node.parent, root);
+				mModel.actions.AddRange(node.actions);
+				mModel.durations.AddRange(node.durations);
+				mModel.numFrames = node.frame;
+			}
+		}
+		
+		#endregion UCT
+
+		#region LevelTest
+
+	//LevelTest
+		public static int NumFramesAS = 10;
+		public static int DepthAS = 4000;
+		public static int NumFramesUCT = 10;
+		public static int DepthUCT = 4000;
+		public static int Iterations;
+		public static int Depth;
+		public static float MinDistAS = 1f;
+		public static float MaxDistAS = 10f;
+		public static int NodesAS = 100;
+		public static int ASFramesTST = 10;
+		public static int ASDepthTST = 25;
+		public static float MinDistMCT = 1f;
+		public static float MaxDistMCT = 10f;
+		public static int Nodes = 100;
+		public static int MCTIterTST;
+		public static int MCTDepthTST;
+		public static float MinDistUCT = 1f;
+		public static float MaxDistUCT = 10f;
+		public static int NodesUCT = 100;
+		public static int UCTFramesTST = 10;
+		public static int UCTDepthTST = 50;
+
+
+		public static int iters = 2;
+		public static string testFilename = "test.csv";
+
+		private void testLevel(){
+
+			using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+			{
+				file.WriteLine("Type,Iteration,Success,Time,Frames,KeyPresses");
+			}
+			for(int i = 0; i < iters; i++){
+
+				//Astar
+
+				framesPerStep = NumFramesAS;
+				maxDepthAStar = DepthAS;
+				
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				string toWrite = "AStar," + i + ",";
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start();
+				RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				stopwatch.Stop();
+				if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+					toWrite += "0,";
+				}	
+				else{
+					toWrite += "1,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+			}
+
+			for(int i = 0; i < iters; i++){
+
+				//MCT
+
+
+				numIters = Iterations;
+				depthIter = Depth;
+				
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				string toWrite = "MCT," + i + ",";
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				cleanUp();
+				stopwatch.Start();
+				RTNode tmp = MCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				stopwatch.Stop();
+				if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+					toWrite += "0,";
+				}	
+				else{
+					toWrite += "1,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+			}
+
+			for(int i = 0; i < iters; i++){
+				//UCT
+
+
+				framesPerStep = NumFramesUCT;
+				maxDepthAStar = DepthUCT;
+				
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				string toWrite = "UCT," +  i + ",";
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				cleanUp();
+				stopwatch.Start();
+				RTNode tmp = UCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				stopwatch.Stop();
+				if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+					toWrite += "0,";
+				}	
+				else{
+					toWrite += "1,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+
+			}
+
+			for(int i = 0; i < iters; i++){
+				//RRT - Astar
+
+
+
+				minDistRTNodes = MinDistAS;
+				maxDistRTNodes = MaxDistAS;
+				framesPerStep = ASFramesTST;
+				maxDepthAStar = ASDepthTST;
+				rrtIters = NodesAS;
+
+
+				string toWrite = "RRTASTAR," +  i + ",";
+				bool success = false;
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start ();
+				success = RRT(1);
+				stopwatch.Stop();
+				if(success){
+					toWrite += "1,";
+				}
+				else{
+					toWrite += "0,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+
+
+			}
+
+			for(int i = 0; i < iters; i++){
+				//RRT - MCT
+
+
+
+
+				
+				minDistRTNodes = MinDistMCT;
+				maxDistRTNodes = MaxDistMCT;
+				numIters = MCTIterTST;
+				depthIter = MCTDepthTST;
+				rrtIters = Nodes;
+
+
+				
+				string toWrite = "RRTMCT," +  i + ",";
+				bool success = false;
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start ();
+				success = RRT(0);
+				stopwatch.Stop();
+				if(success){
+					toWrite += "1,";
+				}
+				else{
+					toWrite += "0,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+			}
+
+			for(int i = 0; i < iters; i++){
+				//RRT - UCT
+
+
+				
+				minDistRTNodes = MinDistUCT;
+				maxDistRTNodes = MaxDistUCT;
+				framesPerStep = UCTFramesTST;
+				maxDepthAStar = UCTDepthTST;
+				rrtIters = NodesUCT;
+
+				string toWrite = "RRTUCT," +  i + ",";
+				bool success = false;
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start ();
+				success = RRT(2);
+				stopwatch.Stop();
+				if(success){
+					toWrite += "1,";
+				}
+				else{
+					toWrite += "0,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+			}
+			
+			
+		}
+		
+		
+		
+		private int retrieveInputLength(movementModel model){
+			int numKeyPress = 0;
+			int index = 0;
+			string prevAction = "";
+			string curAction;
+			while(index < model.actions.Count){
+				curAction = model.actions[index];
+				if(curAction.Equals(prevAction)){
+					index++;
+				}
+				else{
+					numKeyPress++;
+					index++;
+
+					if (curAction.Equals("jump left")){
+						if(!prevAction.Contains("eft")){
+							numKeyPress++;
+						}
+						prevAction = "Left";
+					}
+					if (curAction.Equals("jump right")){
+						if(!prevAction.Contains("ight")){
+							numKeyPress++;
+						}
+						prevAction = "Right";
+					}
+					else{
+						prevAction = curAction;
+					}
+				}
+
+			}
+			return numKeyPress;
+
+		}
+
+		#endregion LevelTest
+		
+		
+
+
 	}
 }
 

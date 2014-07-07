@@ -9,9 +9,21 @@ public class HPlatMovement : MonoBehaviour {
 	private bool initialized = false;
 	private int totalFrames;
 
+	private int curFrame;
+
+	public void Awake(){
+		initialize();
+		curFrame = 0;
+	}
+
+	void Update(){
+		curFrame++;
+		goToFrame(curFrame);
+	}
+
 	public void initialize(){
 		initialized = true;
-		movementSpeed = 0.075f;
+		movementSpeed = 0.09f;
 		lmostX = transform.FindChild("lmost").position.x;
 		rmostX = transform.FindChild("rmost").position.x;
 		totalFrames = Mathf.CeilToInt((rmostX - lmostX) / movementSpeed) * 2;

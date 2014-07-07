@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UnityEngine;
 
 namespace KDTreeDLL
 {
@@ -48,7 +49,6 @@ namespace KDTreeDLL
             m_root = null;
         }
 
-
         /** 
          * Insert a node in a KD-tree.  Uses algorithm translated from 352.ins.c of
          *
@@ -67,7 +67,7 @@ namespace KDTreeDLL
          * @throws KeySizeException if key.length mismatches K
          * @throws KeyDuplicateException if key already in tree
          */
-        public void insert(double[] key, Object value)
+        public void insert(double[] key, System.Object value)
         {
 
             if (key.Length != m_K)
@@ -98,7 +98,7 @@ namespace KDTreeDLL
          *
          * @throws KeySizeException if key.length mismatches K
          */
-        public Object search(double[] key)
+        public System.Object search(double[] key)
         {
 
             if (key.Length != m_K)
@@ -164,10 +164,10 @@ namespace KDTreeDLL
         * @throws KeySizeException if key.length mismatches K
 
         */
-        public Object nearest(double[] key)
+        public System.Object nearest(double[] key)
         {
 
-            Object[] nbrs = nearest(key, 1);
+            System.Object[] nbrs = nearest(key, 1);
             return nbrs[0];
         }
 
@@ -185,7 +185,7 @@ namespace KDTreeDLL
         * @throws IllegalArgumentException if <I>n</I> is negative or
         * exceeds tree size 
         */
-        public Object[] nearest(double[] key, int n)
+        public System.Object[] nearest(double[] key, int n)
         {
 
             if (n < 0 || n > m_count)
@@ -198,7 +198,7 @@ namespace KDTreeDLL
                 throw new KeySizeException();
             }
 
-            Object[] nbrs = new Object[n];
+            System.Object[] nbrs = new System.Object[n];
             NearestNeighborList nnl = new NearestNeighborList(n);
 
             // initial call is with infinite hyper-rectangle and max distance
@@ -225,11 +225,11 @@ namespace KDTreeDLL
          * @param lowk lower-bounds for key
          * @param uppk upper-bounds for key
          *
-         * @return array of Objects whose keys fall in range [lowk,uppk]
+         * @return array of System.Objects whose keys fall in range [lowk,uppk]
          *
          * @throws KeySizeException on mismatch among lowk.length, uppk.length, or K
          */
-        public Object[] range(double[] lowk, double[] uppk)
+        public System.Object[] range(double[] lowk, double[] uppk)
         {
 
             if (lowk.Length != uppk.Length)
@@ -247,7 +247,7 @@ namespace KDTreeDLL
                 List<KDNode> v = new List<KDNode>();
                 KDNode.rsearch(new HPoint(lowk), new HPoint(uppk),
                        m_root, 0, m_K, v);
-                Object[] o = new Object[v.Count];
+                System.Object[] o = new System.Object[v.Count];
                 for (int i = 0; i < v.Count; ++i)
                 {
                     KDNode n = (KDNode)v[i];
@@ -271,12 +271,12 @@ namespace KDTreeDLL
         {
             // these are seen by KDTree
             protected HPoint k;
-            public Object v;
+            public System.Object v;
             protected KDNode left, right;
             public bool deleted;
 
             // Method ins translated from 352.ins.c of Gonnet & Baeza-Yates
-            public static KDNode ins(HPoint key, Object val, KDNode t, int lev, int K)
+            public static KDNode ins(HPoint key, System.Object val, KDNode t, int lev, int K)
             {
                 if (t == null)
                 {
@@ -524,7 +524,7 @@ namespace KDTreeDLL
 
 
             // constructor is used only by class; other methods are static
-            private KDNode(HPoint key, Object val)
+            private KDNode(HPoint key, System.Object val)
             {
 
                 k = key;

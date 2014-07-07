@@ -8,10 +8,23 @@ public class VPlatMovement : MonoBehaviour {
 	private float tmostY;
 	private bool initialized = false;
 	private int totalFrames;
+
+	private int curFrame;
+
+
+	public void Awake(){
+		initialize();
+		curFrame = 0;
+	}
 	
+	void Update(){
+		curFrame++;
+		goToFrame(curFrame);
+	}
+
 	public void initialize(){
 		initialized = true;
-		movementSpeed = 0.075f;
+		movementSpeed = 0.09f;
 		bmostY = transform.FindChild("bmost").position.y;
 		tmostY = transform.FindChild("tmost").position.y;
 		totalFrames = Mathf.CeilToInt((tmostY - bmostY) / movementSpeed) * 2;

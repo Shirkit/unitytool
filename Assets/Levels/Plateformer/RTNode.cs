@@ -18,6 +18,7 @@ public class RTNode {
 		actions = new List<string>();
 		durations = new List<int>();
 	}
+	
 	public Vector2 position;
 	public int frame;
 	public PlayerState state;

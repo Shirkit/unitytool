@@ -13,13 +13,13 @@ public class PlayerState{
 	public Vector2 gravity;
 
 	public PlayerState(){
-		movementSpeed = 0.1f;
+		movementSpeed = 0.15f;
 		maxJumps = 2;
 		isOnGround = false;
 		numJumps = 0;
 		velocity = new Vector2(0,0);
 		platformVelocity = new Vector2(0,0);
-		gravity = new Vector2(0, -0.025f);
+		gravity = new Vector2(0, -0.020f);
 		jumpPower = 0.5f;
 	}
 
