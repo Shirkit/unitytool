@@ -65,6 +65,8 @@ namespace EditorArea {
 		public static string batchFilename;
 		#endregion var defs
 
+		#region Inits
+
 		[MenuItem("Window/RRTMapper")]
 		static void Init () {
 			PlatformerEditorWindow window = (PlatformerEditorWindow)EditorWindow.GetWindow (typeof(PlatformerEditorWindow));
@@ -98,6 +100,10 @@ namespace EditorArea {
 
 			platsInitialized = true;
 		}
+
+		#endregion Inits
+
+		#region Update/Gui
 
 		void OnGUI () {
 			scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
@@ -309,19 +315,6 @@ namespace EditorArea {
 
 		}
 
-		void goToStart(){
-			goToFrame(0);
-			PlatsGoToFrame(0);
-			goToFrame(0);
-			PlatsGoToFrame(0);
-			goToFrame(0);
-			PlatsGoToFrame(0);
-			goToFrame(0);
-			curFrame = 0;
-			realFrame = 0;
-		}
-
-
 		bool prevDrawPaths;
 		bool pathsMarked;
 
@@ -385,6 +378,8 @@ namespace EditorArea {
 
 
 		}
+
+		#endregion Update/Gui
 
 		#region ImportExport
 
@@ -460,6 +455,20 @@ namespace EditorArea {
 
 		#endregion ImportExport
 
+		#region UtilityMethods
+
+		void goToStart(){
+			goToFrame(0);
+			PlatsGoToFrame(0);
+			goToFrame(0);
+			PlatsGoToFrame(0);
+			goToFrame(0);
+			PlatsGoToFrame(0);
+			goToFrame(0);
+			curFrame = 0;
+			realFrame = 0;
+		}
+
 		private static void PlatsGoToFrame(int curFrame){
 			if(!platsInitialized){
 				initPlat();
@@ -509,6 +518,8 @@ namespace EditorArea {
 			DestroyImmediate(RRTDebug);
 
 		}
+
+		#endregion UtilityMethods
 
 		#region MCT
 		
@@ -2199,7 +2210,35 @@ namespace EditorArea {
 
 	//LevelTest
 
+		public static int iters;
+
 		private void testLevel(){
+
+
+			for(int i = 0; i < iters; i++){
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				string toWrite = framesPerStep + "," + maxDepthAStar + ",";
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start();
+				RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				stopwatch.Stop();
+				if(Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+					toWrite += "false,";
+				}	
+				else{
+					toWrite += "true,";
+				}
+				toWrite += stopwatch.Elapsed;
+				
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+			}
+
 
 		}
 		
