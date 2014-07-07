@@ -1296,7 +1296,7 @@ namespace EditorArea {
 
 					//TODO: 
 					//Add a control for that one
-					if(UnityEngine.Random.Range(0,100)>0.5f)
+					if(UnityEngine.Random.Range(0,100)>0.3f)
 					{
 						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up, 20f);
 
