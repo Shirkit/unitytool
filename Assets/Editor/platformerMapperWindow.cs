@@ -248,6 +248,75 @@ namespace EditorArea {
 				initPlat();
 			}
 
+			#region LevelTest
+			EditorGUILayout.LabelField ("");
+			EditorGUILayout.LabelField ("");
+			EditorGUILayout.LabelField ("Level Test");
+			
+			testFilename = EditorGUILayout.TextField ("Test Filename", testFilename);
+			iters = EditorGUILayout.IntField ("Iteration Per DataSet", iters);
+			
+			EditorGUILayout.LabelField ("A Star Test");
+			NumFramesAS = EditorGUILayout.IntField (" Num Frames", NumFramesAS);
+
+			DepthAS = EditorGUILayout.IntField ("Depth", DepthAS);
+
+			EditorGUILayout.LabelField ("UCT Test");
+			NumFramesUCT = EditorGUILayout.IntField (" Num Frames", NumFramesUCT);
+			
+			DepthUCT = EditorGUILayout.IntField ("Depth", DepthUCT);
+
+			EditorGUILayout.LabelField ("MCT Test");
+			
+			Iterations = EditorGUILayout.IntField("iterations", Iterations);
+			Depth = EditorGUILayout.IntField("min Depth", Depth);
+
+			EditorGUILayout.LabelField ("RRT Test ASTAR");
+			
+			MinDistAS = EditorGUILayout.FloatField("Min Dist", MinDistAS);
+
+			MaxDistAS = EditorGUILayout.FloatField("Max Dist", MaxDistAS);
+
+			NodesAS = EditorGUILayout.IntField("Nodes", NodesAS);
+
+			ASFramesTST = EditorGUILayout.IntField("A Star FPS", ASFramesTST);
+			ASDepthTST = EditorGUILayout.IntField("A Star Depth", ASDepthTST);
+
+
+			EditorGUILayout.LabelField ("RRT Test MCT");
+			
+			MinDistMCT = EditorGUILayout.FloatField("Min Dist", MinDistMCT);
+			
+			MaxDistMCT = EditorGUILayout.FloatField("Max Dist", MaxDistMCT);
+			
+			Nodes = EditorGUILayout.IntField("Nodes", Nodes);
+			
+			MCTIterTST = EditorGUILayout.IntField("MCT Iter", MCTIterTST);
+			MCTDepthTST = EditorGUILayout.IntField("MCT Depth", MCTDepthTST);
+
+			EditorGUILayout.LabelField ("RRT Test UCT");
+			
+			MinDistUCT = EditorGUILayout.FloatField("Min Dist", MinDistUCT);
+			
+			MaxDistUCT = EditorGUILayout.FloatField("Max Dist", MaxDistUCT);
+			
+			NodesUCT = EditorGUILayout.IntField("Nodes", NodesUCT);
+
+			UCTFramesTST = EditorGUILayout.IntField("UCT FPS", UCTFramesTST);
+			UCTDepthTST = EditorGUILayout.IntField("UCT Depth", UCTDepthTST);
+			
+
+			if(GUILayout.Button ("Test Level")){
+				if(!platsInitialized){
+					initPlat();
+				}
+				testLevel();
+			}
+
+			#endregion LevelTest
+
+
+
 
 			EditorGUILayout.LabelField ("");
 			EditorGUILayout.LabelField ("");
@@ -2235,105 +2304,255 @@ namespace EditorArea {
 		#region LevelTest
 
 	//LevelTest
+		public static int NumFramesAS = 10;
+		public static int DepthAS = 4000;
+		public static int NumFramesUCT = 10;
+		public static int DepthUCT = 4000;
+		public static int Iterations;
+		public static int Depth;
+		public static float MinDistAS = 1f;
+		public static float MaxDistAS = 10f;
+		public static int NodesAS = 100;
+		public static int ASFramesTST = 10;
+		public static int ASDepthTST = 25;
+		public static float MinDistMCT = 1f;
+		public static float MaxDistMCT = 10f;
+		public static int Nodes = 100;
+		public static int MCTIterTST;
+		public static int MCTDepthTST;
+		public static float MinDistUCT = 1f;
+		public static float MaxDistUCT = 10f;
+		public static int NodesUCT = 100;
+		public static int UCTFramesTST = 10;
+		public static int UCTDepthTST = 50;
 
-		public static int iters;
-		public static string testFilename;
+
+		public static int iters = 2;
+		public static string testFilename = "test.csv";
 
 		private void testLevel(){
 
-
+			using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+			{
+				file.WriteLine("Type,Iteration,Success,Time,Frames,KeyPresses");
+			}
 			for(int i = 0; i < iters; i++){
 
 				//Astar
 
+				framesPerStep = NumFramesAS;
+				maxDepthAStar = DepthAS;
+				
 				realFrame = 0;
 				curFrame = 0;
 				PlatsGoToFrame(0);
-				string toWrite = framesPerStep + "," + maxDepthAStar + ",";
+				string toWrite = "AStar," + i + ",";
 				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
 				stopwatch.Start();
 				RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				stopwatch.Stop();
-				if(Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+				if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
 					toWrite += "0,";
 				}	
 				else{
 					toWrite += "1,";
 				}
 				toWrite += stopwatch.ElapsedMilliseconds;
-				
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
 				
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 				{
 					file.WriteLine(toWrite);
 				}
+			}
 
+			for(int i = 0; i < iters; i++){
 
 				//MCT
 
+
+				numIters = Iterations;
+				depthIter = Depth;
+				
 				realFrame = 0;
 				curFrame = 0;
 				PlatsGoToFrame(0);
-				toWrite = numIters + "," + depthIter + ",";
-				stopwatch = new System.Diagnostics.Stopwatch();
+				string toWrite = "MCT," + i + ",";
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
 				cleanUp();
 				stopwatch.Start();
-				tmp = MCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				RTNode tmp = MCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				stopwatch.Stop();
-				if(Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+				if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
 					toWrite += "0,";
 				}	
 				else{
 					toWrite += "1,";
 				}
 				toWrite += stopwatch.ElapsedMilliseconds;
-				
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
 				
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 				{
 					file.WriteLine(toWrite);
 				}
+			}
 
+			for(int i = 0; i < iters; i++){
 				//UCT
 
+
+				framesPerStep = NumFramesUCT;
+				maxDepthAStar = DepthUCT;
+				
 				realFrame = 0;
 				curFrame = 0;
 				PlatsGoToFrame(0);
-				toWrite = framesPerStep + "," + maxDepthAStar + ",";
-				stopwatch = new System.Diagnostics.Stopwatch();
+				string toWrite = "UCT," +  i + ",";
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
 				cleanUp();
 				stopwatch.Start();
-				tmp = UCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				RTNode tmp = UCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				stopwatch.Stop();
-				if(Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+				if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
 					toWrite += "0,";
 				}	
 				else{
 					toWrite += "1,";
 				}
 				toWrite += stopwatch.ElapsedMilliseconds;
-				
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
 				
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 				{
 					file.WriteLine(toWrite);
 				}
 
+			}
 
+			for(int i = 0; i < iters; i++){
 				//RRT - Astar
 
 
+
+				minDistRTNodes = MinDistAS;
+				maxDistRTNodes = MaxDistAS;
+				framesPerStep = ASFramesTST;
+				maxDepthAStar = ASDepthTST;
+				rrtIters = NodesAS;
+
+
+				string toWrite = "RRTASTAR," +  i + ",";
+				bool success = false;
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start ();
+				success = RRT(1);
+				stopwatch.Stop();
+				if(success){
+					toWrite += "1,";
+				}
+				else{
+					toWrite += "0,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+
+
+			}
+
+			for(int i = 0; i < iters; i++){
 				//RRT - MCT
 
 
-				//RRT - UCT
+
+
+				
+				minDistRTNodes = MinDistMCT;
+				maxDistRTNodes = MaxDistMCT;
+				numIters = MCTIterTST;
+				depthIter = MCTDepthTST;
+				rrtIters = Nodes;
+
+
+				
+				string toWrite = "RRTMCT," +  i + ",";
+				bool success = false;
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start ();
+				success = RRT(0);
+				stopwatch.Stop();
+				if(success){
+					toWrite += "1,";
+				}
+				else{
+					toWrite += "0,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
 			}
 
+			for(int i = 0; i < iters; i++){
+				//RRT - UCT
 
+
+				
+				minDistRTNodes = MinDistUCT;
+				maxDistRTNodes = MaxDistUCT;
+				framesPerStep = UCTFramesTST;
+				maxDepthAStar = UCTDepthTST;
+				rrtIters = NodesUCT;
+
+				string toWrite = "RRTUCT," +  i + ",";
+				bool success = false;
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+				stopwatch.Start ();
+				success = RRT(2);
+				stopwatch.Stop();
+				if(success){
+					toWrite += "1,";
+				}
+				else{
+					toWrite += "0,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				toWrite += "," + mModel.numFrames;
+				toWrite += "," + retrieveInputLength(mModel);
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+			}
+			
+			
 		}
 		
-
-
+		
+		
 		private int retrieveInputLength(movementModel model){
 			int numKeyPress = 0;
 			int index = 0;
@@ -2373,13 +2592,6 @@ namespace EditorArea {
 		#endregion LevelTest
 		
 		
-		
-		
-		
-		
-		
-		
-
 
 
 	}
