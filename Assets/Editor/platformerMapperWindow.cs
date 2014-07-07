@@ -206,6 +206,7 @@ namespace EditorArea {
 			}
 
 			threedee = EditorGUILayout.Toggle ("Astar3d", threedee);
+			minDist = EditorGUILayout.FloatField("Min Dist Astar", minDist);
 
 			if(GUILayout.Button ("AStarSearch")){
 				cleanUpRRTDebug();
@@ -811,7 +812,7 @@ namespace EditorArea {
 						pos2 = new Vector3(closest.position.x, closest.position.y,0);
 					}
 					
-					if(Vector3.Distance(pos1, pos2) < 1.5f)
+					if(Vector3.Distance(pos1, pos2) < minDist)
 					{
 						continue;
 					}
@@ -956,6 +957,8 @@ namespace EditorArea {
 			}
 		}
 
+		public float minDist = 1.5f;
+
 		private void tryDoAction(RTNode cur, string action, Vector3 golLoc){
 
 			RTNode nex = addAction(cur, action, golLoc);
@@ -1015,7 +1018,7 @@ namespace EditorArea {
 							pos1 = new Vector3(nex.position.x, nex.position.y,0);
 							pos2 = new Vector3(closest.position.x, closest.position.y,0);
 						}
-						if(Vector3.Distance(pos1, pos2) > 1.5f)
+						if(Vector3.Distance(pos1, pos2) > minDist)
 						{
 							heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
 							statesExplored++;
@@ -1187,7 +1190,13 @@ namespace EditorArea {
 				Vector3 tr = GameObject.Find ("topRight").transform.position;
 				rrtTrees[j] = new KDTree(2);
 				roots[j] = new RTNode(startingLoc, 0, new PlayerState());
+				try{
 				rrtTrees[j].insert(new double[] {roots[j].position.x, roots[j].position.y} ,roots[j]);
+				}
+				catch(System.Exception e){
+					Debug.Log ("LOCATION 1");
+					throw e;
+				}
 				q = 0;
 
 				
@@ -1467,7 +1476,13 @@ namespace EditorArea {
 						final.parent = closest;
 						closest.children.Add (final);
 						final.frame = closest.frame + final.frame;
+						try{
 						rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
+						}
+						catch(System.Exception e){
+							Debug.Log ("LOCATION 2");
+							throw e;
+						}
 						
 						if((new Vector3(final.position.x, final.position.y, 10) - goalLoc).magnitude < 0.5)
 						{
@@ -1505,7 +1520,10 @@ namespace EditorArea {
 				else{
 					final = UCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
-				if(final != null){
+				if(Vector2.Distance (final.position, goalLoc) < 0.5f){
+
+
+
 					if(debugMode){
 						VectorLine line = new VectorLine("RRT", new Vector3[] {node.position, final.position}, Color.red, null, 2.0f);
 						line.Draw3D();
@@ -1514,7 +1532,13 @@ namespace EditorArea {
 					final.parent = node;
 					node.children.Add (final);
 					final.frame = node.frame + final.frame;
+					try{
 					rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
+					}
+					catch(System.Exception e){
+						Debug.Log ("LOCATION 3");
+						throw e;
+					}
 					goalNodes[j] = final;
 					return true;
 				}
@@ -2340,6 +2364,7 @@ namespace EditorArea {
 				}
 
 			}
+			return numKeyPress;
 
 		}
 
