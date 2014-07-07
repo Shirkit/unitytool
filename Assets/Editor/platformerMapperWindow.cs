@@ -2211,11 +2211,15 @@ namespace EditorArea {
 	//LevelTest
 
 		public static int iters;
+		public static string testFilename;
 
 		private void testLevel(){
 
 
 			for(int i = 0; i < iters; i++){
+
+				//Astar
+
 				realFrame = 0;
 				curFrame = 0;
 				PlatsGoToFrame(0);
@@ -2225,24 +2229,120 @@ namespace EditorArea {
 				RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				stopwatch.Stop();
 				if(Vector2.Distance(tmp.position, goalLoc) > 0.5f){
-					toWrite += "false,";
+					toWrite += "0,";
 				}	
 				else{
-					toWrite += "true,";
+					toWrite += "1,";
 				}
-				toWrite += stopwatch.Elapsed;
+				toWrite += stopwatch.ElapsedMilliseconds;
 				
 				
-				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 				{
 					file.WriteLine(toWrite);
 				}
+
+
+				//MCT
+
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				toWrite = numIters + "," + depthIter + ",";
+				stopwatch = new System.Diagnostics.Stopwatch();
+				cleanUp();
+				stopwatch.Start();
+				tmp = MCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				stopwatch.Stop();
+				if(Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+					toWrite += "0,";
+				}	
+				else{
+					toWrite += "1,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+
+				//UCT
+
+				realFrame = 0;
+				curFrame = 0;
+				PlatsGoToFrame(0);
+				toWrite = framesPerStep + "," + maxDepthAStar + ",";
+				stopwatch = new System.Diagnostics.Stopwatch();
+				cleanUp();
+				stopwatch.Start();
+				tmp = UCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
+				stopwatch.Stop();
+				if(Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+					toWrite += "0,";
+				}	
+				else{
+					toWrite += "1,";
+				}
+				toWrite += stopwatch.ElapsedMilliseconds;
+				
+				
+				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+				{
+					file.WriteLine(toWrite);
+				}
+
+
+				//RRT - Astar
+
+
+				//RRT - MCT
+
+
+				//RRT - UCT
 			}
 
 
 		}
 		
-		
+
+
+		private int retrieveInputLength(movementModel model){
+			int numKeyPress = 0;
+			int index = 0;
+			string prevAction = "";
+			string curAction;
+			while(index < model.actions.Count){
+				curAction = model.actions[index];
+				if(curAction.Equals(prevAction)){
+					index++;
+				}
+				else{
+					numKeyPress++;
+					index++;
+
+					if (curAction.Equals("jump left")){
+						if(!prevAction.Contains("eft")){
+							numKeyPress++;
+						}
+						prevAction = "Left";
+					}
+					if (curAction.Equals("jump right")){
+						if(!prevAction.Contains("ight")){
+							numKeyPress++;
+						}
+						prevAction = "Right";
+					}
+					else{
+						prevAction = curAction;
+					}
+				}
+
+			}
+
+		}
+
 		#endregion LevelTest
 		
 		
