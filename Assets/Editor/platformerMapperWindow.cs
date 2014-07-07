@@ -386,6 +386,8 @@ namespace EditorArea {
 
 		}
 
+		#region ImportExport
+
 		private void exportPaths(){
 			foreach(movementModel model in mModels){
 				if(model != null){
@@ -456,6 +458,8 @@ namespace EditorArea {
 			}
 		}
 
+		#endregion ImportExport
+
 		private static void PlatsGoToFrame(int curFrame){
 			if(!platsInitialized){
 				initPlat();
@@ -481,19 +485,6 @@ namespace EditorArea {
 
 			PlatsGoToFrame(curFrame);
 		}		
-				
-		private void multiMCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
-			cleanUp();
-			count = 0;
-
-			for(int i = 0; i < numPlayers; i++){
-				MCTSearch(startLoc, golLoc, state, frame);
-				count++;
-			}
-			if(showDeaths){
-				totalFrames = totalFrames + 1000;
-			}
-		}
 
 		private void cleanUp(){
 			DestroyImmediate(astar);
@@ -517,6 +508,21 @@ namespace EditorArea {
 		private void cleanUpRRTDebug(){
 			DestroyImmediate(RRTDebug);
 
+		}
+
+		#region MCT
+		
+		private void multiMCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
+			cleanUp();
+			count = 0;
+			
+			for(int i = 0; i < numPlayers; i++){
+				MCTSearch(startLoc, golLoc, state, frame);
+				count++;
+			}
+			if(showDeaths){
+				totalFrames = totalFrames + 1000;
+			}
 		}
 
 		private RTNode MCTSearch(Vector3 startLoc,Vector3 golLoc, PlayerState state, int frame){
@@ -695,6 +701,10 @@ namespace EditorArea {
 			}
 			return false;
 		}
+
+		#endregion MCT
+
+		#region AStar
 
 		public bool asGoalReached;
 		public PriorityQueue<RTNode, double> heap;
@@ -1102,6 +1112,8 @@ namespace EditorArea {
 			}
 		}
 
+		#endregion AStar
+
 		private void printSolution(){
 			int i = 0;
 			while(i < mModel.durations.Count){
@@ -1109,6 +1121,9 @@ namespace EditorArea {
 				i++;
 			}
 		}
+
+
+		#region RRT
 
 		public bool[] goalReached;
 		public static int rrtIters = 100;
@@ -1510,6 +1525,10 @@ namespace EditorArea {
 			}
 		}
 
+		#endregion RRT
+
+		#region Batch
+
 		//Batch Computations Code
 
 		#region batchCompute vars
@@ -1702,6 +1721,9 @@ namespace EditorArea {
 			goToFrame(0);
 		}
 
+		#endregion Batch
+
+		#region failedKeyboardAttempt
 		void initializeKeyboard(){
 			if(!platsInitialized){
 				initPlat();
@@ -1772,6 +1794,10 @@ namespace EditorArea {
 				return "wait";
 			}*/
 		}
+
+		#endregion failedKeyboardAttempt
+
+		#region UCT
 
 	//UCTSEARCH
 
@@ -2167,11 +2193,18 @@ namespace EditorArea {
 			}
 		}
 		
+		#endregion UCT
+
+		#region LevelTest
+
+	//LevelTest
+
+		private void testLevel(){
+
+		}
 		
 		
-		
-		
-		
+		#endregion LevelTest
 		
 		
 		
