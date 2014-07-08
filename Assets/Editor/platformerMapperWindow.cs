@@ -1016,6 +1016,7 @@ namespace EditorArea {
 			RTNode toReturn = new RTNode(asGoalNode.position, mModel.numFrames, asGoalNode.state);
 			toReturn.actions.AddRange (mModel.actions);
 			toReturn.durations.AddRange (mModel.durations);
+			Debug.Log (" Number of frames : " + mModel.numFrames);
 			return toReturn;
 		}
 			
@@ -1438,6 +1439,7 @@ namespace EditorArea {
 					mModel.startLocation = startingLoc;
 					mModel.initializev2();
 					mModels.Add (mModel);
+					mModel.numFrames = 0;
 
 					loopAdd(goalNodes[j], j);
 					totalFrames = Mathf.Max(mModel.numFrames, totalFrames);
@@ -1458,7 +1460,7 @@ namespace EditorArea {
 				}
 			}
 
-
+			Debug.Log ("Num Frames : " + mModel.numFrames);
 			
 		}
 
@@ -1551,7 +1553,9 @@ namespace EditorArea {
 
 						final.parent = closest;
 						closest.children.Add (final);
-						final.frame = closest.frame + final.frame;
+						if(useMCT == 1){
+							final.frame = closest.frame + final.frame;
+						}
 						try{
 						rrtTrees[j].insert(new double[] {final.position.x, final.position.y}, final);
 						}
@@ -1944,7 +1948,26 @@ namespace EditorArea {
 				uctTex = new Texture2D(uctGridX, uctGridY);
 				uctText.transform.parent = uct.transform;
 			}
-			
+
+			GameObject modelObj2 = Instantiate(modelFab) as GameObject;
+			modelObj2.name = "testmodel";
+			GameObject player2 = Instantiate(playerFab) as GameObject;
+			player2.name = "testplayer";
+			movementModel mModel2 = modelObj2.GetComponent<movementModel>() as movementModel;
+			mModel2.player = player2;
+			mModel2.startState = state;
+			mModel2.startLocation = startLoc;
+			mModel2.startFrame = frame;
+			mModel2.hplatmovers = hplatmovers;
+			mModel2.vplatmovers = vplatmovers;
+
+
+
+
+
+
+
+
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + count;
 			modelObj.transform.parent = models.transform;
@@ -2062,15 +2085,34 @@ namespace EditorArea {
 			}
 
 			if(success || showDeaths){
+			
 				mModel.startState = state;
 				mModel.startFrame = frame;
 				mModel.startLocation = startLoc;
 				mModel.initializev2();
 				mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
-				
-				return reCreatePathUCT(v, root);
+				RTNode toReturn = reCreatePathUCT(v, root);
+				mModel2.initializev2();
+				mModel2.actions.AddRange(toReturn.actions);
+				mModel2.durations.AddRange(toReturn.durations);
+				mModel2.loopUpdate();
+				if((player2.transform.position - golLoc).magnitude > 0.5){
+					DestroyImmediate(modelObj2);
+					DestroyImmediate(player2);
+					return null;
+				}
+				else{
+					DestroyImmediate(modelObj2);
+					DestroyImmediate(player2);
+					return toReturn;
+				}
+
 			}
 			else{
+				DestroyImmediate(modelObj2);
+				DestroyImmediate(player2);
+				//Debug.Log (mModel.numFrames);
+
 				return null;
 
 				if(cls.dead)
