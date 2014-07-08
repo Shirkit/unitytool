@@ -966,6 +966,7 @@ namespace EditorArea {
 				}
 			}
 			if(asGoalReached){
+
 				count = 0;
 				mModel.startFrame = frame;
 				mModel.startState = state;
@@ -983,6 +984,7 @@ namespace EditorArea {
 				mModel2.durations.AddRange(toReturn.durations);
 				mModel2.loopUpdate();
 				if((player2.transform.position - golLoc).magnitude > 0.5){
+
 					DestroyImmediate(modelObj2);
 					DestroyImmediate(player2);
 					return null;
@@ -2407,9 +2409,12 @@ namespace EditorArea {
 				stopwatch.Start();
 				RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				stopwatch.Stop();
-				if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+				if(tmp == null){
 					toWrite += "0,";
-				}	
+				}
+				else if( Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+					toWrite += "3,";
+				}
 				else{
 					toWrite += "1,";
 				}
@@ -2422,6 +2427,7 @@ namespace EditorArea {
 					file.WriteLine(toWrite);
 				}
 			}
+			/*
 			threedee = true;
 			for(int i = 0; i < iters; i++){
 				
@@ -2633,7 +2639,7 @@ namespace EditorArea {
 				{
 					file.WriteLine(toWrite);
 				}
-			}
+			}*/
 			
 			
 		}
