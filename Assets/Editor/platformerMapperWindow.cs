@@ -310,6 +310,8 @@ namespace EditorArea {
 				if(!platsInitialized){
 					initPlat();
 				}
+				startingLoc = GameObject.Find ("startingPosition").transform.position;
+				goalLoc = GameObject.Find("goalPosition").transform.position;
 				testLevel();
 			}
 
@@ -2065,7 +2067,7 @@ namespace EditorArea {
 				return reCreatePathUCT(v, root);
 			}
 			else{
-				if(v.dead){
+				if(cls.dead){
 					return null;
 				}
 				else{
