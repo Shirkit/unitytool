@@ -1596,7 +1596,7 @@ namespace EditorArea {
 				else{
 					final = UCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
 				}
-				if(Vector2.Distance (final.position, goalLoc) < 0.5f){
+				if(final != null && Vector2.Distance (final.position, goalLoc) < 0.5f){
 
 
 
@@ -1955,6 +1955,7 @@ namespace EditorArea {
 			mModel.hplatmovers = hplatmovers;
 			mModel.vplatmovers = vplatmovers;
 			mModel.player = player;
+			mModel.numFrames = 0;
 			mModels.Add (mModel);
 			count++;
 			
@@ -2050,13 +2051,13 @@ namespace EditorArea {
 				
 				Sprite s = AssetDatabase.LoadAssetAtPath(
 					"Assets/Levels/Plateformer/Graphics/UCTDensity.png", typeof(Sprite)) as Sprite;
-				Debug.Log ("s-" + s);
-				Debug.Log ("r-" + r);
+				//Debug.Log ("s-" + s);
+				//Debug.Log ("r-" + r);
 
 
 				r.sprite = s;  
-				Debug.Log ("rspr-" + r.sprite);
-				Debug.Log (uctText.GetComponent<SpriteRenderer>().sprite);
+				//Debug.Log ("rspr-" + r.sprite);
+				//Debug.Log (uctText.GetComponent<SpriteRenderer>().sprite);
 
 			}
 
@@ -2205,6 +2206,7 @@ namespace EditorArea {
 			mModel.startState = v.rt.state;
 			mModel.startLocation = v.rt.position;
 			mModel.startFrame = v.rt.frame;
+			//mModel.numFrames = 0;
 			mModel.initializev2();
 			int frame = framesPerStep;
 			mModel.actions.Add (action);
@@ -2296,6 +2298,8 @@ namespace EditorArea {
 			RTNode toReturn = new RTNode(v.rt.position, mModel.numFrames, v.rt.state);
 			toReturn.actions.AddRange (mModel.actions);
 			toReturn.durations.AddRange (mModel.durations);
+
+			//Debug.Log ("Frame numbr is: " + mModel.numFrames);
 			return toReturn;
 		}
 		
@@ -2407,7 +2411,7 @@ namespace EditorArea {
 					file.WriteLine(toWrite);
 				}
 			}
-
+			threedee = false;
 			for(int i = 0; i < iters; i++){
 
 				//MCT
