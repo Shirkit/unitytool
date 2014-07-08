@@ -1298,12 +1298,16 @@ namespace EditorArea {
 
 					//TODO: 
 					//Add a control for that one
-					if(UnityEngine.Random.Range(0,100)>0.3f)
+					if(UnityEngine.Random.Range(0,100)>0)
 					{
-						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up, 20f);
+						RaycastHit2D returnCast = Physics2D.Raycast(new Vector3(x,y),- Vector3.up, 200f);
 
-						if(returnCast.collider != null && returnCast.collider.tag == "Floor")
+						if(returnCast.collider != null )//&& returnCast.collider.tag == "Floor")
 						{
+							if(Vector2.Distance(returnCast.point,new Vector3(x,y))>5f)
+							{
+								y = returnCast.point.y+0.5f; 
+							}
 							//VectorLine line = new VectorLine("linecast", new Vector3[] {new Vector3(x,y), 
 							//	returnCast.point}, Color.blue, null, 1.0f);
 							//line.Draw3D();
@@ -1313,7 +1317,6 @@ namespace EditorArea {
 							//Draw lines
 
 							//Debug.Log(returnCast.collider.name); 
-							y = returnCast.point.y+0.5f; 
 						}
 
 					}
@@ -2067,10 +2070,14 @@ namespace EditorArea {
 				return reCreatePathUCT(v, root);
 			}
 			else{
-				if(cls.dead){
+				return null;
+
+				if(cls.dead)
+				{
 					return null;
 				}
-				else{
+				else
+				{
 					mModel.startState = state;
 					mModel.startFrame = frame;
 					mModel.startLocation = startLoc;
