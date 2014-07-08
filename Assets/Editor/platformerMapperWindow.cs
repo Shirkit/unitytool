@@ -2310,30 +2310,30 @@ namespace EditorArea {
 		
 		#endregion UCT
 
-		#region LevelTest
+		#region LevelTest  
 
 	//LevelTest
 		public static int NumFramesAS = 10;
 		public static int DepthAS = 4000;
 		public static int NumFramesUCT = 10;
-		public static int DepthUCT = 4000;
-		public static int Iterations;
-		public static int Depth;
+		public static int DepthUCT = 8000;
+		public static int Iterations = 25;
+		public static int Depth= 1000;
 		public static float MinDistAS = 1f;
 		public static float MaxDistAS = 10f;
-		public static int NodesAS = 100;
+		public static int NodesAS = 400;
 		public static int ASFramesTST = 10;
 		public static int ASDepthTST = 25;
 		public static float MinDistMCT = 1f;
 		public static float MaxDistMCT = 10f;
-		public static int Nodes = 100;
-		public static int MCTIterTST;
-		public static int MCTDepthTST;
+		public static int Nodes = 400;
+		public static int MCTIterTST = 8;
+		public static int MCTDepthTST = 20;
 		public static float MinDistUCT = 1f;
 		public static float MaxDistUCT = 10f;
-		public static int NodesUCT = 100;
+		public static int NodesUCT = 400;
 		public static int UCTFramesTST = 10;
-		public static int UCTDepthTST = 50;
+		public static int UCTDepthTST = 80;
 
 
 		public static int iters = 2;
