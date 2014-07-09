@@ -13,3 +13,11 @@ AStar2,1,0,417,631,42
 Type,Iteration,Success,Time,Frames,KeyPresses
 AStar2,0,1,278,631,42
 AStar2,1,1,291,631,42
+Type,Iteration,Success,Time,Frames,KeyPresses
+AStar2,0,0,99,0,1
+AStar3,0,0,2697,0,3
+MCT,0,0,518,2507,179
+UCT,0,0,1676,0,1
+RRTASTAR,0,1,4123,938,89
+RRTMCT,0,0,6074,59,6
+RRTUCT,0,0,9362,383,1
