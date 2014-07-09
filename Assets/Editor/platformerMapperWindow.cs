@@ -69,15 +69,16 @@ namespace EditorArea {
 			DestroyImmediate(GameObject.Find("arrows"));
 			GameObject arws = new GameObject ("arrows");
 			Texture2D frontTex = Resources.Load ("arrowStart") as Texture2D;
+			Material arrowMat = Resources.Load ("Arrow") as Material;
 			VectorLine.SetEndCap ("Arrow", EndCap.None);
-			VectorLine.SetEndCap("Arrow", EndCap.Mirror, Resources.Load ("Arrow") as Material , frontTex);
+			VectorLine.SetEndCap("Arrow", EndCap.Mirror, arrowMat , frontTex);
 			
 			
 			foreach(HPlatMovement hplat in hplatmovers){
 				Vector3 tmp = new Vector3(hplat.lmostX, hplat.gameObject.transform.position.y, -5);
 				Vector3 tmp2 = new Vector3(hplat.rmostX, hplat.gameObject.transform.position.y, -5);
 				
-				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, null, 2.0f, LineType.Continuous);
+				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, arrowMat, 7f, LineType.Continuous);
 				line.vectorObject.transform.parent = arws.transform;
 				line.endCap = "Arrow";
 				line.Draw3D();
@@ -86,7 +87,7 @@ namespace EditorArea {
 				Vector3 tmp = new Vector3(vplat.gameObject.transform.position.x, vplat.bmostY, -5);
 				Vector3 tmp2 = new Vector3(vplat.gameObject.transform.position.x, vplat.tmostY, -5);
 				
-				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, null, 2.0f, LineType.Continuous);
+				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, arrowMat, 7f, LineType.Continuous);
 				line.vectorObject.transform.parent = arws.transform;
 				line.endCap = "Arrow";
 				line.Draw3D();
