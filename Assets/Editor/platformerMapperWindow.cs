@@ -2427,7 +2427,7 @@ namespace EditorArea {
 					file.WriteLine(toWrite);
 				}
 			}
-			/*
+
 			threedee = true;
 			for(int i = 0; i < iters; i++){
 				
@@ -2639,7 +2639,7 @@ namespace EditorArea {
 				{
 					file.WriteLine(toWrite);
 				}
-			}*/
+			}
 			
 			
 		}
