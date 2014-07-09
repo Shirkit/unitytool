@@ -1277,8 +1277,12 @@ namespace EditorArea {
 		public static float addedX;
 		public static float addedY;
 
+		public static int statesExploredRRT;
+
 		private bool RRT(int useMCT){
 			cleanUp();
+			statesExploredRRT = 0;
+
 			if(debugMode){
 
 				//TODO: Put it in a clean place. The RRT Gameobject is never 
@@ -1463,6 +1467,10 @@ namespace EditorArea {
 			}
 			cleanUp();
 			reCreatePath();
+			if(debugMode){
+				Debug.Log (statesExploredRRT);
+			}
+
 			if(goalReached[0]){
 				return true;
 			}
@@ -1558,10 +1566,12 @@ namespace EditorArea {
 				else if (useMCT == 1)
 				{
 					final = AStarSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
+					statesExploredRRT += statesExploredAS;
 				}
 				else
 				{
 					final = UCTSearch(new Vector3(closest.position.x, closest.position.y, 10), new Vector3(x, y, 10), closest.state, closest.frame);
+					statesExploredRRT += statesExploredUCT;
 				}
 				if(final != null)
 				{
@@ -1649,9 +1659,11 @@ namespace EditorArea {
 				}
 				else if (useMCT == 1){
 					final = AStarSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
+					statesExploredRRT += statesExploredAS;
 				}
 				else{
 					final = UCTSearch(new Vector3(node.position.x, node.position.y, 10), goalLoc, node.state, node.frame);
+					statesExploredRRT += statesExploredUCT;
 				}
 				if(final != null && Vector2.Distance (final.position, goalLoc) < 0.5f){
 
@@ -2138,6 +2150,8 @@ namespace EditorArea {
 				//Debug.Log ("rspr-" + r.sprite);
 				//Debug.Log (uctText.GetComponent<SpriteRenderer>().sprite);
 
+				Debug.Log("States Explored: " + statesExploredUCT);
+
 			}
 
 			if(success || showDeaths){
@@ -2301,6 +2315,8 @@ namespace EditorArea {
 		}
 
 		private UCTNode expandWith(UCTNode v, string action, Vector3 golLoc){
+			statesExploredUCT++;
+
 			mModel.startState = v.rt.state;
 			mModel.startLocation = v.rt.position;
 			mModel.startFrame = v.rt.frame;
@@ -2453,7 +2469,7 @@ namespace EditorArea {
 
 			using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 			{
-				file.WriteLine("Type,Iteration,Success,Time,Frames,KeyPresses");
+				file.WriteLine("Type,Iteration,Success,Time,Frames,KeyPresses,StatesExplored");
 			}
 			threedee = false;
 			if(as2B){
@@ -2484,7 +2500,8 @@ namespace EditorArea {
 				toWrite += stopwatch.ElapsedMilliseconds;
 				toWrite += "," + mModel.numFrames;
 				toWrite += "," + retrieveInputLength(mModel);
-				
+				toWrite += "," + statesExploredAS;
+
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 				{
 					file.WriteLine(toWrite);
@@ -2517,7 +2534,8 @@ namespace EditorArea {
 					toWrite += stopwatch.ElapsedMilliseconds;
 					toWrite += "," + mModel.numFrames;
 					toWrite += "," + retrieveInputLength(mModel);
-					
+					toWrite += "," + statesExploredAS;
+
 					using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 					{
 						file.WriteLine(toWrite);
@@ -2585,7 +2603,8 @@ namespace EditorArea {
 				toWrite += stopwatch.ElapsedMilliseconds;
 				toWrite += "," + mModel.numFrames;
 				toWrite += "," + retrieveInputLength(mModel);
-				
+				toWrite += "," + statesExploredUCT;
+
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 				{
 					file.WriteLine(toWrite);
@@ -2625,6 +2644,7 @@ namespace EditorArea {
 				toWrite += stopwatch.ElapsedMilliseconds;
 				toWrite += "," + mModel.numFrames;
 				toWrite += "," + retrieveInputLength(mModel);
+				toWrite += "," + statesExploredRRT;
 
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 				{
@@ -2706,7 +2726,8 @@ namespace EditorArea {
 				toWrite += stopwatch.ElapsedMilliseconds;
 				toWrite += "," + mModel.numFrames;
 				toWrite += "," + retrieveInputLength(mModel);
-				
+				toWrite += "," + statesExploredRRT;
+
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
 				{
 					file.WriteLine(toWrite);
