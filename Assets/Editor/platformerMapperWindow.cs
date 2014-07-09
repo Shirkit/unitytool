@@ -69,6 +69,7 @@ namespace EditorArea {
 			DestroyImmediate(GameObject.Find("arrows"));
 			GameObject arws = new GameObject ("arrows");
 			Texture2D frontTex = Resources.Load ("arrowStart") as Texture2D;
+			VectorLine.SetEndCap ("Arrow", EndCap.None);
 			VectorLine.SetEndCap("Arrow", EndCap.Mirror, Resources.Load ("Arrow") as Material , frontTex);
 			
 			
