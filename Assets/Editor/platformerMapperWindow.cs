@@ -619,6 +619,10 @@ namespace EditorArea {
 
 		private void cleanUpRRTDebug(){
 			DestroyImmediate(RRTDebug);
+			while(GameObject.Find ("RRT") != null){
+				DestroyImmediate(GameObject.Find ("RRT"));
+			}
+				            
 
 		}
 
@@ -1049,7 +1053,7 @@ namespace EditorArea {
 			RTNode toReturn = new RTNode(asGoalNode.position, mModel.numFrames, asGoalNode.state);
 			toReturn.actions.AddRange (mModel.actions);
 			toReturn.durations.AddRange (mModel.durations);
-			Debug.Log (" Number of frames : " + mModel.numFrames);
+			//Debug.Log (" Number of frames : " + mModel.numFrames);
 			return toReturn;
 		}
 			
@@ -1495,7 +1499,7 @@ namespace EditorArea {
 				}
 			}
 
-			Debug.Log ("Num Frames : " + mModel.numFrames);
+			//Debug.Log ("Num Frames : " + mModel.numFrames);
 			
 		}
 
