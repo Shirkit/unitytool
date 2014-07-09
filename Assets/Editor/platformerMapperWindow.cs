@@ -65,35 +65,6 @@ namespace EditorArea {
 		public static string batchFilename;
 		#endregion var defs
 
-
-		public static void drawArrows(){
-			DestroyImmediate(GameObject.Find("arrows"));
-			GameObject arws = new GameObject ("arrows");
-			Texture2D frontTex = Resources.Load ("arrowStart") as Texture2D;
-			VectorLine.SetEndCap("Arrow", EndCap.Mirror, Resources.Load ("Arrow") as Material , frontTex);
-
-
-			foreach(HPlatMovement hplat in hplatmovers){
-				Vector3 tmp = new Vector3(hplat.lmostX, hplat.gameObject.transform.position.y, -5);
-				Vector3 tmp2 = new Vector3(hplat.rmostX, hplat.gameObject.transform.position.y, -5);
-
-				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, null, 2.0f, LineType.Continuous);
-				line.vectorObject.transform.parent = arws.transform;
-				line.endCap = "Arrow";
-				line.Draw3D();
-			}
-			foreach(VPlatMovement vplat in vplatmovers){
-				Vector3 tmp = new Vector3(vplat.gameObject.transform.position.x, vplat.bmostY, -5);
-				Vector3 tmp2 = new Vector3(vplat.gameObject.transform.position.x, vplat.tmostY, -5);
-
-				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, null, 2.0f, LineType.Continuous);
-				line.vectorObject.transform.parent = arws.transform;
-				line.endCap = "Arrow";
-				line.Draw3D();
-			}
-		}
-
-
 		#region Inits
 
 		[MenuItem("Window/RRTMapper")]
@@ -136,10 +107,6 @@ namespace EditorArea {
 
 		void OnGUI () {
 			scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
-
-			if(GUILayout.Button ("Draw Moving Platform Lines")){
-				drawArrows();
-			}
 
 
 
@@ -1340,6 +1307,8 @@ namespace EditorArea {
 
 						if(returnCast.collider != null )//&& returnCast.collider.tag == "Floor")
 						{
+							if(returnCast.collider.gameObject.tag == "Lethals")
+								continue; 
 							if(Vector2.Distance(returnCast.point,new Vector3(x,y))>5f)
 							{
 								y = returnCast.point.y+0.5f; 
