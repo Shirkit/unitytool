@@ -4,8 +4,8 @@ using System.Collections;
 public class HPlatMovement : MonoBehaviour {
 
 	private float movementSpeed;
-	private float lmostX;
-	private float rmostX;
+	public float lmostX;
+	public float rmostX;
 	private bool initialized = false;
 	private int totalFrames;
 
