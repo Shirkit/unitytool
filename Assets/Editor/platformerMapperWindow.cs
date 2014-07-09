@@ -306,7 +306,15 @@ namespace EditorArea {
 
 			UCTFramesTST = EditorGUILayout.IntField("UCT FPS", UCTFramesTST);
 			UCTDepthTST = EditorGUILayout.IntField("UCT Depth", UCTDepthTST);
-			
+			as2B = EditorGUILayout.Toggle("astar2d", as2B);
+			as3B = EditorGUILayout.Toggle("astar3d", as3B);
+			mctB = EditorGUILayout.Toggle("mct", mctB);
+			uctB = EditorGUILayout.Toggle("uct", uctB);
+			rrtasB = EditorGUILayout.Toggle("rrt-astar", rrtasB);
+			rrtmctB = EditorGUILayout.Toggle("rrt-mct", rrtmctB);
+			rrtuctB = EditorGUILayout.Toggle("rrt-uct", rrtuctB);
+
+
 
 			if(GUILayout.Button ("Test Level")){
 				if(!platsInitialized){
@@ -837,7 +845,7 @@ namespace EditorArea {
 		public static int maxDepthAStar = 4000;
 
 		public GameObject astar;
-		public int statesExplored;
+		public int statesExploredAS;
 
 		public KDTree asClosed;
 		public bool asKDNonEmpty;
@@ -845,7 +853,7 @@ namespace EditorArea {
 
 		private RTNode AStarSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 
-			statesExplored = 0;
+			statesExploredAS = 0;
 			cleanUp();
 			if(threedee){
 				asClosed = new KDTree(3);
@@ -893,7 +901,7 @@ namespace EditorArea {
 			asRoot = new RTNode(startLoc, 0, state);
 			heap.Enqueue(asRoot, -Vector2.Distance(asRoot.position, golLoc) -((float)asRoot.frame)/10f);
 
-			statesExplored++;
+			statesExploredAS++;
 			int k = 0;
 			while(!asGoalReached && heap.Count > 0 && k < maxDepthAStar){
 				k++;
@@ -994,7 +1002,7 @@ namespace EditorArea {
 			if(batchComputation){
 				using (System.IO.StreamWriter file = new System.IO.StreamWriter(batchFilename, true))
 				{
-					file.WriteLine(("States Explored:" + statesExplored));
+					file.WriteLine(("States Explored:" + statesExploredAS));
 
 				}
 				if(asGoalReached){
@@ -1013,7 +1021,7 @@ namespace EditorArea {
 				mModel.initializev2();
 				mModel.color = new Color(Random.Range (0f, 1f), Random.Range (0f, 1f), Random.Range (0f, 1f));
 				if(drawWholeThing){
-					Debug.Log ("STATES EXPLORED = " + statesExplored);
+					Debug.Log ("STATES EXPLORED = " + statesExploredAS);
 				}
 
 				RTNode toReturn = reCreatePathAS();
@@ -1038,7 +1046,7 @@ namespace EditorArea {
 				DestroyImmediate(modelObj2);
 				DestroyImmediate(player2);
 				if(drawWholeThing){
-					Debug.Log ("STATES EXPLORED = " + statesExplored);
+					Debug.Log ("STATES EXPLORED = " + statesExploredAS);
 				}
 				return null;
 			}
@@ -1113,7 +1121,7 @@ namespace EditorArea {
 				if(dist < 0.5f){
 					asGoalReached = true;
 					asGoalNode = nex;
-					statesExplored++;
+					statesExploredAS++;
 				}
 				else{
 					//Check if in the close list. 
@@ -1134,13 +1142,13 @@ namespace EditorArea {
 						if(Vector3.Distance(pos1, pos2) > minDist)
 						{
 							heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
-							statesExplored++;
+							statesExploredAS++;
 						}
 
 					}
 					else{
 						heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
-						statesExplored++;
+						statesExploredAS++;
 					}
 				}
 			}
@@ -1970,10 +1978,13 @@ namespace EditorArea {
 		public GameObject uctText;
 		public Texture2D uctTex;
 
+		public int statesExploredUCT;
+
 		public UCTNode cls;
 
 		private RTNode UCTSearch(Vector3 startLoc, Vector3 golLoc, PlayerState state, int frame){
 			cleanUp();
+			statesExploredUCT = 0;
 
 			uctGridX = 25;
 			uctGridY = 10;
@@ -2404,6 +2415,14 @@ namespace EditorArea {
 		#region LevelTest  
 
 	//LevelTest
+		public static bool as2B;
+		public static bool as3B;
+		public static bool mctB;
+		public static bool uctB;
+		public static bool rrtasB;
+		public static bool rrtmctB;
+		public static bool rrtuctB;
+
 		public static int NumFramesAS = 10;
 		public static int DepthAS = 4000;
 		public static int NumFramesUCT = 10;
@@ -2437,7 +2456,8 @@ namespace EditorArea {
 				file.WriteLine("Type,Iteration,Success,Time,Frames,KeyPresses");
 			}
 			threedee = false;
-			for(int i = 0; i < iters; i++){
+			if(as2B){
+				for(int i = 0; i < iters; i++){
 
 				//Astar
 
@@ -2470,40 +2490,43 @@ namespace EditorArea {
 					file.WriteLine(toWrite);
 				}
 			}
-
+			}
 			threedee = true;
-			for(int i = 0; i < iters; i++){
-				
-				//Astar
-				
-				framesPerStep = NumFramesAS;
-				maxDepthAStar = DepthAS;
-				
-				realFrame = 0;
-				curFrame = 0;
-				PlatsGoToFrame(0);
-				string toWrite = "AStar3," + i + ",";
-				System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-				stopwatch.Start();
-				RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
-				stopwatch.Stop();
-				if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
-					toWrite += "0,";
-				}	
-				else{
-					toWrite += "1,";
-				}
-				toWrite += stopwatch.ElapsedMilliseconds;
-				toWrite += "," + mModel.numFrames;
-				toWrite += "," + retrieveInputLength(mModel);
-				
-				using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
-				{
-					file.WriteLine(toWrite);
+			if(as3B){
+				for(int i = 0; i < iters; i++){
+					
+					//Astar
+					
+					framesPerStep = NumFramesAS;
+					maxDepthAStar = DepthAS;
+					
+					realFrame = 0;
+					curFrame = 0;
+					PlatsGoToFrame(0);
+					string toWrite = "AStar3," + i + ",";
+					System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+					stopwatch.Start();
+					RTNode tmp = AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
+					stopwatch.Stop();
+					if(tmp == null || Vector2.Distance(tmp.position, goalLoc) > 0.5f){
+						toWrite += "0,";
+					}	
+					else{
+						toWrite += "1,";
+					}
+					toWrite += stopwatch.ElapsedMilliseconds;
+					toWrite += "," + mModel.numFrames;
+					toWrite += "," + retrieveInputLength(mModel);
+					
+					using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
+					{
+						file.WriteLine(toWrite);
+					}
 				}
 			}
 			threedee = false;
-			for(int i = 0; i < iters; i++){
+			if(mctB){
+				for(int i = 0; i < iters; i++){
 
 				//MCT
 
@@ -2535,8 +2558,9 @@ namespace EditorArea {
 					file.WriteLine(toWrite);
 				}
 			}
-
-			for(int i = 0; i < iters; i++){
+			}
+			if(uctB){
+				for(int i = 0; i < iters; i++){
 				//UCT
 
 
@@ -2568,8 +2592,10 @@ namespace EditorArea {
 				}
 
 			}
+			}
 
-			for(int i = 0; i < iters; i++){
+			if(rrtasB){
+				for(int i = 0; i < iters; i++){
 				//RRT - Astar
 
 
@@ -2607,8 +2633,10 @@ namespace EditorArea {
 
 
 			}
+			}
 
-			for(int i = 0; i < iters; i++){
+			if(rrtmctB){
+				for(int i = 0; i < iters; i++){
 				//RRT - MCT
 
 
@@ -2647,8 +2675,9 @@ namespace EditorArea {
 					file.WriteLine(toWrite);
 				}
 			}
-
-			for(int i = 0; i < iters; i++){
+			}
+			if(rrtuctB){
+				for(int i = 0; i < iters; i++){
 				//RRT - UCT
 
 
@@ -2683,7 +2712,7 @@ namespace EditorArea {
 					file.WriteLine(toWrite);
 				}
 			}
-			
+			}
 			
 		}
 		
