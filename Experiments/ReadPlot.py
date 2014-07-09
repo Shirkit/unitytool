@@ -39,6 +39,7 @@ with open("exag2-test1.csv","rb") as csvfile:
 mu, std = norm.fit(dataKey["AStar2"])
 
 names = {"AStar2","AStar3","UCT","RRTASTAR","RRTUCT"}
+#names = {"AStar2","AStar3","UCT","RRTASTAR","RRTMCT"}
 
 for name in names:
 
@@ -73,7 +74,7 @@ for name in names:
 		dataFrames[name].append(0)
 	
 
-	print " & " + "{:1.1f}".format(float(successCount)/len(dataSuccess[name])) 
+	print " & " + "{:1.2f}".format(float(successCount)/float(len(dataSuccess[name]))) 
 
 	#Success time
 	mu, std = norm.fit(dataTime[name])
