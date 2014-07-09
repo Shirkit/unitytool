@@ -4,8 +4,8 @@ using System.Collections;
 public class VPlatMovement : MonoBehaviour {
 	
 	private float movementSpeed;
-	private float bmostY;
-	private float tmostY;
+	public float bmostY;
+	public float tmostY;
 	private bool initialized = false;
 	private int totalFrames;
 
