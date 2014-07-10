@@ -11,8 +11,9 @@ dataSuccess = dict()
 dataTime = dict()
 dataFrames = dict()
 dataKey = dict()
+dataStates = dict()
 
-with open("exag2-test1.csv","rb") as csvfile:
+with open("exag6-test1.csv","rb") as csvfile:
 	reader = csv.reader(csvfile)
 	for i, row in enumerate(reader):
 		
@@ -24,21 +25,25 @@ with open("exag2-test1.csv","rb") as csvfile:
 			dataTime[str(row[0])].append(float(row[3]))
 			dataFrames[str(row[0])].append(float(row[4]))
 			dataKey[str(row[0])].append(float(row[5]))
+			dataStates[str(row[0])].append(float(row[6]))
 
 		else:
 			dataSuccess[str(row[0])] = []
 			dataTime[str(row[0])] = []
 			dataFrames[str(row[0])] = []
 			dataKey[str(row[0])] = []
+			dataStates[str(row[0])] = []
 
 			dataSuccess[str(row[0])].append(float(row[2]))
 			dataTime[str(row[0])].append(float(row[3]))
 			dataFrames[str(row[0])].append(float(row[4]))
 			dataKey[str(row[0])].append(float(row[5]))
+			dataStates[str(row[0])].append(float(row[6]))
 		
 mu, std = norm.fit(dataKey["AStar2"])
 
 names = {"AStar2","AStar3","UCT","RRTASTAR","RRTUCT"}
+names = {"AStar2","AStar3","UCT","RRTASTAR"}
 #names = {"AStar2","AStar3","UCT","RRTASTAR","RRTMCT"}
 
 for name in names:
@@ -64,6 +69,7 @@ for name in names:
 		del dataTime[name][i]
 		del dataKey[name][i]
 		del dataFrames[name][i]
+		del dataStates[name][i]
 
 	##Check if list empty
 	if len(dataTime[name]) == 0:
@@ -72,7 +78,8 @@ for name in names:
 		dataKey[name].append(0)
 	if len(dataFrames[name]) == 0:
 		dataFrames[name].append(0)
-	
+	if len(dataStates[name]) == 0:
+		dataStates[name].append(0)
 
 	print " & " + "{:1.2f}".format(float(successCount)/float(len(dataSuccess[name]))) 
 
@@ -85,4 +92,7 @@ for name in names:
 	#Success Keys Count
 	mu, std = norm.fit(dataKey[name])
 	print  " & " + "{:1.1f}".format(mu) + " & $\pm$ & " + "{:1.1f}".format(std) 
+	#Success States Count
+	mu, std = norm.fit(dataStates[name])
+	print  " & " + "{:1.1f}".format(mu) + " & $\pm$ & " + "{:1.1f}".format(std)
 	print '\\' + '\\' 
