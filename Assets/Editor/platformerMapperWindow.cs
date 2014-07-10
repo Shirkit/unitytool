@@ -85,8 +85,8 @@ namespace EditorArea {
 
 			blH = GameObject.Find ("bottomLeft").transform.position;
 			trH = GameObject.Find ("topRight").transform.position;
-			hmapGridX = 25;
-			hmapGridY = 25;
+			hmapGridX = 50;
+			hmapGridY = 50;
 
 
 			hmapDensity = new int[hmapGridX, hmapGridY];
@@ -110,17 +110,17 @@ namespace EditorArea {
 				for(int l = 0; l < hmapGridY; l++){
 
 					Color col;
-					if((float)hmapDensity[k, l] > 0.75f * ((float)maxHDensity)){
-						col  = Color.red;
+					if((float)hmapDensity[k, l] > 0.5f * ((float)maxHDensity)){
+						col  = Color.black;
 					}
 					else{
 
 						Color initCol = Color.red;
 						initCol.a = 0f;
 						
-						float maxLerp = 0.75f * ((float)maxHDensity);
+						float maxLerp = 0.5f * ((float)maxHDensity);
 
-						col = Color.Lerp(initCol, Color.red, (((float)hmapDensity[ k, l])/maxLerp)); 
+						col = Color.Lerp(initCol, Color.black, (((float)hmapDensity[ k, l])/maxLerp)); 
 					}
 
 
@@ -690,7 +690,7 @@ namespace EditorArea {
 				Vector3 tmp = new Vector3(hplat.lmostX, hplat.gameObject.transform.position.y, -5);
 				Vector3 tmp2 = new Vector3(hplat.rmostX, hplat.gameObject.transform.position.y, -5);
 				
-				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, arrowMat, 7f, LineType.Continuous);
+				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.grey, arrowMat, 7f, LineType.Continuous);
 				line.vectorObject.transform.parent = arws.transform;
 				line.endCap = "Arrow";
 				line.Draw3D();
@@ -699,7 +699,7 @@ namespace EditorArea {
 				Vector3 tmp = new Vector3(vplat.gameObject.transform.position.x, vplat.bmostY, -5);
 				Vector3 tmp2 = new Vector3(vplat.gameObject.transform.position.x, vplat.tmostY, -5);
 				
-				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, arrowMat, 7f, LineType.Continuous);
+				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.grey, arrowMat, 7f, LineType.Continuous);
 				line.vectorObject.transform.parent = arws.transform;
 				line.endCap = "Arrow";
 				line.Draw3D();
@@ -2630,6 +2630,9 @@ namespace EditorArea {
 			}
 			threedee = false;
 			if(as2B){
+				if(colHmapU){
+					colHmapL =  true;
+				}
 				for(int i = 0; i < iters; i++){
 
 				//Astar
@@ -2664,9 +2667,13 @@ namespace EditorArea {
 					file.WriteLine(toWrite);
 				}
 			}
+				colHmapL = false;
 			}
 			threedee = true;
 			if(as3B){
+				if(colHmapU){
+					colHmapL =  true;
+				}
 				for(int i = 0; i < iters; i++){
 					
 					//Astar
@@ -2698,6 +2705,7 @@ namespace EditorArea {
 						file.WriteLine(toWrite);
 					}
 				}
+				colHmapL = false;
 			}
 			threedee = false;
 			if(mctB){
@@ -2735,6 +2743,9 @@ namespace EditorArea {
 			}
 			}
 			if(uctB){
+				if(colHmapU){
+					colHmapL =  true;
+				}
 				for(int i = 0; i < iters; i++){
 				//UCT
 
@@ -2768,6 +2779,7 @@ namespace EditorArea {
 				}
 
 			}
+				colHmapL = false;
 			}
 
 			if(rrtasB){
