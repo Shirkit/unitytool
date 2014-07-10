@@ -13,7 +13,7 @@ dataFrames = dict()
 dataKey = dict()
 dataStates = dict()
 
-with open("exag6-test2.csv","rb") as csvfile:
+with open("Exag2-Test2.csv","rb") as csvfile:
 	reader = csv.reader(csvfile)
 	for i, row in enumerate(reader):
 		
@@ -44,6 +44,10 @@ mu, std = norm.fit(dataKey["AStar2"])
 
 names = {"AStar2","AStar3","UCT","RRTASTAR","RRTUCT"}
 #names = {"AStar2","AStar3","UCT","RRTASTAR","RRTMCT"}
+namesValue = {"AStar2":"\\Astar$_2$","AStar3":"\\Astar$_3$","UCT":"MCTS","RRTASTAR":"RRT$_{\\mbox{\Astar}}$","RRTUCT":"RRT$_{\\mbox{MCTS}}$"}
+
+#Header for the table
+
 
 for name in names:
 
@@ -51,7 +55,7 @@ for name in names:
 	muTimeAll, stdTimeAll = norm.fit(dataTime[name])
 
 	#Time All Search
-	print  name +" & " + "{:1.1f}".format(muTimeAll) + " & $\pm$ & " + "{:1.1f}".format(stdTimeAll) 
+	print  namesValue[name] +" & " + "{:1.1f}".format(muTimeAll) + "  $\pm$  " + "{:1.1f}".format(stdTimeAll) 
 
 
 	#Success Rate
@@ -84,14 +88,14 @@ for name in names:
 
 	#Success time
 	mu, std = norm.fit(dataTime[name])
-	print  " & " + "{:1.1f}".format(mu) + " & $\pm$ & " + "{:1.1f}".format(std) 
+	print  " & " + "{:1.1f}".format(mu) + "  $\pm$  " + "{:1.1f}".format(std) 
 	#Success Keys
 	mu, std = norm.fit(dataFrames[name])
-	print  " & " + "{:1.1f}".format(mu) + " & $\pm$ & " + "{:1.1f}".format(std) 
+	print  " & " + "{:1.1f}".format(mu) + "  $\pm$  " + "{:1.1f}".format(std) 
 	#Success Keys Count
 	mu, std = norm.fit(dataKey[name])
-	print  " & " + "{:1.1f}".format(mu) + " & $\pm$ & " + "{:1.1f}".format(std) 
+	print  " & " + "{:1.1f}".format(mu) + "  $\pm$  " + "{:1.1f}".format(std) 
 	#Success States Count
 	mu, std = norm.fit(dataStates[name])
-	print  " & " + "{:1.1f}".format(mu) + " & $\pm$ & " + "{:1.1f}".format(std)
+	print  " & " + "{:1.0f}".format(mu) + "  $\pm$  " + "{:1.0f}".format(std)
 	print '\\' + '\\' 
