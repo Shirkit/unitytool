@@ -1,5 +1,4 @@
 Type,Iteration,Success,Time,Frames,KeyPresses,StatesExplored
-Type,Iteration,Success,Time,Frames,KeyPresses,StatesExplored
 AStar2,0,1,722,621,39,1363
 AStar2,1,1,710,621,39,1363
 AStar2,2,1,702,621,39,1363
@@ -5000,3 +4999,4 @@ RRTUCT,996,1,16846,1750,107,16304
 RRTUCT,997,0,22584,233,6,22156
 RRTUCT,998,0,21138,0,3,20713
 RRTUCT,999,1,15104,2010,106,14591
+
