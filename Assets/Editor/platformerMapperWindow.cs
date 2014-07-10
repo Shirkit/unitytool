@@ -12,7 +12,7 @@ using KDTreeDLL;
 
 namespace EditorArea {
 	public class PlatformerEditorWindow : EditorWindow  {
-
+		
 		#region var defs
 		public GameObject heatmap;
 		public GameObject players;
@@ -65,6 +65,122 @@ namespace EditorArea {
 		public static string batchFilename;
 		#endregion var defs
 
+		#region heatmap
+
+		public static GameObject hmap;
+		public static GameObject hmapText;
+		public static Texture2D hmapTex;
+		public static int[,] hmapDensity;
+		public static int hmapGridX = 100;
+		public static int hmapGridY = 100;
+		public static int maxHDensity;
+		public static Vector3 blH;
+		public static Vector3 trH;
+
+		public static bool colHmapU;
+		public static bool colHmapL;
+
+		public static void initHeatMapper(){
+			DestroyImmediate(GameObject.Find ("hmap"));
+
+			blH = GameObject.Find ("bottomLeft").transform.position;
+			trH = GameObject.Find ("topRight").transform.position;
+			hmapGridX = 50;
+			hmapGridY = 50;
+
+
+			hmapDensity = new int[hmapGridX, hmapGridY];
+			maxHDensity = 0;
+
+
+
+			
+
+			hmap = new GameObject("hmap");
+			hmapText = new GameObject("hmapText");
+			hmapText.transform.position = blH + (0.5f * (trH - blH));
+			hmapText.transform.position += new Vector3(0,0,15);
+			hmapText.transform.localScale = new Vector3((100f*(trH.x - blH.x)/((float)hmapGridX)), (100f*(trH.y - blH.y)/((float)hmapGridY)), 1);
+			hmapText.AddComponent<SpriteRenderer>();
+			hmapTex = new Texture2D(hmapGridX, hmapGridY);
+			hmapText.transform.parent = hmap.transform;
+		}
+		public static void colorHeatMapper(){
+			for(int k = 0; k < hmapGridX; k++){
+				for(int l = 0; l < hmapGridY; l++){
+
+					Color col;
+					if((float)hmapDensity[k, l] > 0.5f * ((float)maxHDensity)){
+						col  = Color.black;
+					}
+					else{
+
+						Color initCol = Color.red;
+						initCol.a = 0f;
+						
+						float maxLerp = 0.5f * ((float)maxHDensity);
+
+						col = Color.Lerp(initCol, Color.black, (((float)hmapDensity[ k, l])/maxLerp)); 
+					}
+
+
+					hmapTex.SetPixel(k, l, col);
+				}
+			}
+			hmapTex.Apply();
+			
+			byte[] bytes = hmapTex.EncodeToPNG();
+			File.WriteAllBytes(Application.dataPath + 
+			                   "/Levels/Plateformer/Graphics/HMAPDensity.png", bytes);
+			
+			
+			SpriteRenderer r = hmapText.GetComponent<SpriteRenderer>(); 
+			
+			
+			
+			Sprite s = AssetDatabase.LoadAssetAtPath(
+				"Assets/Levels/Plateformer/Graphics/HMAPDensity.png", typeof(Sprite)) as Sprite;
+			//Debug.Log ("s-" + s);
+			//Debug.Log ("r-" + r);
+			
+			
+			r.sprite = s;  
+			
+		}
+		public static void updateDensity(float x, float y){
+
+
+			int xIndex = Mathf.FloorToInt((x - blH.x) / ((trH.x - blH.x) / (float)hmapGridX));
+			int yIndex = Mathf.FloorToInt((y - blH.y) / ((trH.y - blH.y) / (float)hmapGridY));
+
+			if(xIndex >= hmapGridX || yIndex >= hmapGridY || xIndex < 0 || yIndex < 0){
+				return;
+			}
+
+
+			try{
+			hmapDensity[xIndex, yIndex]++;
+			}
+			catch(System.Exception e){
+				Debug.Log (xIndex);
+				Debug.Log (yIndex);
+				Debug.Log (hmapDensity.Length);
+				Debug.Log (hmapDensity.Rank);
+				throw e;
+			}
+			maxHDensity = Mathf.Max (maxHDensity, hmapDensity[xIndex, yIndex]);
+		}
+		public static void colorPath(movementModel model){
+			while(!model.updater()){
+				float x = model.player.transform.position.x;
+				float y = model.player.transform.position.y;
+				updateDensity(x, y);
+			}
+		}
+
+
+		#endregion heatmap
+
 		#region Inits
 
 		[MenuItem("Window/RRTMapper")]
@@ -107,6 +223,19 @@ namespace EditorArea {
 
 		void OnGUI () {
 			scrollPos = EditorGUILayout.BeginScrollView (scrollPos);
+
+			if(GUILayout.Button("Init Heat Mapper")){
+				initHeatMapper();
+			}
+			if(GUILayout.Button ("colorHeatMapper")){
+				colorHeatMapper();
+			}
+			colHmapU = EditorGUILayout.Toggle("ColourHMap", colHmapU);
+
+
+
+
+
 
 			if(GUILayout.Button ("Draw Moving Platform Lines")){
 				drawArrows();
@@ -211,6 +340,9 @@ namespace EditorArea {
 			minDist = EditorGUILayout.FloatField("Min Dist Astar", minDist);
 
 			if(GUILayout.Button ("AStarSearch")){
+				if(colHmapU){
+					colHmapL =  true;
+				}
 				cleanUpRRTDebug();
 				if(debugMode){
 					drawWholeThing = true;
@@ -226,9 +358,13 @@ namespace EditorArea {
 				AStarSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				PlatsGoToFrame(0);
 				drawWholeThing = false;
+				colHmapL = false;
 			}
 
 			if(GUILayout.Button ("UCT Search")){
+				if(colHmapU){
+					colHmapL =  true;
+				}
 				cleanUpRRTDebug();
 				if(debugMode){
 					drawWholeThing = true;
@@ -244,6 +380,7 @@ namespace EditorArea {
 				UCTSearch(startingLoc, goalLoc, new PlayerState(), 0);
 				PlatsGoToFrame(0);
 				drawWholeThing = false;
+				colHmapL = false;
 			}
 
 			if(GUILayout.Button ("ReInitialize Moving Platforms")){
@@ -553,7 +690,7 @@ namespace EditorArea {
 				Vector3 tmp = new Vector3(hplat.lmostX, hplat.gameObject.transform.position.y, -5);
 				Vector3 tmp2 = new Vector3(hplat.rmostX, hplat.gameObject.transform.position.y, -5);
 				
-				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, arrowMat, 7f, LineType.Continuous);
+				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.grey, arrowMat, 7f, LineType.Continuous);
 				line.vectorObject.transform.parent = arws.transform;
 				line.endCap = "Arrow";
 				line.Draw3D();
@@ -562,7 +699,7 @@ namespace EditorArea {
 				Vector3 tmp = new Vector3(vplat.gameObject.transform.position.x, vplat.bmostY, -5);
 				Vector3 tmp2 = new Vector3(vplat.gameObject.transform.position.x, vplat.tmostY, -5);
 				
-				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.magenta, arrowMat, 7f, LineType.Continuous);
+				VectorLine line = new VectorLine("line", new Vector3[] {tmp, tmp2} , Color.grey, arrowMat, 7f, LineType.Continuous);
 				line.vectorObject.transform.parent = arws.transform;
 				line.endCap = "Arrow";
 				line.Draw3D();
@@ -1039,6 +1176,10 @@ namespace EditorArea {
 				else{
 					DestroyImmediate(modelObj2);
 					DestroyImmediate(player2);
+					if(colHmapL){
+						colorPath(mModel);
+					}
+
 					return toReturn;
 				}
 			}
@@ -1065,6 +1206,8 @@ namespace EditorArea {
 			RTNode toReturn = new RTNode(asGoalNode.position, mModel.numFrames, asGoalNode.state);
 			toReturn.actions.AddRange (mModel.actions);
 			toReturn.durations.AddRange (mModel.durations);
+
+
 			//Debug.Log (" Number of frames : " + mModel.numFrames);
 			return toReturn;
 		}
@@ -1515,6 +1658,10 @@ namespace EditorArea {
 						mModel.drawPath(paths);
 					}
 					count++;
+					if(colHmapU){
+						colorPath(mModel);
+					}
+
 				}
 				else{
 					//Debug.Log ("Attempt " + j + " failed");
@@ -2121,10 +2268,16 @@ namespace EditorArea {
 			if(drawWholeThing){
 				for(int k = 0; k < uctGridX; k++){
 					for(int l = 0; l < uctGridY; l++){
-						Color col = Color.Lerp(Color.gray, Color.red, (((float)uctDensity[0, k, l])/((float)maxDensity[0]))); 
+						Color initialCol = Color.red;
+						initialCol.a = 0f;
+
+					
+
+						Color col = Color.Lerp(initialCol, Color.red, (((float)uctDensity[0, k, l])/((float)maxDensity[0]))); 
 						//col.a = 0.8f;
 
-						col.a = 1f;
+
+
 
 						uctTex.SetPixel(k, l, col);
 					}
@@ -2174,6 +2327,10 @@ namespace EditorArea {
 				else{
 					DestroyImmediate(modelObj2);
 					DestroyImmediate(player2);
+
+					if(colHmapL){
+						colorPath(mModel);
+					}
 					return toReturn;
 				}
 
@@ -2473,6 +2630,9 @@ namespace EditorArea {
 			}
 			threedee = false;
 			if(as2B){
+				if(colHmapU){
+					colHmapL =  true;
+				}
 				for(int i = 0; i < iters; i++){
 
 				//Astar
@@ -2507,9 +2667,13 @@ namespace EditorArea {
 					file.WriteLine(toWrite);
 				}
 			}
+				colHmapL = false;
 			}
 			threedee = true;
 			if(as3B){
+				if(colHmapU){
+					colHmapL =  true;
+				}
 				for(int i = 0; i < iters; i++){
 					
 					//Astar
@@ -2541,6 +2705,7 @@ namespace EditorArea {
 						file.WriteLine(toWrite);
 					}
 				}
+				colHmapL = false;
 			}
 			threedee = false;
 			if(mctB){
@@ -2578,6 +2743,9 @@ namespace EditorArea {
 			}
 			}
 			if(uctB){
+				if(colHmapU){
+					colHmapL =  true;
+				}
 				for(int i = 0; i < iters; i++){
 				//UCT
 
@@ -2611,6 +2779,7 @@ namespace EditorArea {
 				}
 
 			}
+				colHmapL = false;
 			}
 
 			if(rrtasB){
