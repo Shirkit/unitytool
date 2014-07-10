@@ -2033,9 +2033,6 @@ namespace EditorArea {
 
 
 
-
-
-
 			modelObj = Instantiate(modelFab) as GameObject;
 			modelObj.name = "modelObject" + count;
 			modelObj.transform.parent = models.transform;
@@ -2125,7 +2122,10 @@ namespace EditorArea {
 				for(int k = 0; k < uctGridX; k++){
 					for(int l = 0; l < uctGridY; l++){
 						Color col = Color.Lerp(Color.gray, Color.red, (((float)uctDensity[0, k, l])/((float)maxDensity[0]))); 
-						col.a = 0.7f;
+						//col.a = 0.8f;
+
+						col.a = 1f;
+
 						uctTex.SetPixel(k, l, col);
 					}
 				}
