@@ -13,7 +13,7 @@ dataFrames = dict()
 dataKey = dict()
 dataStates = dict()
 
-with open("Exag1-test2.csv","rb") as csvfile:
+with open("Exag2-Test2.csv","rb") as csvfile:
 	reader = csv.reader(csvfile)
 	for i, row in enumerate(reader):
 		
