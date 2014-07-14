@@ -5,6 +5,8 @@ public class userMovement : MonoBehaviour {
 
 	public string action;
 	public movementModel mov;
+	public Vector3 goalLocation;
+	public bool won;
 
 	// Use this for initialization
 	void Start () {
@@ -12,48 +14,84 @@ public class userMovement : MonoBehaviour {
 		mov.player = gameObject;
 		mov.startLocation = gameObject.transform.position;
 		mov.startState = mov.state;
+		goalLocation  = GameObject.Find("goalPosition").transform.position;
+		won = false;
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		if(Input.GetKey (KeyCode.RightArrow)){
-			if(Input.GetKeyDown (KeyCode.UpArrow)){
-				action = "jump right";
+		if(!mov.dead){
+			if((Input.GetKey (KeyCode.RightArrow) || Input.GetKey (KeyCode.D))){
+				if((Input.GetKeyDown (KeyCode.UpArrow) || Input.GetKeyDown (KeyCode.W))){
+					action = "jump right";
+				}
+				else{
+					action = "Right";
+				}
+			}
+			else if((Input.GetKey (KeyCode.LeftArrow) || Input.GetKey (KeyCode.A))){
+				if((Input.GetKeyDown (KeyCode.UpArrow) || Input.GetKeyDown (KeyCode.W))){
+					action = "jump left";
+				}
+				else{
+					action = "Left";
+				}
+			}
+			else if((Input.GetKeyDown (KeyCode.UpArrow) || Input.GetKeyDown (KeyCode.W))){
+				action = "jump";
 			}
 			else{
-				action = "Right";
+				action = "wait";
 			}
-		}
-		else if(Input.GetKey (KeyCode.LeftArrow)){
-			if(Input.GetKeyDown (KeyCode.UpArrow)){
-				action = "jump left";
-			}
-			else{
-				action = "Left";
-			}
-		}
-		else if(Input.GetKeyDown (KeyCode.UpArrow)){
-			action = "jump";
-		}
-		else{
-			action = "wait";
-		}
 
-		mov.doAction(action, 1);
-		mov.movePlayer();
-		mov.doCollisions();
+			mov.doAction(action, 1);
+			mov.movePlayer();
+			mov.doCollisions();
 
-		Debug.Log (mov.state.isOnGround);
+			if(Vector3.Distance(gameObject.transform.position, goalLocation) < 0.5f){
+				win();
+			}
+		
+		}
 
 		if(gameObject.transform.position.y < -1){
 			mov.dead = true;
 		}
+	
 
-		if(mov.dead){
-			mov.dead = false;
-			gameObject.transform.position =  mov.startLocation;
-			mov.state = mov.startState;
+		if(Input.GetKeyDown (KeyCode.R)){
+			reset();
+		}
+
+		if(Input.GetKeyDown (KeyCode.Escape)){
+			Application.LoadLevel (1);
 		}
 
 	}
+
+	private void reset(){
+		mov.dead = false;
+		gameObject.transform.position =  mov.startLocation;
+		mov.state = mov.startState;
+		won = false;
+	}
+
+	private void win(){
+		won  = true;
+	}
+
+	void OnGUI(){
+		if(mov.dead){
+			if(GUI.Button(new Rect(Screen.width * .4f, Screen.height * .4f, Screen.width * .3f, Screen.height * .1f), "You Died, Click Here, or Press R to Restart")) {
+				reset();
+			}
+		}
+		else if(won){
+			if(GUI.Button(new Rect(Screen.width * .4f, Screen.height * .4f, Screen.width * .3f, Screen.height * .1f), "You Won, Click Here, or Press R to Restart")) {
+				reset();
+			}
+		}
+
+	}
+
 }
