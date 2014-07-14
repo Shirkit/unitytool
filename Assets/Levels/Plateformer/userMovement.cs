@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class userMovement : MonoBehaviour {
 
@@ -7,6 +8,7 @@ public class userMovement : MonoBehaviour {
 	public movementModel mov;
 	public Vector3 goalLocation;
 	public bool won;
+	public List<Vector2> path;
 
 	// Use this for initialization
 	void Start () {
@@ -16,6 +18,7 @@ public class userMovement : MonoBehaviour {
 		mov.startState = mov.state;
 		goalLocation  = GameObject.Find("goalPosition").transform.position;
 		won = false;
+		path = new List<Vector2>();
 	}
 	
 	// Update is called once per frame
@@ -49,8 +52,11 @@ public class userMovement : MonoBehaviour {
 			mov.doCollisions();
 
 			if(Vector3.Distance(gameObject.transform.position, goalLocation) < 0.5f){
-				win();
+				if(!won){
+					win();
+				}
 			}
+			path.Add (gameObject.transform.position);
 		
 		}
 
@@ -74,10 +80,15 @@ public class userMovement : MonoBehaviour {
 		gameObject.transform.position =  mov.startLocation;
 		mov.state = mov.startState;
 		won = false;
+		path = new List<Vector2>();
 	}
 
 	private void win(){
 		won  = true;
+		//Record path somewhere....
+		foreach(Vector2 pos in path){
+			Debug.Log (pos);
+		}
 	}
 
 	void OnGUI(){
