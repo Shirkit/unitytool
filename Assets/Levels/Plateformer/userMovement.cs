@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using WWW;
 
 public class userMovement : MonoBehaviour {
 
@@ -86,9 +87,32 @@ public class userMovement : MonoBehaviour {
 	private void win(){
 		won  = true;
 		//Record path somewhere....
+		string data = "";
 		foreach(Vector2 pos in path){
-			Debug.Log (pos);
+			data += pos;
+			data += "\n";
 		}
+	}
+
+	private void sendData(string data){
+		string URL = "http://whateverthehostsitewillbe.com/writeResults.php";
+		WWWForm form = new WWWForm();
+		form.AddField ( "results_name", "Dataset");
+		form.AddField ( "results_data", "sue");
+		WWW w = WWW(URL, form);
+
+		StartCoroutine(WaitForRequest(w));
+
+
+	}
+
+	IEnumerator WaitForRequest(WWW w){
+		yield return w;
+
+		if(w.error != null){
+			Debug.Log ("WWW Error:" + w.error);
+		}
+	}
 	}
 
 	void OnGUI(){
