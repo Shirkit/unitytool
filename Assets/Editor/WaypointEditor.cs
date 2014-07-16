@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using UnityEditor;
 using UnityEngine;
 using Objects;
@@ -32,3 +34,5 @@ namespace EditorArea {
 		}
 	}
 }
+
+#endif

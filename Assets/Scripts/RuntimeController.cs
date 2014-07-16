@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿#if !UNITY_WEBPLAYER
+
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using Common;
@@ -165,3 +167,5 @@ public class RuntimeController : MonoBehaviour, NodeProvider {
 		return n3;
 	}
 }
+
+#endif

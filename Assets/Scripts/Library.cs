@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using System;
 using Common;
 using Objects;
@@ -146,3 +148,4 @@ namespace Extra {
 	}
 }
 
+#endif

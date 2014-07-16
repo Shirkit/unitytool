@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using Extra;
 using System;
 using System.Collections.Generic;
@@ -118,3 +120,5 @@ namespace Common {
 	}
 	
 }
+
+#endif

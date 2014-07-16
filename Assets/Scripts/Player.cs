@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using UnityEngine;
 using System.Collections.Generic;
 using Common;
@@ -56,3 +58,5 @@ namespace Objects {
 		}
 	}
 }
+
+#endif

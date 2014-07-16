@@ -1,4 +1,4 @@
-﻿
+﻿#if !UNITY_WEBPLAYER
 
 using UnityEngine;
 using UnityEditor;
@@ -12,7 +12,9 @@ using KDTreeDLL;
 
 namespace EditorArea {
 	public class PlatformerEditorWindow : EditorWindow  {
-		
+
+
+
 		#region var defs
 		public GameObject heatmap;
 		public GameObject players;
@@ -2975,3 +2977,5 @@ public class serializableModel{
 		startLoc = pSLoc;
 	}
 }
+
+#endif

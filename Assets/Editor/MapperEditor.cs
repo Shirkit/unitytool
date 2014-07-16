@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -148,3 +150,5 @@ namespace EditorArea {
 		} // OnSceneGui
 	} // Class
 } // NS
+
+#endif

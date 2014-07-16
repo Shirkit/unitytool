@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
@@ -137,3 +139,4 @@ namespace EditorArea {
 		}
 	}
 }
+#endif

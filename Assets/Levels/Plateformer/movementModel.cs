@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
+#if !UNITY_WEBPLAYER
 using UnityEditor;
+#endif
 using System.Collections;
 using System.Collections.Generic;
 using Vectrosity;

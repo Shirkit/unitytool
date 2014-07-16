@@ -1,6 +1,10 @@
+#if !UNITY_WEBPLAYER
+
 using UnityEngine;
 using System.Collections.Generic;
+
 using UnityEditor;
+
 
 namespace Objects {
 	public class Waypoint : MonoBehaviour {
@@ -37,3 +41,6 @@ public class WaitingWaypoint : Waypoint {
 	public Dictionary<int, float> times = new Dictionary<int, float>();
 	
 }*/
+
+
+#endif

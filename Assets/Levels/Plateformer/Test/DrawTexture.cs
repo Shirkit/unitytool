@@ -1,6 +1,9 @@
-﻿using UnityEngine;
+﻿#if !UNITY_WEBPLAYER
+
+using UnityEngine;
 using System.Collections;
 using System.IO;
+
 using UnityEditor;
 
 [ExecuteInEditMode]
@@ -39,8 +42,7 @@ public class DrawTexture : MonoBehaviour {
 		texture.Apply(); 
 
 		byte[] bytes = texture.EncodeToPNG();
-		File.WriteAllBytes(Application.dataPath + 
-			"/Levels/Plateformer/Graphics/SavedScreen.png", bytes);
+		File.WriteAllBytes(Application.dataPath + "/Levels/Plateformer/Graphics/SavedScreen.png", bytes);
 
 
 		SpriteRenderer r = gameObject.GetComponent<SpriteRenderer>(); 
@@ -54,3 +56,4 @@ public class DrawTexture : MonoBehaviour {
 
 	}	
 }
+#endif

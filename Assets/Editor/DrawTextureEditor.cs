@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿#if !UNITY_WEBPLAYER
+
+using UnityEngine;
 using System.Collections;
 using UnityEditor;
 
@@ -23,3 +25,5 @@ public class DrawTextureEditor : Editor
 	}
 
 }
+
+#endif

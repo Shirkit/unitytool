@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor;
@@ -12,3 +14,5 @@ namespace Objects {
 		
 	}
 }
+
+#endif

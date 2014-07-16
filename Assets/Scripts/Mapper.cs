@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using UnityEngine;
 using System;
 using System.Collections;
@@ -184,3 +186,5 @@ public class Mapper : MonoBehaviour {
 		return im;
 	}	
 }
+
+#endif

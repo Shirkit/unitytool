@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -609,3 +611,5 @@ namespace Extra {
 		}
 	}
 }
+
+#endif

@@ -1,8 +1,12 @@
+#if !UNITY_WEBPLAYER
+
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+
 using UnityEditor;
+
 using Common;
 
 namespace Exploration {
@@ -169,3 +173,5 @@ namespace Exploration {
 		}
 	}
 }
+
+#endif

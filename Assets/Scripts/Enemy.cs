@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -144,3 +146,5 @@ namespace Objects {
 		}
 	}
 }
+
+#endif

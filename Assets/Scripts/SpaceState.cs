@@ -1,3 +1,5 @@
+#if !UNITY_WEBPLAYER
+
 using System;
 using UnityEngine;
 using Objects;
@@ -69,3 +71,5 @@ namespace Common {
 		#endregion
 	}
 }
+
+#endif
