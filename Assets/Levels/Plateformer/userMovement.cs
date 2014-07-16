@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using WWW;
+//using WWW;
 
 public class userMovement : MonoBehaviour {
 
@@ -92,28 +92,43 @@ public class userMovement : MonoBehaviour {
 			data += pos;
 			data += "\n";
 		}
+		sendData(data);
 	}
 
+	private string webResults;
+	public int countDisplayed = 0;
+	public bool display = false;
+
 	private void sendData(string data){
-		string URL = "http://whateverthehostsitewillbe.com/writeResults.php";
+		string URL ="http://cs.mcgill.ca/~aborod3/writeResults.php";
 		WWWForm form = new WWWForm();
-		form.AddField ( "results_name", "Dataset");
-		form.AddField ( "results_data", "sue");
-		WWW w = WWW(URL, form);
+		form.AddField ( "name", "Dataset");
+		//form.AddField ( "data", data);
+
+		WWW w = new WWW(URL, form);
 
 		StartCoroutine(WaitForRequest(w));
 
 
 	}
 
+
+
 	IEnumerator WaitForRequest(WWW w){
 		yield return w;
 
-		if(w.error != null){
+		if(!string.IsNullOrEmpty(w.error)){
 			Debug.Log ("WWW Error:" + w.error);
+			webResults = "WWW Error:" + w.error;
+				display = true;
+		}
+		else{
+			Debug.Log ("WWW Success" + w.text);
+			webResults = "WWW Success" + w.text;
+				display = true;
 		}
 	}
-	}
+
 
 	void OnGUI(){
 		if(mov.dead){
@@ -126,6 +141,13 @@ public class userMovement : MonoBehaviour {
 				reset();
 			}
 		}
+
+		if(display){
+			if(GUI.Button(new Rect(Screen.width * .2f, Screen.height * .2f, Screen.width * .7f, Screen.height * .1f), webResults)) {
+
+			}
+		}
+		
 
 	}
 
