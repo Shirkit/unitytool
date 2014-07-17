@@ -100,12 +100,19 @@ public class userMovement : MonoBehaviour {
 	public bool display = false;
 
 	private void sendData(string data){
-		string URL ="http://cs.mcgill.ca/~aborod3/writeResults.php";
+		string URL ="http://cgi.cs.mcgill.ca/~aborod3/writeResults.php";
 		WWWForm form = new WWWForm();
 		form.AddField ( "name", "Dataset");
-		//form.AddField ( "data", data);
+		form.AddField ( "data", data);
 
-		WWW w = new WWW(URL, form);
+		var headers = form.headers;
+
+		if (!headers.Contains("Content-Type"))
+		{
+			headers.Add("Content-Type", "application/x-www-form-urlencoded");
+		}
+
+		WWW w = new WWW(URL, form.data, headers);
 
 		StartCoroutine(WaitForRequest(w));
 
@@ -142,11 +149,11 @@ public class userMovement : MonoBehaviour {
 			}
 		}
 
-		if(display){
-			if(GUI.Button(new Rect(Screen.width * .2f, Screen.height * .2f, Screen.width * .7f, Screen.height * .1f), webResults)) {
+		/*if(display){
+			if(GUI.Button(new Rect(Screen.width * .1f, Screen.height * .1f, Screen.width * .8f, Screen.height * .3f), webResults)) {
 
 			}
-		}
+		}*/
 		
 
 	}
