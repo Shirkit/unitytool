@@ -9,6 +9,7 @@ public class userMovement : MonoBehaviour {
 	public movementModel mov;
 	public Vector3 goalLocation;
 	public bool won;
+	public bool died = false;
 	public List<Vector2> path;
 
 	// Use this for initialization
@@ -66,7 +67,9 @@ public class userMovement : MonoBehaviour {
 		}
 
 		if(mov.dead){
-			death();
+			if(!died){
+				death();
+			}
 		}
 	
 
@@ -75,12 +78,13 @@ public class userMovement : MonoBehaviour {
 		}
 
 		if(Input.GetKeyDown (KeyCode.Escape)){
-			Application.LoadLevel (1);
+			Application.LoadLevel (4);
 		}
 
 	}
 
 	private void reset(){
+		died = false;
 		mov.dead = false;
 		gameObject.transform.position =  mov.startLocation;
 		mov.state = mov.startState;
@@ -89,6 +93,7 @@ public class userMovement : MonoBehaviour {
 	}
 
 	private void death(){
+		died = true;
 		string data = "";
 		foreach(Vector2 pos in path){
 			data += pos;

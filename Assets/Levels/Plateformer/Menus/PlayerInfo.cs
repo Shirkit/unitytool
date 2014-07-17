@@ -8,7 +8,7 @@ public class PlayerInfo {
 	public static int curLevel = 0;	
 	public static int pathNumber = 0;
 
-	public static void toStringIncr(){
+	public static string toStringIncr(){
 		pathNumber++;
 		return username + "," + ansQ1 +"," + ansQ2 +"," + curLevel + "," + pathNumber;
 	}
