@@ -64,6 +64,10 @@ public class userMovement : MonoBehaviour {
 		if(gameObject.transform.position.y < -1){
 			mov.dead = true;
 		}
+
+		if(mov.dead){
+			death();
+		}
 	
 
 		if(Input.GetKeyDown (KeyCode.R)){
@@ -84,6 +88,16 @@ public class userMovement : MonoBehaviour {
 		path = new List<Vector2>();
 	}
 
+	private void death(){
+		string data = "";
+		foreach(Vector2 pos in path){
+			data += pos;
+			data += "\n";
+		}
+		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + ",0";
+		sendData(title, data);
+	}
+
 	private void win(){
 		won  = true;
 		//Record path somewhere....
@@ -92,17 +106,18 @@ public class userMovement : MonoBehaviour {
 			data += pos;
 			data += "\n";
 		}
-		sendData(data);
+		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + ",1";
+		sendData(title, data);
 	}
 
 	private string webResults;
 	public int countDisplayed = 0;
 	public bool display = false;
 
-	private void sendData(string data){
+	private void sendData(string title, string data){
 		string URL ="http://cgi.cs.mcgill.ca/~aborod3/writeResults.php";
 		WWWForm form = new WWWForm();
-		form.AddField ( "name", "Dataset");
+		form.AddField ( "name", title);
 		form.AddField ( "data", data);
 
 		var headers = form.headers;
