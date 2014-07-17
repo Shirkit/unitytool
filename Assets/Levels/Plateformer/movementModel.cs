@@ -224,6 +224,8 @@ public class movementModel : MonoBehaviour{
 	private bool layerMasksLoaded = false;
 
 	public void doCollisions(){
+
+
 		if(!layerMasksLoaded){
 			floor = 1 << LayerMask.NameToLayer("Floor");
 			walls = 1 << LayerMask.NameToLayer("Walls");

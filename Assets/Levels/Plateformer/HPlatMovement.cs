@@ -54,7 +54,7 @@ public class HPlatMovement : MonoBehaviour {
 		}
 	}
 	public bool isGoingLeft(int frame){
-		if(frame % totalFrames > totalFrames/2){
+		if((frame % totalFrames) > (totalFrames/2)){
 			return true;
 		}
 		else{

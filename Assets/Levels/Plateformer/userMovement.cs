@@ -11,6 +11,12 @@ public class userMovement : MonoBehaviour {
 	public bool won;
 	public bool died = false;
 	public List<Vector2> path;
+	//step, jump, die, win
+	public  AudioClip sound1;
+	public  AudioClip sound2;
+	public  AudioClip sound3;
+	public  AudioClip sound4;
+
 
 	// Use this for initialization
 	void Start () {
@@ -22,31 +28,56 @@ public class userMovement : MonoBehaviour {
 		won = false;
 		path = new List<Vector2>();
 	}
-	
+
+	private int num = 0;
+
 	// Update is called once per frame
 	void Update () {
+
+
 		if(!mov.dead){
 			if((Input.GetKey (KeyCode.RightArrow) || Input.GetKey (KeyCode.D))){
 				if((Input.GetKeyDown (KeyCode.UpArrow) || Input.GetKeyDown (KeyCode.W))){
 					action = "jump right";
+					audio.PlayOneShot (sound2);
+					num = 0;
 				}
 				else{
 					action = "Right";
+					if(mov.state.isOnGround){
+						num++;
+						num = num % 8;
+						if(num == 1){
+							audio.PlayOneShot (sound1);
+						}
+					}
 				}
 			}
 			else if((Input.GetKey (KeyCode.LeftArrow) || Input.GetKey (KeyCode.A))){
 				if((Input.GetKeyDown (KeyCode.UpArrow) || Input.GetKeyDown (KeyCode.W))){
 					action = "jump left";
+					audio.PlayOneShot (sound2);
+					num = 0;
 				}
 				else{
 					action = "Left";
+					if(mov.state.isOnGround){
+						num++;
+						num = num % 8;
+						if(num == 1){
+							audio.PlayOneShot (sound1);
+						}
+					}
 				}
 			}
 			else if((Input.GetKeyDown (KeyCode.UpArrow) || Input.GetKeyDown (KeyCode.W))){
 				action = "jump";
+				audio.PlayOneShot (sound2);
+				num = 0;
 			}
 			else{
 				action = "wait";
+				num = 0;
 			}
 
 			mov.doAction(action, 1);
@@ -55,6 +86,7 @@ public class userMovement : MonoBehaviour {
 
 			if(Vector3.Distance(gameObject.transform.position, goalLocation) < 0.5f){
 				if(!won){
+					audio.PlayOneShot (sound4);
 					win();
 				}
 			}
@@ -68,6 +100,7 @@ public class userMovement : MonoBehaviour {
 
 		if(mov.dead){
 			if(!died){
+				audio.PlayOneShot (sound3);
 				death();
 			}
 		}
