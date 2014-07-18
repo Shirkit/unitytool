@@ -81,6 +81,7 @@ public class userMovement : MonoBehaviour {
 			}
 
 			mov.doAction(action, 1);
+			mov.frame++;
 			mov.movePlayer();
 			mov.doCollisions();
 

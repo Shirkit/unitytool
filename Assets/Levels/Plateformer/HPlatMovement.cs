@@ -7,9 +7,9 @@ public class HPlatMovement : MonoBehaviour {
 	public float lmostX;
 	public float rmostX;
 	private bool initialized = false;
-	private int totalFrames;
+	public int totalFrames;
 
-	private int curFrame;
+	public int curFrame;
 
 	public void Awake(){
 		initialize();

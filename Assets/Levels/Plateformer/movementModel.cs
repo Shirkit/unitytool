@@ -271,6 +271,16 @@ public class movementModel : MonoBehaviour{
 						}
 					}
 				}
+				else{
+					if(Mathf.Approximately(player.transform.position.y, (collH.gameObject.transform.position.y + collH.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
+						if(collH.gameObject.GetComponent<HPlatMovement>().isGoingLeft(frame)){
+							state.platformVelocity.x = -0.09f;
+						}
+						else{
+							state.platformVelocity.x = 0.09f;
+						}
+					}
+				}
 			}
 		}
 
