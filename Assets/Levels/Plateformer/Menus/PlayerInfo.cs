@@ -2,14 +2,15 @@
 using System.Collections;
 
 public class PlayerInfo {
-	public static string username = "";
+	public static int userid = 0;
 	public static int ansQ1 = 0;
 	public static int ansQ2 = 0;
 	public static int curLevel = 0;	
 	public static int pathNumber = 0;
+	public static bool mute = false;
 
 	public static string toStringIncr(){
 		pathNumber++;
-		return username + "," + ansQ1 +"," + ansQ2 +"," + curLevel + "," + pathNumber;
+		return userid + "," + ansQ1 +"," + ansQ2 +"," + curLevel + "," + pathNumber;
 	}
 }

@@ -115,6 +115,10 @@ public class userMovement : MonoBehaviour {
 			Application.LoadLevel (4);
 		}
 
+		if(won && Input.GetKeyDown (KeyCode.Space)){
+			next();
+		}
+
 	}
 
 	private void reset(){
@@ -147,6 +151,15 @@ public class userMovement : MonoBehaviour {
 		}
 		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + ",1";
 		sendData(title, data);
+	}
+
+	private void next(){
+		PlayerInfo.curLevel++;
+		if(PlayerInfo.curLevel == 9){
+			Application.LoadLevel (3);
+		}
+
+		Application.LoadLevel (PlayerInfo.curLevel+4);
 	}
 
 	private string webResults;
@@ -193,16 +206,23 @@ public class userMovement : MonoBehaviour {
 
 	void OnGUI(){
 		if(mov.dead){
-			if(GUI.Button(new Rect(Screen.width * .4f, Screen.height * .4f, Screen.width * .3f, Screen.height * .1f), "You Died, Click Here, or Press R to Restart")) {
+			if(GUI.Button(new Rect(Screen.width * .4f, Screen.height * .4f, Screen.width * .4f, Screen.height * .1f), "You Died, Click Here, or Press R to Restart")) {
 				reset();
 			}
 		}
 		else if(won){
-			if(GUI.Button(new Rect(Screen.width * .4f, Screen.height * .4f, Screen.width * .3f, Screen.height * .1f), "You Won, Click Here, or Press R to Restart")) {
-				reset();
+			if(GUI.Button(new Rect(Screen.width * .4f, Screen.height * .4f, Screen.width * .4f, Screen.height * .1f), "You Won, Click Here, or Press Space to Continue")) {
+				next();
 			}
 		}
 
+
+		AudioListener.pause = PlayerInfo.mute;
+
+		if(GUI.Button (new Rect(Screen.width  * .9f, 0, Screen.width * .1f, Screen.height * .1f), "MUTE")){
+			PlayerInfo.mute = !PlayerInfo.mute;
+		}
+		
 		/*if(display){
 			if(GUI.Button(new Rect(Screen.width * .1f, Screen.height * .1f, Screen.width * .8f, Screen.height * .3f), webResults)) {
 
