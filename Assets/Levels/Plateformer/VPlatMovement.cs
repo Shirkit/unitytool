@@ -9,7 +9,7 @@ public class VPlatMovement : MonoBehaviour {
 	private bool initialized = false;
 	private int totalFrames;
 
-	private int curFrame;
+	public int curFrame;
 
 
 	public void Awake(){
