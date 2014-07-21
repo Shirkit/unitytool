@@ -11,6 +11,7 @@ public class userMovement : MonoBehaviour {
 	public bool won;
 	public bool died = false;
 	public List<Vector2> path;
+	public int numKeyPress = 0;
 	//step, jump, die, win
 	public  AudioClip sound1;
 	public  AudioClip sound2;
@@ -27,13 +28,48 @@ public class userMovement : MonoBehaviour {
 		goalLocation  = GameObject.Find("goalPosition").transform.position;
 		won = false;
 		path = new List<Vector2>();
+		initPlat(mov);
+
+
 	}
 
+	void initPlat(movementModel mov){
+		GameObject hmovplat = GameObject.Find ("HMovingPlatforms");
+		mov.hplatmovers = new HPlatMovement[hmovplat.transform.childCount];
+		
+		int i = 0;
+		foreach(Transform child in hmovplat.transform){
+			mov.hplatmovers[i] = child.gameObject.GetComponent<HPlatMovement>();
+			mov.hplatmovers[i].initialize();
+			i++;
+		}
+		
+		GameObject vmovplat = GameObject.Find ("VMovingPlatforms");
+		mov.vplatmovers = new VPlatMovement[vmovplat.transform.childCount];
+		
+		i = 0;
+		foreach(Transform child in vmovplat.transform){
+			mov.vplatmovers[i] = child.gameObject.GetComponent<VPlatMovement>();
+			mov.vplatmovers[i].initialize();
+			i++;
+		}
+	}
+	
 	private int num = 0;
 
 	// Update is called once per frame
 	void Update () {
 
+		if(Input.GetKeyDown (KeyCode.RightArrow) || Input.GetKeyDown (KeyCode.D)){
+			numKeyPress++;
+		}
+		if(Input.GetKeyDown (KeyCode.LeftArrow) || Input.GetKeyDown ( KeyCode.A)){
+			numKeyPress++;
+		}
+		if(Input.GetKeyDown (KeyCode.UpArrow ) || Input.GetKeyDown ( KeyCode.W)){
+			numKeyPress++;
+		}
+		
 
 		if(!mov.dead){
 			if((Input.GetKey (KeyCode.RightArrow) || Input.GetKey (KeyCode.D))){
@@ -122,6 +158,8 @@ public class userMovement : MonoBehaviour {
 	}
 
 	private void reset(){
+		mov.frame = 0;
+		mov.PlatsGoToFrame(0);
 		died = false;
 		mov.dead = false;
 		gameObject.transform.position =  mov.startLocation;
@@ -137,7 +175,7 @@ public class userMovement : MonoBehaviour {
 			data += pos;
 			data += "\n";
 		}
-		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + ",0";
+		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + ",0," + numKeyPress;
 		sendData(title, data);
 	}
 
@@ -149,7 +187,7 @@ public class userMovement : MonoBehaviour {
 			data += pos;
 			data += "\n";
 		}
-		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + ",1";
+		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + ",1," + numKeyPress;
 		sendData(title, data);
 	}
 

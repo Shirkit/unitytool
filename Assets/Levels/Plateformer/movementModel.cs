@@ -403,14 +403,16 @@ public class movementModel : MonoBehaviour{
 		line2.vectorObject.transform.position = new Vector3(0f, 0f, -12f);
 	}
 
-	private void PlatsGoToFrame(int curFrame){
+	public void PlatsGoToFrame(int curFrame){
 		foreach(HPlatMovement mov in hplatmovers){
 			if(mov != null){
+				mov.curFrame = curFrame;
 				mov.goToFrame(curFrame);
 			}
 		}
 		foreach(VPlatMovement mov in vplatmovers){
 			if(mov != null){
+				mov.curFrame = curFrame;
 				mov.goToFrame(curFrame);
 			}
 		}
