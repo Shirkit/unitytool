@@ -55,7 +55,11 @@ public class VPlatMovement : MonoBehaviour {
 		}
 	}
 	public bool isGoingDown(int frame){
-		if(frame % totalFrames > totalFrames/2){
+		if((frame % totalFrames) == (totalFrames-1)){
+			return false;
+		}
+
+		if((frame % totalFrames) > (totalFrames/2)){
 			return true;
 		}
 		else{

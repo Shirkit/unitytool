@@ -289,8 +289,8 @@ public class movementModel : MonoBehaviour{
 			if(collV.tag.Equals("VMovingPlatforms")){
 				if(!state.isOnGround){
 					
-					if((state.velocity.y < 0.1f) && (collV.gameObject.transform.position.y + collV.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y) < player.transform.position.y + 0.1f){
-						state.isOnGround = true;
+					if((state.velocity.y < 0.1f) && (collV.gameObject.transform.position.y + collV.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f + state.velocity.y) < player.transform.position.y + 0.2f){
+						//state.isOnGround = true;
 						state.numJumps = 0;
 						player.transform.position = new Vector3(player.transform.position.x, (collV.gameObject.transform.position.y + collV.gameObject.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f), player.transform.position.z);
 						state.velocity.y = 0;
@@ -301,7 +301,17 @@ public class movementModel : MonoBehaviour{
 					}
 					if(Mathf.Approximately(player.transform.position.y, (collV.gameObject.transform.position.y + collV.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
 						if(collV.gameObject.GetComponent<VPlatMovement>().isGoingDown(frame)){
-							state.platformVelocity.y = -0.09f;							
+							state.platformVelocity.y = -0.09f;		
+						}
+						else{
+							state.platformVelocity.y = 0.09f;
+						}
+					}
+				}
+				else{
+					if(Mathf.Approximately(player.transform.position.y, (collV.gameObject.transform.position.y + collV.transform.localScale.y*0.5f + player.transform.localScale.y*0.5f - 0.1f))){
+						if(collV.gameObject.GetComponent<VPlatMovement>().isGoingDown(frame)){
+							state.platformVelocity.y = -0.09f;		
 						}
 						else{
 							state.platformVelocity.y = 0.09f;
