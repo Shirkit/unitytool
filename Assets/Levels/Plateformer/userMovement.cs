@@ -171,23 +171,25 @@ public class userMovement : MonoBehaviour {
 	private void death(){
 		died = true;
 		string data = "";
-		foreach(Vector2 pos in path){
-			data += pos;
-			data += "\n";
-		}
-		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + ",0," + numKeyPress;
-		sendData(title, data);
+		composeData(0);
 	}
 
 	private void win(){
 		won  = true;
 		//Record path somewhere....
+		composeData(1);
+	}
+
+	private void composeData(int success){
 		string data = "";
+		int dist = 0;
+		Vector2 prevPos = path[0];
 		foreach(Vector2 pos in path){
 			data += pos;
 			data += "\n";
+			dist += Vector2.Distance(prevPos, pos);
 		}
-		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + ",1," + numKeyPress;
+		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + "," + success + "," + numKeyPress + "," + path.Count + "," + dist;
 		sendData(title, data);
 	}
 
