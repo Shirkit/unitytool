@@ -17,9 +17,59 @@ public class MainMenu : MonoBehaviour {
 
 		comments = GUI.TextArea(new Rect(Screen.width *.2f, Screen.height*.65f, Screen.width*.6f, Screen.height*.3f), comments);
 
+		if(display){
+			if(GUI.Button(new Rect(Screen.width * .1f, Screen.height * .1f, Screen.width * .8f, Screen.height * .3f), webResults)) {
+				
+			}
+		}
 	}
 
-	private void submit(){
+	private string webResults;
+	public bool display = false;
 
+	private void submit(){
+		string title = PlayerInfo.userid + "," + System.DateTime.Now + "\n";
+		sendData(title, comments);
+
+
+	}
+
+
+
+	private void sendData(string title, string data){
+		string URL ="http://cgi.cs.mcgill.ca/~aborod3/writeComment.php";
+		WWWForm form = new WWWForm();
+		form.AddField ( "name", title);
+		form.AddField ( "data", data);
+		
+		var headers = form.headers;
+		
+		if (!headers.Contains("Content-Type"))
+		{
+			headers.Add("Content-Type", "application/x-www-form-urlencoded");
+		}
+		
+		WWW w = new WWW(URL, form.data, headers);
+		
+		StartCoroutine(WaitForRequest(w));
+		
+		
+	}
+	
+	
+	
+	IEnumerator WaitForRequest(WWW w){
+		yield return w;
+		
+		if(!string.IsNullOrEmpty(w.error)){
+			Debug.Log ("WWW Error:" + w.error);
+			webResults = "WWW Error:" + w.error;
+			display = true;
+		}
+		else{
+			Debug.Log ("WWW Success" + w.text);
+			webResults = "WWW Success" + w.text;
+			display = true;
+		}
 	}
 }
