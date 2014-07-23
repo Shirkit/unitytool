@@ -182,7 +182,7 @@ public class userMovement : MonoBehaviour {
 
 	private void composeData(int success){
 		string data = "";
-		int dist = 0;
+		float dist = 0;
 		Vector2 prevPos = path[0];
 		foreach(Vector2 pos in path){
 			data += pos;
