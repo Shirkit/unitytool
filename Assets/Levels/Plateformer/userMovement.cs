@@ -180,8 +180,11 @@ public class userMovement : MonoBehaviour {
 		composeData(1);
 	}
 
+	public static string data = "";
+	public static string title = "";
+
 	private void composeData(int success){
-		string data = "";
+		data = "";
 		float dist = 0;
 		Vector2 prevPos = path[0];
 		foreach(Vector2 pos in path){
@@ -189,8 +192,10 @@ public class userMovement : MonoBehaviour {
 			data += "\n";
 			dist += Vector2.Distance(prevPos, pos);
 		}
-		string title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + "," + success + "," + numKeyPress + "," + path.Count + "," + dist;
-		sendData(title, data);
+		title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + "," + success + "," + numKeyPress + "," + path.Count + "," + dist;
+		if(success == 0){
+			sendData(title, data);
+		}
 	}
 
 	private void next(){
