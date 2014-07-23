@@ -195,11 +195,9 @@ public class userMovement : MonoBehaviour {
 
 	private void next(){
 		PlayerInfo.curLevel++;
-		if(PlayerInfo.curLevel == 9){
-			Application.LoadLevel (3);
-		}
 
-		Application.LoadLevel (PlayerInfo.curLevel+4);
+
+		Application.LoadLevel (5);
 	}
 
 	private string webResults;
