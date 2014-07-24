@@ -623,6 +623,26 @@ namespace EditorArea {
 			}
 		}
 
+		private void exportPathsAsPosName(string name){
+			foreach(movementModel model in mModels){
+				if(model != null){
+					exportPathAsPosName(model, name);
+				}
+			}
+		}
+
+		private void exportPathAsPosName(movementModel model, string name){
+			int presses = retrieveInputLength(model);
+			serializablePosMovModel sModel = model.toPosModel(presses).toSerializable();
+			XmlSerializer ser = new XmlSerializer (typeof(serializablePosMovModel));
+			using (FileStream stream = new FileStream (name + ".xml", FileMode.Create)) {
+				ser.Serialize (stream, sModel);
+				stream.Flush ();
+				stream.Close ();
+			}
+		}
+
+
 		private void exportPathsAsPos(){
 			foreach(movementModel model in mModels){
 				if(model != null){
