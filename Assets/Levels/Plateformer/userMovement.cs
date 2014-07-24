@@ -191,6 +191,7 @@ public class userMovement : MonoBehaviour {
 			data += pos;
 			data += "\n";
 			dist += Vector2.Distance(prevPos, pos);
+			prevPos = pos;
 		}
 		title = System.DateTime.Now + "," + PlayerInfo.toStringIncr() + "," + success + "," + numKeyPress + "," + path.Count + "," + dist;
 		if(success == 0){
