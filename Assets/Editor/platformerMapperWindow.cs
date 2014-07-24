@@ -633,7 +633,8 @@ namespace EditorArea {
 
 		private void exportPathAsPos(movementModel model){
 			Debug.Log (model.gameObject.name);
-			serializablePosMovModel sModel = model.toPosModel().toSerializable();
+			int presses = retrieveInputLength(model);
+			serializablePosMovModel sModel = model.toPosModel(presses).toSerializable();
 			XmlSerializer ser = new XmlSerializer (typeof(serializablePosMovModel));
 			using (FileStream stream = new FileStream ("pos" + model.gameObject.name.Substring(11) + ".xml", FileMode.Create)) {
 				ser.Serialize (stream, sModel);
@@ -2910,7 +2911,7 @@ namespace EditorArea {
 		
 		
 		
-		private int retrieveInputLength(movementModel model){
+		public static int retrieveInputLength(movementModel model){
 			int numKeyPress = 0;
 			int index = 0;
 			string prevAction = "";

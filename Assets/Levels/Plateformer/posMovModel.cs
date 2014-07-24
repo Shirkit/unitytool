@@ -13,15 +13,18 @@ public class posMovModel : MonoBehaviour {
 	public bool pathComputed = false;
 	public Vector3[] pointsArray;
 
+	public int keyPresses;
+
 
 	public posMovModel(){
 
 	}
 
-	public posMovModel(GameObject pPlayer, List<Vector3> pPositions){
+	public posMovModel(GameObject pPlayer, List<Vector3> pPositions, int pPresses){
 		player = pPlayer;
 		positions = pPositions;
 		curFrame = 0;
+		keyPresses = pPresses;
 	}
 
 
@@ -79,7 +82,7 @@ public class posMovModel : MonoBehaviour {
 	}
 
 	public serializablePosMovModel toSerializable(){
-		return new serializablePosMovModel(positions, positions.Count*5, positions[0]);
+		return new serializablePosMovModel(positions, positions.Count*5, positions[0], keyPresses);
 	}
 }
 
@@ -92,15 +95,17 @@ public class serializablePosMovModel{
 	public List<Vector3> positions;
 	
 	public int numFrames;
+	public int keyPresses;
 	public Vector3 startLoc;
 	
 	
 	public serializablePosMovModel(){
 	}
 	
-	public serializablePosMovModel(List<Vector3> pPositions,int pFrames, Vector3 pSLoc){
+	public serializablePosMovModel(List<Vector3> pPositions,int pFrames, Vector3 pSLoc, int pPresses){
 		positions = pPositions;
 		numFrames = pFrames;
 		startLoc = pSLoc;
+		keyPresses = pPresses;
 	}
 }

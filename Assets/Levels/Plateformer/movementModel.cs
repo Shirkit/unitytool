@@ -156,7 +156,7 @@ public class movementModel : MonoBehaviour{
 			resetState();
 		}
 		else{
-			state.reset();
+			state.reset(); frame = 0;
 		}
 		aIndex = 0;
 		if(startLocation != null){
@@ -418,16 +418,16 @@ public class movementModel : MonoBehaviour{
 		}
 	}
 
-	public posMovModel toPosModel(){
+	public posMovModel toPosModel(int presses){
 		List<Vector3> positions = new List<Vector3>();
 		player.transform.position = GameObject.Find("startingPosition").transform.position;
-		state.reset();
+		state.reset(); frame = 0;
 		positions.Add (player.transform.position);
 		while(!runFrames(5)){
 			positions.Add (player.transform.position);
 		}
 		player.transform.position = GameObject.Find("startingPosition").transform.position;
-		state.reset();
-		return new posMovModel(player, positions);
+		state.reset(); frame = 0;
+		return new posMovModel(player, positions, presses);
 	}
 }
