@@ -2645,6 +2645,9 @@ namespace EditorArea {
 		public static int iters = 2;
 		public static string testFilename = "test.csv";
 
+		private int fileID = 5000;
+
+
 		private void testLevel(){
 
 			using (System.IO.StreamWriter file = new System.IO.StreamWriter(testFilename, true))
@@ -2689,6 +2692,7 @@ namespace EditorArea {
 				{
 					file.WriteLine(toWrite);
 				}
+
 			}
 				colHmapL = false;
 			}
