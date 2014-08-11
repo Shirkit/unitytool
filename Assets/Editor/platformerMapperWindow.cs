@@ -1352,7 +1352,15 @@ namespace EditorArea {
 				}
 				else{
 					mModel.durations.Add (1);
-					mModel.actions.Add ("wait");
+					if(action.Equals ("jump left")){
+						mModel.actions.Add ("Left");
+					}
+					else if(action.Equals ("jump right")){
+						mModel.actions.Add ("Right");
+					}
+					else{
+						mModel.actions.Add ("wait");
+					}
 					mModel.durations.Add (framesPerStep-1);
 					int j;
 					for(j = 0; j < framesPerStep; j++){
@@ -1385,7 +1393,6 @@ namespace EditorArea {
 			else{
 				mModel.durations.Add (1);
 				frame = mModel.loopUpdate();
-
 
 			}
 
@@ -2528,7 +2535,15 @@ namespace EditorArea {
 				}
 				else{
 					mModel.durations.Add (1);
-					mModel.actions.Add ("wait");
+					if(action.Equals ("jump left")){
+						mModel.actions.Add ("Left");
+					}
+					else if(action.Equals ("jump right")){
+						mModel.actions.Add ("Right");
+					}
+					else{
+						mModel.actions.Add ("wait");
+					}
 					mModel.durations.Add (framesPerStep-1);
 					int j;
 					for(j = 0; j < framesPerStep; j++){
