@@ -789,6 +789,15 @@ namespace EditorArea {
 
 		}
 
+		private List<movementModel> nonRRTmModels;
+
+		private void cleanUpNonRRT(){
+			foreach( movementModel mod in nonRRTmModels){
+				mModels.Remove(mod);
+
+			}
+		}
+
 		private void cleanUpRRTDebug(){
 			DestroyImmediate(RRTDebug);
 			while(GameObject.Find ("RRT") != null){
