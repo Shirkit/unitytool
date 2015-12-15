@@ -1067,12 +1067,17 @@ namespace EditorArea {
 			
 			asGoalReached = false;
 			heap = new PriorityQueue<RTNode, double>();
-			asRoot = new RTNode(startLoc, 0, state);
-			heap.Enqueue(asRoot, -Vector2.Distance(asRoot.position, golLoc) -((float)asRoot.frame)/10f);
+			asRoot = new RTNode(startLoc, 0, state); 
+			asRoot.h = -Vector2.Distance(asRoot.position, golLoc) -((float)asRoot.frame)/10f; 
+			asRoot.g = 0; 
+			asRoot.f = asRoot.h+asRoot.g;
+			heap.Enqueue(asRoot, asRoot.f);
 
 			statesExploredAS++;
 			int k = 0;
-			while(!asGoalReached && heap.Count > 0 && k < maxDepthAStar){
+			Debug.Log("hello");
+			while(!asGoalReached && heap.Count > 0 && k < maxDepthAStar)
+			{
 				k++;
 
 				RTNode cur = heap.Dequeue().Value;
@@ -1086,13 +1091,15 @@ namespace EditorArea {
 					Vector3 pos1;
 					Vector3 pos2;
 
-					if(threedee){
+					if(threedee)
+					{
 						closest = asClosed.nearest(new double[]{cur.position.x, cur.position.y, cur.frame}) as RTNode;
 
 						pos1 = new Vector3(cur.position.x, cur.position.y,((float)cur.frame)/10f);
 						pos2 = new Vector3(closest.position.x, closest.position.y,((float)closest.frame)/10f);
 					}
-					else{
+					else
+					{
 						closest = asClosed.nearest(new double[]{cur.position.x, cur.position.y}) as RTNode;
 						
 						pos1 = new Vector3(cur.position.x, cur.position.y,0);
@@ -1103,11 +1110,14 @@ namespace EditorArea {
 					{
 						continue;
 					}
-					else{
-						if(threedee){
+					else
+					{
+						if(threedee)
+						{
 							asClosed.insert (new double[]{cur.position.x, cur.position.y, cur.frame}, cur);
 						}
-						else{
+						else
+						{
 							asClosed.insert (new double[]{cur.position.x, cur.position.y}, cur);
 						}	          
 						asKDNonEmpty = true;
@@ -1147,21 +1157,26 @@ namespace EditorArea {
 					break;
 				}
 				tryDoAction(cur, "Left", golLoc);
-				if(asGoalReached){
+				if(asGoalReached)
+				{
 					break;
 				}
 				tryDoAction(cur, "wait", golLoc);
-				if(asGoalReached){
+				if(asGoalReached)
+				{
 					break;
 				}
-				if(cur.state.numJumps < cur.state.maxJumps){
+				if(cur.state.numJumps < cur.state.maxJumps)
+				{
 					tryDoAction(cur, "jump", golLoc);
-					if(asGoalReached){
+					if(asGoalReached)
+					{
 						break;
 					}
 
 					tryDoAction(cur, "jump right", golLoc);
-					if(asGoalReached){
+					if(asGoalReached)
+					{
 						break;
 					}
 					tryDoAction(cur, "jump left", golLoc);
@@ -1316,13 +1331,21 @@ namespace EditorArea {
 						}
 						if(Vector3.Distance(pos1, pos2) > minDist)
 						{
-							heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
+							nex.h =  -dist -((float)nex.frame)/10f;
+							nex.g = cur.g - Vector2.Distance(nex.position,cur.position);
+							nex.f = nex.h + nex.h;
+							heap.Enqueue(nex, nex.f);
 							statesExploredAS++;
 						}
 
 					}
-					else{
-						heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
+					else
+					{
+						nex.h =  -dist -((float)nex.frame)/10f;
+						nex.g = cur.g - Vector2.Distance(nex.position,cur.position);
+						nex.f = nex.h + nex.h;
+						heap.Enqueue(nex, nex.f);
+						// heap.Enqueue(nex, -dist -((float)nex.frame)/10f);
 						statesExploredAS++;
 					}
 				}

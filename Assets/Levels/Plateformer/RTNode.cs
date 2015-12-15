@@ -26,6 +26,8 @@ public class RTNode {
 	public List<RTNode> children;
 	public List<string> actions;
 	public List<int> durations;
-
+	public float h;
+	public float f; 
+	public float g; 
 	public int statesExplored;
 }
